@@ -34,10 +34,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		
 		//ゲームシーンの描画
 		gameScene->Draw();
-		//軸描画
-		AxisIndicator::GetInstance()->Draw();
-		//imguiの描画
-		inguiManager->Draw();
+
 
 		//描画終了
 		dxCommon->PostDraw();

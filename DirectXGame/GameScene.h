@@ -1,6 +1,6 @@
 #pragma once
 #include "KamataEngine.h"
-
+#include "Player.h"
 //ゲームシーン
 class GameScene
 {
@@ -16,25 +16,15 @@ public:
 
 	//描画
 	void Draw();
-	
+
 	~GameScene();
 
 private:
-
-	uint32_t textureHandle_ = 0;
-	uint32_t soundDatahandle_ = 0;
-	uint32_t voiceHandle_ = 0;
-	float inputFloat3[3] = {0, 0, 0};
-	// ワールドトランスフォーム
-	KamataEngine::WorldTransform worldTransform_;
-
-	// カメラ
-	KamataEngine::Camera camera_;
-
-	// 3dモデル
+	uint32_t textureHandel_ = 0;
 	KamataEngine::Model* model_ = nullptr;
-	KamataEngine::Sprite* sprite_ = nullptr;
+	KamataEngine::WorldTransform worldTransform_;
+	KamataEngine::Camera camera_;
+	Player* player_ = nullptr;
+	
 
-	//デバッグカメラ
-	KamataEngine::DebugCamera* debugcamera_ = nullptr;
 };
