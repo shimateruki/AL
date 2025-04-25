@@ -1,5 +1,6 @@
 #include "GameScene.h"
 
+
 using namespace KamataEngine;
 
 //初期化
@@ -12,15 +13,21 @@ void GameScene::Initialize()
 	camera_.Initialize();
 	player_ = new Player();
 	player_->Initialize(model_, textureHandel_, &camera_);
+
 }
 //更新
 void GameScene::Update() 
 {
+
 	player_->Update(); 
 
+
+
+	
 }
 
 //描画
+
 void GameScene::Draw() 
 
 { DirectXCommon* dxcommon = DirectXCommon::GetInstance();
@@ -32,4 +39,7 @@ GameScene::~GameScene()
 {
 	delete model_; 
 	delete player_;
+	
 }
+
+

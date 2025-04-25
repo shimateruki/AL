@@ -6,6 +6,8 @@ class GameScene
 {
 public:
 
+
+
 	//初期化
 	void Initialize();
 
@@ -14,6 +16,7 @@ public:
 
 	//描画
 	void Draw();
+
 	~GameScene();
 
 private:
@@ -23,4 +26,5 @@ private:
 	KamataEngine::Camera camera_;
 	Player* player_ = nullptr;
 	
+
 };
