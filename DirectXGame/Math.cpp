@@ -3,14 +3,14 @@
 
 using namespace KamataEngine;
 
-Matrix4x4 MakeScaleMatrix(const Vector3& scale) {
+Matrix4x4 Math::MakeScaleMatrix(const Vector3& scale) {
 
 	Matrix4x4 result{scale.x, 0.0f, 0.0f, 0.0f, 0.0f, scale.y, 0.0f, 0.0f, 0.0f, 0.0f, scale.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
 
 	return result;
 }
 
-Matrix4x4 MakeRotateXMatrix(float theta) {
+Matrix4x4 Math::MakeRotateXMatrix(float theta) {
 	float sin = std::sin(theta);
 	float cos = std::cos(theta);
 
@@ -19,7 +19,7 @@ Matrix4x4 MakeRotateXMatrix(float theta) {
 	return result;
 }
 
-Matrix4x4 MakeRotateYMatrix(float theta) {
+Matrix4x4 Math::MakeRotateYMatrix(float theta) {
 	float sin = std::sin(theta);
 	float cos = std::cos(theta);
 
@@ -28,7 +28,7 @@ Matrix4x4 MakeRotateYMatrix(float theta) {
 	return result;
 }
 
-Matrix4x4 MakeRotateZMatrix(float theta) {
+Matrix4x4 Math::MakeRotateZMatrix(float theta) {
 	float sin = std::sin(theta);
 	float cos = std::cos(theta);
 
@@ -37,13 +37,13 @@ Matrix4x4 MakeRotateZMatrix(float theta) {
 	return result;
 }
 
-Matrix4x4 MakeTranslateMatrix(const Vector3& translate) {
+Matrix4x4 Math::MakeTranslateMatrix(const Vector3& translate) {
 	Matrix4x4 result{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, translate.x, translate.y, translate.z, 1.0f};
 
 	return result;
 }
 
-Matrix4x4 Multiply(const Matrix4x4& m1, const Matrix4x4& m2) {
+Matrix4x4 Math::Multiply(const Matrix4x4& m1, const Matrix4x4& m2) {
 	Matrix4x4 result = {};
 	for (int row = 0; row < 4; ++row) {
 		for (int col = 0; col < 4; ++col) {
@@ -53,7 +53,7 @@ Matrix4x4 Multiply(const Matrix4x4& m1, const Matrix4x4& m2) {
 	return result;
 }
 
-Matrix4x4 MakeAffineMatrix(const Vector3& scale, const Vector3& rotate, const Vector3& translate) {
+Matrix4x4 Math::MakeAffineMatrix(const Vector3& scale, const Vector3& rotate, const Vector3& translate) {
 	Matrix4x4 scaleMatrix = MakeScaleMatrix(scale);
 	Matrix4x4 rotateXMatrix = MakeRotateXMatrix(rotate.x);
 	Matrix4x4 rotateYMatrix = MakeRotateYMatrix(rotate.y);
@@ -65,8 +65,7 @@ Matrix4x4 MakeAffineMatrix(const Vector3& scale, const Vector3& rotate, const Ve
 
 	return worldMatrix;
 }
-Matrix4x4 MakeViewportMatrix(float left, float top, float width, float height, float minDepth, float maxDepth)
-{
+Matrix4x4 Math::MakeViewportMatrix(float left, float top, float width, float height, float minDepth, float maxDepth) {
 	Matrix4x4 result{};
 	result.m[0][0] = width / 2.0f;
 	result.m[1][1] = -height / 2.0f; // Y軸反転
@@ -78,8 +77,7 @@ Matrix4x4 MakeViewportMatrix(float left, float top, float width, float height, f
 	return result;
 }
 
-KamataEngine::Matrix4x4 MakeOrthographicMatrix(float left, float top, float right, float bottom, float nearClip, float farClip) 
-{
+KamataEngine::Matrix4x4 Math::MakeOrthographicMatrix(float left, float top, float right, float bottom, float nearClip, float farClip) {
 	Matrix4x4 result{};
 	result.m[0][0] = 2.0f / (right - left);
 	result.m[1][1] = 2.0f / (top - bottom);
@@ -90,6 +88,11 @@ KamataEngine::Matrix4x4 MakeOrthographicMatrix(float left, float top, float righ
 	result.m[3][3] = 1.0f;
 	return result;
 	
+}
+
+void Math::worldTransFormUpdate(KamataEngine::WorldTransform& worldTransform) {
+	worldTransform.matWorld_ = MakeAffineMatrix(worldTransform.scale_, worldTransform.rotation_, worldTransform.translation_);
+	worldTransform.TransferMatrix();
 }
 
 
