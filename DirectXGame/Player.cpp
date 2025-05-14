@@ -6,19 +6,19 @@ void Player::Initialize(Model* model, uint32_t textureHandle,Camera* camera)
 {
 	assert(model); 
 	camera_ = camera;
-	model_ = model;
+model_ = model;
 	textureHandle_ = textureHandle;
-	worldTransform_.Initialize();
+	worldTransformPlayer_.Initialize();
 
 	
 }
 
 void Player::Update() 
 {
-	worldTransform_.TransferMatrix(); 
+	math->worldTransFormUpdate(worldTransformPlayer_); 
 }
 
 void Player::Draw() 
 {
-	model_->Draw(worldTransform_,*camera_, textureHandle_); 
+	model_->Draw(worldTransformPlayer_, *camera_); 
 }

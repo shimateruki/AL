@@ -1,5 +1,6 @@
 #pragma once
 #include"KamataEngine.h"
+#include "math.h"
 class Player
 {
 public:
@@ -8,10 +9,12 @@ public:
 	void Draw();
 
 private:
-	KamataEngine::WorldTransform worldTransform_;
+	KamataEngine::WorldTransform worldTransformPlayer_;
+	KamataEngine::WorldTransform playerModel_;
 	KamataEngine:: Model*  model_ = nullptr;
 	uint32_t textureHandle_ = 0;
 	KamataEngine::Camera* camera_ = nullptr;
-
+	
+	Math* math;
 
 };

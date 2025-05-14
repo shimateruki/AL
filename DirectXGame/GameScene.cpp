@@ -1,6 +1,6 @@
 #include "GameScene.h"
 
-#include "math.h"
+
 
 using namespace KamataEngine;
 
@@ -11,9 +11,11 @@ void GameScene::Initialize()
 
 	model_ = Model::Create();
 	worldTransform_.Initialize();
+
+	camera_.farZ = 1280.0f;
+
 	camera_.Initialize();
-	//player_ = new Player();
-	//player_->Initialize(model_, textureHandel_, &camera_);
+	
 
 	//要素数
 	const uint32_t kNumBlockVirtal = 10;
@@ -32,20 +34,32 @@ void GameScene::Initialize()
 	{
 		for (uint32_t j = 0; j < kNumBlockHorizotal; ++j) {
 		
-			if (i % 2==  0 && j % 2 ==0) {
+			if ((i + j )% 2 == 1)continue;
 
 				worldTransformBlocks_[i][j] = new WorldTransform();
 				worldTransformBlocks_[i][j]->Initialize();
 				worldTransformBlocks_[i][j]->translation_.x = kBlockWidth * j;
 				worldTransformBlocks_[i][j]->translation_.y = kBlockHeight * i;
-			}
+			
 		
 		}
 	}
 
 	debaucamera_ = new DebugCamera(100, 50);
+	debaucamera_->SetFarZ(1280.0f);
+
 	
-	//
+	
+	modelSkydome_ = Model::CreateFromOBJ("skydome", true);
+	playerModel_ = Model::CreateFromOBJ("player", true);
+
+	player_ = new Player();
+	player_->Initialize(playerModel_, textureHandel_, &camera_);
+	
+	
+	skydome_ = new Skydome();
+	skydome_->Initialize(modelSkydome_, &camera_); 
+
 
 }
 
@@ -56,6 +70,8 @@ void GameScene::Update()
 {
 
 	//player_->Update(); 
+
+	
 
 
 	
@@ -68,7 +84,7 @@ void GameScene::Update()
 			{
 				continue;
 			}
-			worldTransformBlocks->matWorld_ = MakeAffineMatrix(worldTransformBlocks->scale_, worldTransformBlocks->rotation_, worldTransformBlocks->translation_);
+			worldTransformBlocks->matWorld_ =math-> MakeAffineMatrix(worldTransformBlocks->scale_, worldTransformBlocks->rotation_, worldTransformBlocks->translation_);
 			worldTransformBlocks->TransferMatrix();
 		}
 	}
@@ -101,6 +117,9 @@ void GameScene::Update()
 	{
 		camera_.UpdateMatrix();
 	}
+
+
+	skydome_->Update();
 	
 }
 
@@ -127,12 +146,18 @@ void GameScene::Draw()
 		}
 		
 	}
+
+skydome_->Draw();
+
 	Model::PostDraw();
+
+	
 }
 GameScene::~GameScene()
 {
 	delete model_; 
 	delete debaucamera_;
+	delete modelSkydome_;
 	//delete player_;
 
 	for (std::vector<WorldTransform*>& worldTransformBlockLine:worldTransformBlocks_) 
