@@ -9,6 +9,7 @@ void Player::Initialize(Model* model, uint32_t textureHandle,Camera* camera)
 model_ = model;
 	textureHandle_ = textureHandle;
 	worldTransformPlayer_.Initialize();
+	worldTransformPlayer_.translation_.z = -5.0f;
 
 	
 }
