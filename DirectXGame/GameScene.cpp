@@ -83,6 +83,7 @@ void GameScene::Update()
 	{
 		camera_.matView = debaucamera_->GetCamera().matView;
 		camera_.matProjection = debaucamera_->GetCamera().matProjection;
+
 		//ビュープロジェクション行列の転送
 		camera_.TransferMatrix();
 	}
@@ -126,6 +127,7 @@ void GameScene::GenerrateBlock()
 {
 	const uint32_t kNumBlockVirtal = mapChipField_->GetNumBlockVirtcal();
 	const uint32_t kNumBlockHorizotal = mapChipField_->GetNumBlockHorizonal();
+
 	worldTransformBlocks_.resize(kNumBlockVirtal);
 	for (uint32_t i = 0; i < kNumBlockVirtal; ++i) {
 		worldTransformBlocks_[i].resize(kNumBlockHorizotal);
