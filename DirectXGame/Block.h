@@ -1,17 +1,18 @@
 #pragma once
 #include "KamataEngine.h"
 #include "math.h"
-class Player {
+class Block {
+
 public:
-	void Initialize(KamataEngine::Model* model, uint32_t textureHandle, KamataEngine::Camera* camera);
+	void Initialize(KamataEngine::Model* model, const KamataEngine::Vector3& position, KamataEngine::Camera* camera);
+
 	void Update();
 	void Draw();
 
 private:
 	KamataEngine::WorldTransform worldTransformPlayer_;
-	KamataEngine::WorldTransform playerModel_;
+	KamataEngine::WorldTransform blockModel_;
 	KamataEngine::Model* model_ = nullptr;
-	uint32_t textureHandle_ = 0;
 	KamataEngine::Camera* camera_ = nullptr;
 
 	Math* math;
