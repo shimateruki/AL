@@ -2,9 +2,9 @@
 #include "KamataEngine.h"
 #include "Player.h"
 #include "skydome.h"
-#include"Block.h"
 #include<vector>
 #include "math.h"
+#include "MapChipField.h"
 //ゲームシーン
 class GameScene
 {
@@ -20,6 +20,8 @@ public:
 
 	//描画
 	void Draw();
+
+	void GenerrateBlock();
 
 	~GameScene();
 
@@ -37,8 +39,10 @@ private:
 	Skydome* skydome_ = nullptr;
 	KamataEngine::Model* playerModel_ = nullptr;
 	KamataEngine::Model* modelSkydome_ = nullptr;
-	Block* blocks_[10][20];       // Blockクラスで管理
-	KamataEngine::Model* blockModel_ = nullptr; // 共通モデル
+	
+
+	//マップチップフィールド
+	MapChipField* mapChipField_;
 
 	Math* math;
 };

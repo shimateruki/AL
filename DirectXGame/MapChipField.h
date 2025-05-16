@@ -23,6 +23,8 @@ public:
 	void ResetMapChipData();
 	void LoadMapChipCsv(const std::string& filePath);
 	KamataEngine::Vector3 GetChipPositionIndex(uint32_t xindex, uint32_t yindex);
+	uint32_t GetNumBlockVirtcal() { return kNumBlockVirtical; }
+	uint32_t GetNumBlockHorizonal( ){ return kNumBlockHorizonal; }
 
 	private:
 	MapChipData mapChipData_;
