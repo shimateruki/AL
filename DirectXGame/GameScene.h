@@ -1,5 +1,5 @@
 #pragma once
-#include "Block.h"
+
 #include "KamataEngine.h"
 #include "Player.h"
 #include "math.h"
@@ -33,8 +33,7 @@ private:
 	Skydome* skydome_ = nullptr;
 	KamataEngine::Model* playerModel_ = nullptr;
 	KamataEngine::Model* modelSkydome_ = nullptr;
-	Block* blocks_[10][20];                     // Blockクラスで管理
-	KamataEngine::Model* blockModel_ = nullptr; // 共通モデル
+
 
 	Math* math;
 };

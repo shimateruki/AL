@@ -6,7 +6,7 @@ void GameScene::Initialize() {
 	textureHandel_ = TextureManager::Load("sample.png");
 
 	// モデルロード
-	blockModel_ = Model::CreateFromOBJ("block", true);
+	model_ = Model::CreateFromOBJ("block", true);
 	modelSkydome_ = Model::CreateFromOBJ("skydome", true);
 	playerModel_ = Model::CreateFromOBJ("player", true);
 
@@ -26,24 +26,33 @@ void GameScene::Initialize() {
 	skydome_ = new Skydome();
 	skydome_->Initialize(modelSkydome_, &camera_);
 
-	// ブロック生成
+// 要素数
 	const uint32_t kNumBlockVirtal = 10;
 	const uint32_t kNumBlockHorizotal = 20;
+	// ブロック一個分
 	const float kBlockWidth = 2.0f;
 	const float kBlockHeight = 2.0f;
 
+	worldTransformBlocks_.resize(kNumBlockVirtal);
+	for (uint32_t i = 0; i < kNumBlockVirtal; ++i) {
+		worldTransformBlocks_[i].resize(kNumBlockHorizotal);
+	}
+
 	for (uint32_t i = 0; i < kNumBlockVirtal; ++i) {
 		for (uint32_t j = 0; j < kNumBlockHorizotal; ++j) {
-			if ((i + j) % 2 == 1) {
-				blocks_[i][j] = nullptr;
-				continue;
-			}
 
-			blocks_[i][j] = new Block();
-			Vector3 pos = {kBlockWidth * j, kBlockHeight * i, 0.0f};
-			blocks_[i][j]->Initialize(blockModel_, pos, &camera_);
+			if (i % 2 == 0 && j % 2 == 0) {
+
+				worldTransformBlocks_[i][j] = new WorldTransform();
+				worldTransformBlocks_[i][j]->Initialize();
+				worldTransformBlocks_[i][j]->translation_.x = kBlockWidth * j;
+				worldTransformBlocks_[i][j]->translation_.y = kBlockHeight * i;
+			}
 		}
 	}
+
+
+	
 }
 
 // 更新
@@ -53,13 +62,17 @@ void GameScene::Update() {
 
 	// ブロックの更新
 
-	for (int i = 0; i < 10; ++i) {
-		for (int j = 0; j < 20; ++j) {
-			if (blocks_[i][j]) {
-				blocks_[i][j]->Update();
+	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
+		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
+			if (!worldTransformBlocks) {
+				continue;
 			}
+			worldTransformBlocks->matWorld_ =math->MakeAffineMatrix(worldTransformBlocks->scale_, worldTransformBlocks->rotation_, worldTransformBlocks->translation_);
+			worldTransformBlocks->TransferMatrix();
 		}
 	}
+
+
 	debaucamera_->Update();
 #ifdef _DEBUG
 
@@ -94,11 +107,13 @@ void GameScene::Draw()
 	Model::PreDraw(dxcommon->GetCommandList());
 	player_->Draw();
 
-	for (int i = 0; i < 10; ++i) {
-		for (int j = 0; j < 20; ++j) {
-			if (blocks_[i][j]) {
-				blocks_[i][j]->Draw();
+	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
+		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
+			if (!worldTransformBlocks) {
+				continue;
 			}
+
+			model_->Draw(*worldTransformBlocks, camera_);
 		}
 	}
 
