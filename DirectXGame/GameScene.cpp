@@ -1,91 +1,63 @@
 #include "GameScene.h"
 
-
-
 using namespace KamataEngine;
 
-//初期化
-void GameScene::Initialize() 
-{
+void GameScene::Initialize() {
 	textureHandel_ = TextureManager::Load("sample.png");
 
-	model_ = Model::Create();
-	worldTransform_.Initialize();
-
-	camera_.farZ = 1280.0f;
-
-	camera_.Initialize();
-	
-
-	//要素数
-	const uint32_t kNumBlockVirtal = 10;
-	const uint32_t kNumBlockHorizotal = 20;
-	//ブロック一個分
-	const float kBlockWidth = 2.0f;
-	const float kBlockHeight = 2.0f;
-	
-
-	worldTransformBlocks_.resize(kNumBlockVirtal);
-	for (uint32_t i = 0; i < kNumBlockVirtal; ++i) {
-		worldTransformBlocks_[i].resize(kNumBlockHorizotal);
-	}
-
-	for (uint32_t  i = 0; i < kNumBlockVirtal; ++i) 
-	{
-		for (uint32_t j = 0; j < kNumBlockHorizotal; ++j) {
-		
-			if ((i + j )% 2 == 1)continue;
-
-				worldTransformBlocks_[i][j] = new WorldTransform();
-				worldTransformBlocks_[i][j]->Initialize();
-				worldTransformBlocks_[i][j]->translation_.x = kBlockWidth * j;
-				worldTransformBlocks_[i][j]->translation_.y = kBlockHeight * i;
-			
-		
-		}
-	}
-
-	debaucamera_ = new DebugCamera(100, 50);
-	debaucamera_->SetFarZ(1280.0f);
-
-	
-	
+	// モデルロード
+	blockModel_ = Model::CreateFromOBJ("block", true);
 	modelSkydome_ = Model::CreateFromOBJ("skydome", true);
 	playerModel_ = Model::CreateFromOBJ("player", true);
 
+	// カメラ
+	camera_.farZ = 1280.0f;
+	camera_.Initialize();
+
+	// Debugカメラ
+	debaucamera_ = new DebugCamera(100, 50);
+	debaucamera_->SetFarZ(1280.0f);
+
+	// プレイヤー
 	player_ = new Player();
 	player_->Initialize(playerModel_, textureHandel_, &camera_);
-	
-	
+
+	// スカイドーム
 	skydome_ = new Skydome();
-	skydome_->Initialize(modelSkydome_, &camera_); 
+	skydome_->Initialize(modelSkydome_, &camera_);
 
+	// ブロック生成
+	const uint32_t kNumBlockVirtal = 10;
+	const uint32_t kNumBlockHorizotal = 20;
+	const float kBlockWidth = 2.0f;
+	const float kBlockHeight = 2.0f;
 
-}
-
-
-
-//更新
-void GameScene::Update() 
-{
-
-	//player_->Update(); 
-
-	
-
-
-	
-	//ブロックの更新
-
-	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
-		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) 
-		{
-			if (!worldTransformBlocks) 
-			{
+	for (uint32_t i = 0; i < kNumBlockVirtal; ++i) {
+		for (uint32_t j = 0; j < kNumBlockHorizotal; ++j) {
+			if ((i + j) % 2 == 1) {
+				blocks_[i][j] = nullptr;
 				continue;
 			}
-			worldTransformBlocks->matWorld_ =math-> MakeAffineMatrix(worldTransformBlocks->scale_, worldTransformBlocks->rotation_, worldTransformBlocks->translation_);
-			worldTransformBlocks->TransferMatrix();
+
+			blocks_[i][j] = new Block();
+			Vector3 pos = {kBlockWidth * j, kBlockHeight * i, 0.0f};
+			blocks_[i][j]->Initialize(blockModel_, pos, &camera_);
+		}
+	}
+}
+
+// 更新
+void GameScene::Update() {
+
+	player_->Update();
+
+	// ブロックの更新
+
+	for (int i = 0; i < 10; ++i) {
+		for (int j = 0; j < 20; ++j) {
+			if (blocks_[i][j]) {
+				blocks_[i][j]->Update();
+			}
 		}
 	}
 	debaucamera_->Update();
@@ -94,82 +66,56 @@ void GameScene::Update()
 	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 		if (!isDebugCameraActive_) {
 			isDebugCameraActive_ = true;
-		}
-		else 
-		{
+		} else {
 			isDebugCameraActive_ = false;
 		}
-		
-
 	}
-
 
 #endif // !_DEBUG
-	//カメラの処理
-	if (isDebugCameraActive_) 
-	{
+	// カメラの処理
+	if (isDebugCameraActive_) {
 		camera_.matView = debaucamera_->GetCamera().matView;
 		camera_.matProjection = debaucamera_->GetCamera().matProjection;
-		//ビュープロジェクション行列の転送
+		// ビュープロジェクション行列の転送
 		camera_.TransferMatrix();
-	}
-	else 
-	{
+	} else {
 		camera_.UpdateMatrix();
 	}
 
-
 	skydome_->Update();
-	
 }
 
-//描画
+// 描画
 
 void GameScene::Draw()
 
 {
 	DirectXCommon* dxcommon = DirectXCommon::GetInstance();
 	Model::PreDraw(dxcommon->GetCommandList());
-	// player_->Draw();
+	player_->Draw();
 
-	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) 
-	{
-		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) 
-		{
-			if (!worldTransformBlocks) 
-			{
-				continue;
+	for (int i = 0; i < 10; ++i) {
+		for (int j = 0; j < 20; ++j) {
+			if (blocks_[i][j]) {
+				blocks_[i][j]->Draw();
 			}
-			
-				model_->Draw(*worldTransformBlocks, camera_);
-			
 		}
-		
 	}
 
-skydome_->Draw();
+	skydome_->Draw();
 
 	Model::PostDraw();
-
-	
 }
-GameScene::~GameScene()
-{
-	delete model_; 
+GameScene::~GameScene() {
+	delete model_;
 	delete debaucamera_;
 	delete modelSkydome_;
-	//delete player_;
+	delete player_;
 
-	for (std::vector<WorldTransform*>& worldTransformBlockLine:worldTransformBlocks_) 
-	{
-		for (WorldTransform* worldTransformBlocks:worldTransformBlockLine ) 
-		{
+	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
+		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
 			delete worldTransformBlocks;
 		}
-
 	}
 	worldTransformBlocks_.clear();
-	
 }
-
-
