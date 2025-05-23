@@ -8,7 +8,7 @@ MapChipType MapChipField::GetMapChipTypeByindex(uint32_t xindex, uint32_t yindex
 		return MapChipType::kBlank_;
 	}
 	if (yindex < 0 || kNumBlockHorizonal - 1 < yindex) {
-		return MapChipType::kBlock_;
+		return MapChipType::kBlank_;
 	}
 	return mapChipData_.data[yindex][xindex];
 }

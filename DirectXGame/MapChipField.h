@@ -32,7 +32,7 @@ public:
 	MapChipData mapChipData_;
 	static inline const float kBlockWidth = 1.0f;
 	    static inline const float kBlockHeight = 1.0f;
-	static inline const uint32_t kNumBlockVirtical = 30;
+	static inline const uint32_t kNumBlockVirtical = 20;
 	    static inline const uint32_t kNumBlockHorizonal = 100;
 
 };

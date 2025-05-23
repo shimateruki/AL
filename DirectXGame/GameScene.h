@@ -27,7 +27,7 @@ public:
 
 private:
 	uint32_t textureHandel_ = 0;
-	KamataEngine::Model* model_ = nullptr;
+	KamataEngine::Model* blockModel_ = nullptr;
 	KamataEngine::WorldTransform worldTransform_;
 	KamataEngine::Camera camera_;
 	Player* player_ = nullptr;

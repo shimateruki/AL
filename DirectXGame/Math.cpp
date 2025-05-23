@@ -3,6 +3,15 @@
 
 using namespace KamataEngine;
 
+
+
+float Math::EaseInOutSine(float t, float x1, float x2) 
+{
+	t = std::clamp(t, 0.0f, 1.0f);
+	float easeT = t * t * (3.0f - 2.0f * t);
+	return (1.0f - easeT) * x1 + easeT * x2;
+}
+
 Matrix4x4 Math::MakeScaleMatrix(const Vector3& scale) {
 
 	Matrix4x4 result{scale.x, 0.0f, 0.0f, 0.0f, 0.0f, scale.y, 0.0f, 0.0f, 0.0f, 0.0f, scale.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};

@@ -1,10 +1,17 @@
 #pragma once
 #include "KamataEngine.h"
 #include<cmath>
+#include<algorithm>
 
 class Math {
 public:
-	KamataEngine::Matrix4x4 MakeScaleMatrix(const KamataEngine::Vector3& scale);
+
+
+
+float EaseInOutSine(float t, float x1, float x2);
+
+
+KamataEngine::Matrix4x4 MakeScaleMatrix(const KamataEngine::Vector3& scale);
 
 	KamataEngine::Matrix4x4 MakeRotateXMatrix(float theta);
 

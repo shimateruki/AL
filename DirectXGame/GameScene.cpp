@@ -8,7 +8,7 @@ void GameScene::Initialize() {
 	textureHandel_ = TextureManager::Load("sample.png");
 
 	// モデルロード
-	model_= Model::CreateFromOBJ("block", true);
+	blockModel_= Model::CreateFromOBJ("block", true);
 	modelSkydome_ = Model::CreateFromOBJ("skydome", true);
 	playerModel_ = Model::CreateFromOBJ("player", true);
 
@@ -20,17 +20,21 @@ void GameScene::Initialize() {
 	debaucamera_ = new DebugCamera(100, 50);
 	debaucamera_->SetFarZ(1280.0f);
 
+		// マップチップフィールド
+	mapChipField_ = new MapChipField();
+	mapChipField_->LoadMapChipCsv("Resources/blocks.csv");
+
 	// プレイヤー
 	player_ = new Player();
-	player_->Initialize(playerModel_, textureHandel_, &camera_);
+	Vector3 playerPosition = mapChipField_->GetChipPositionIndex(1, 18);
+	player_->Initialize(playerModel_, &camera_, playerPosition);
+	;
 
 	// スカイドーム
 	skydome_ = new Skydome();
 	skydome_->Initialize(modelSkydome_, &camera_);
 
-	// マップチップフィールド
-	mapChipField_ = new MapChipField();
-	mapChipField_->LoadMapChipCsv("Resources/blocks.csv");
+
 
 	GenerrateBlock();
 
@@ -112,7 +116,7 @@ void GameScene::Draw()
 				 continue;
 			 }
 
-			 model_->Draw(*worldTransformBlocks, camera_);
+			 blockModel_->Draw(*worldTransformBlocks, camera_);
 		 }
 	 }
 
@@ -149,7 +153,7 @@ void GameScene::GenerrateBlock()
 }
 GameScene::~GameScene()
 {
-	delete model_; 
+	delete blockModel_; 
 	delete debaucamera_;
 	delete modelSkydome_;
 	delete player_;
