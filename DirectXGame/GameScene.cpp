@@ -35,6 +35,14 @@ void GameScene::Initialize() {
 	skydome_->Initialize(modelSkydome_, &camera_);
 
 
+	CController_ = new CameraController(); // 生成
+	CController_->Initialize(&camera_);     // 初期化
+	CController_->SetTarget(player_);      // 追従対象セット
+	CController_->Reset(); 
+
+
+		CameraController::Rect cameraArea = {12.0f, 100 - 12.0f, 6.0f, 6.0f};
+	CController_->SetMovableSrea(cameraArea);
 
 	GenerrateBlock();
 
@@ -50,7 +58,7 @@ void GameScene::Update()
 
 	player_->Update(); 
 
-	
+	CController_->Update();
 
 
 	

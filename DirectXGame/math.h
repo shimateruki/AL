@@ -3,15 +3,17 @@
 #include<cmath>
 #include<algorithm>
 
+KamataEngine::Vector3 operator+(const KamataEngine::Vector3& objA, const KamataEngine::Vector3& objB);
+KamataEngine::Vector3 operator-(const KamataEngine::Vector3& objA, const KamataEngine::Vector3& objB);
+
 class Math {
 public:
 
 
 
 float EaseInOutSine(float t, float x1, float x2);
-
-
-KamataEngine::Matrix4x4 MakeScaleMatrix(const KamataEngine::Vector3& scale);
+	KamataEngine::Vector3 Lerp(const KamataEngine::Vector3& a, const KamataEngine::Vector3& b, float t);
+	KamataEngine::Matrix4x4 MakeScaleMatrix(const KamataEngine::Vector3& scale);
 
 	KamataEngine::Matrix4x4 MakeRotateXMatrix(float theta);
 

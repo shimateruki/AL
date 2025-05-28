@@ -12,6 +12,7 @@ public:
 	void Initialize(KamataEngine::Model* model, KamataEngine::Camera* camera, KamataEngine::Vector3& position);
 	void Update();
 	void Draw();
+	const KamataEngine::WorldTransform &GetWorldTransformPlayer()const { return worldTransformPlayer_; }
 
 private:
 	KamataEngine::WorldTransform worldTransformPlayer_;

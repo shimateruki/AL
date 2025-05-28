@@ -5,6 +5,7 @@
 #include<vector>
 #include "math.h"
 #include "MapChipField.h"
+#include "CameraController.h"
 //ゲームシーン
 class GameScene
 {
@@ -44,5 +45,8 @@ private:
 	//マップチップフィールド
 	MapChipField* mapChipField_;
 
+CameraController* CController_ = nullptr;
+
 	Math* math;
+
 };

@@ -12,6 +12,26 @@ float Math::EaseInOutSine(float t, float x1, float x2)
 	return (1.0f - easeT) * x1 + easeT * x2;
 }
 
+KamataEngine::Vector3 Math::Lerp(const KamataEngine::Vector3& a, const KamataEngine::Vector3& b, float t) { return {a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t}; }
+
+Vector3 operator+(const Vector3& objA, const Vector3& objB) 
+{
+	Vector3 sc = Vector3(0, 0,0);
+	sc.x = objA.x + objB.x;
+	sc.y = objA.y + objB.y;
+	sc.z = objA.z + objB.z;
+	return sc;
+}
+
+KamataEngine::Vector3 operator-(const KamataEngine::Vector3& objA, const KamataEngine::Vector3& objB) 
+{
+	Vector3 sc = Vector3(0, 0, 0);
+	sc.x = objA.x - objB.x;
+	sc.y = objA.y - objB.y;
+	sc.z = objA.z - objB.z;
+	return sc;
+}
+
 Matrix4x4 Math::MakeScaleMatrix(const Vector3& scale) {
 
 	Matrix4x4 result{scale.x, 0.0f, 0.0f, 0.0f, 0.0f, scale.y, 0.0f, 0.0f, 0.0f, 0.0f, scale.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
