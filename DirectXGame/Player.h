@@ -1,6 +1,29 @@
 #pragma once
 #include"KamataEngine.h"
 #include "math.h"
+
+//前方宣言
+class MapChipField;
+
+enum Corner {
+	kRightBottom,//右下
+	kLeftBottom, //左下
+	kRightTop,//右上
+	kLeftTop,//左上
+
+	knumCorner// 要素数
+};
+
+//マップチップの当たり判定情報
+struct CollisionMapInfo {
+	KamataEngine::Vector3 isMovement; // プレイヤーの移動量
+	bool isHitTop = false;
+	bool isHitBottom = false;
+	bool isHitLeft = false;
+	bool isHitRight = false;
+};
+
+
 enum class LRDirection {
 	kRight,
 	kLeft
@@ -10,9 +33,22 @@ class Player
 {
 public:
 	void Initialize(KamataEngine::Model* model, KamataEngine::Camera* camera, KamataEngine::Vector3& position);
+	void Move();//移動処理
 	void Update();
 	void Draw();
+	void ResolveCollision();
 	const KamataEngine::WorldTransform &GetWorldTransformPlayer()const { return worldTransformPlayer_; }
+	void SetMapChipField(MapChipField* mapChipField) { mapchipField_ = mapChipField; }
+	void MapChipUp(CollisionMapInfo& info);
+	void MapChipDown(CollisionMapInfo& info);
+
+	void MapChipLeft(CollisionMapInfo& info);
+
+	void MapChipRight(CollisionMapInfo& info);
+
+	KamataEngine::Vector3 CarnerPosition(const KamataEngine::Vector3& center, Corner cornter);
+
+
 
 private:
 	KamataEngine::WorldTransform worldTransformPlayer_;
@@ -33,6 +69,14 @@ private:
 	bool onGround_ = true;//着地フラグ
 	static inline const float kGgravityAcceleration = 9.8f;// 重力加速度
 	static inline const float kLimitFallSpeed = 5.0f;//最大落下加速度
-	static inline const float kJumpAccleration = 0.1f;     // ジャンプ加速
+	static inline const float kJumpAccleration = 1.0f;     // ジャンプ加速
 
+	// キャラクターの当たり判定
+	static inline const float kWidth = 0.8f;
+	static inline const float kHeight = 0.8f;
+
+	static inline const float kBlank = 0.0f;
+
+	//マップチップフィールド
+	MapChipField* mapchipField_ = nullptr;
 };

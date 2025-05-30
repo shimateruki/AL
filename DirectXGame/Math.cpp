@@ -32,6 +32,52 @@ KamataEngine::Vector3 operator-(const KamataEngine::Vector3& objA, const KamataE
 	return sc;
 }
 
+Vector3 operator*(const Vector3& objA, const Vector3& objB) {
+	Vector3 sc = Vector3(0, 0, 0);
+	sc.x = objA.x * objB.x;
+	sc.y = objA.y * objB.y;
+	sc.z = objA.z * objB.z;
+	return sc;
+}
+
+KamataEngine::Vector3 operator/(const KamataEngine::Vector3& objA, const KamataEngine::Vector3& objB) {
+	Vector3 sc = Vector3(0, 0, 0);
+	sc.x = objA.x / objB.x;
+	sc.y = objA.y / objB.y;
+	sc.z = objA.z / objB.z;
+	return sc;
+}
+
+Vector3& operator+=(Vector3& lhv, const Vector3& rhv) {
+	lhv.x += rhv.x;
+	lhv.y += rhv.y;
+	lhv.z += rhv.z;
+	return lhv;
+}
+
+Vector3& operator-=(Vector3& lhv, const Vector3& rhv) {
+	lhv.x -= rhv.x;
+	lhv.y -= rhv.y;
+	lhv.z -= rhv.z;
+	return lhv;
+}
+
+Vector3& operator*=(Vector3& v, float s) {
+	v.x *= s;
+	v.y *= s;
+	v.z *= s;
+	return v;
+}
+
+Vector3& operator/=(Vector3& v, float s) {
+	v.x /= s;
+	v.y /= s;
+	v.z /= s;
+	return v;
+}
+
+
+
 Matrix4x4 Math::MakeScaleMatrix(const Vector3& scale) {
 
 	Matrix4x4 result{scale.x, 0.0f, 0.0f, 0.0f, 0.0f, scale.y, 0.0f, 0.0f, 0.0f, 0.0f, scale.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};

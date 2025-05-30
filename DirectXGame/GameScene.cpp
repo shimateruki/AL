@@ -28,7 +28,7 @@ void GameScene::Initialize() {
 	player_ = new Player();
 	Vector3 playerPosition = mapChipField_->GetChipPositionIndex(1, 18);
 	player_->Initialize(playerModel_, &camera_, playerPosition);
-	;
+	player_->SetMapChipField(mapChipField_);
 
 	// スカイドーム
 	skydome_ = new Skydome();
