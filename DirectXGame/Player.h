@@ -13,6 +13,7 @@ public:
 	void Update();
 	void Draw();
 	const KamataEngine::WorldTransform &GetWorldTransformPlayer()const { return worldTransformPlayer_; }
+	KamataEngine::Vector3 GetVelosit() { return velosity_; }
 
 private:
 	KamataEngine::WorldTransform worldTransformPlayer_;
