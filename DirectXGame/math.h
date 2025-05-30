@@ -5,9 +5,6 @@
 
 KamataEngine::Vector3 operator+(const KamataEngine::Vector3& objA, const KamataEngine::Vector3& objB);
 KamataEngine::Vector3 operator-(const KamataEngine::Vector3& objA, const KamataEngine::Vector3& objB);
-KamataEngine::Vector3 operator*(const KamataEngine::Vector3& objA, const KamataEngine::Vector3& objB);
-KamataEngine::Vector3 operator/(const KamataEngine::Vector3& objA, const KamataEngine::Vector3& objB);
-
 
 // 代入演算子オーバーロード
 KamataEngine::Vector3& operator+=(KamataEngine::Vector3& lhs, const KamataEngine::Vector3& rhv);

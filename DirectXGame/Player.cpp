@@ -237,6 +237,14 @@ void Player::MapChipDown(CollisionMapInfo& info) {
 		hit = true;
 	}
 
+	if (hit) {
+		indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kLeftBottom]);
+		mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
+		info.isMovement.y = std::min(0.0f, velosity_.y);
+		info.isHitBottom = true;
+	}
+	
+
 	// 右下
 	indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kRightBottom]);
 	mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
@@ -245,6 +253,8 @@ void Player::MapChipDown(CollisionMapInfo& info) {
 	}
 
 	if (hit) {
+		indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kRightBottom]);
+		mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
 		info.isMovement.y = std::min(0.0f, velosity_.y);
 		info.isHitBottom = true;
 	}
@@ -334,4 +344,37 @@ Vector3 Player::CarnerPosition(const Vector3& center, Corner cornter) {
 
 	return center + offSetTable[static_cast<uint32_t>(cornter)];
 
+}
+
+void Player::ground(const CollisionMapInfo& info) 
+{
+	if (info.isHitBottom) {
+		//着地状態
+		onGround_ = true;
+		//着地時にX速度を減衰
+		velosity_.x += (1.0f - kAtteunuation);
+		//Yの速度をゼロにする
+		velosity_.y = 0.0f;
+		if (velosity_.y>0.0f) {
+			onGround_ = false;
+		}
+
+	}
+	else 
+	{
+		MapChipType mapChipType;
+		//真下の当たり判定
+		bool hit = false;
+
+		//左上点の当たり判定
+		kLeftBottom + Vector3(0, -smallnumber, 0);
+		kRightBottom + Vector3(0, -smallnumber, 0);
+
+		//落下
+		if (!hit) {
+			//空中状態に切り替える
+			onGround_ = false;
+		}
+
+	}
 }

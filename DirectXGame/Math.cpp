@@ -14,6 +14,10 @@ float Math::EaseInOutSine(float t, float x1, float x2)
 
 KamataEngine::Vector3 Math::Lerp(const KamataEngine::Vector3& a, const KamataEngine::Vector3& b, float t) { return {a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t}; }
 
+
+
+
+
 Vector3 operator+(const Vector3& objA, const Vector3& objB) 
 {
 	Vector3 sc = Vector3(0, 0,0);
@@ -32,21 +36,20 @@ KamataEngine::Vector3 operator-(const KamataEngine::Vector3& objA, const KamataE
 	return sc;
 }
 
-Vector3 operator*(const Vector3& objA, const Vector3& objB) {
-	Vector3 sc = Vector3(0, 0, 0);
-	sc.x = objA.x * objB.x;
-	sc.y = objA.y * objB.y;
-	sc.z = objA.z * objB.z;
-	return sc;
+Vector3& operator*=(Vector3& v, float s) {
+	v.x *= s;
+	v.y *= s;
+	v.z *= s;
+	return v;
 }
 
-KamataEngine::Vector3 operator/(const KamataEngine::Vector3& objA, const KamataEngine::Vector3& objB) {
-	Vector3 sc = Vector3(0, 0, 0);
-	sc.x = objA.x / objB.x;
-	sc.y = objA.y / objB.y;
-	sc.z = objA.z / objB.z;
-	return sc;
+Vector3& operator/=(Vector3& v, float s) {
+	v.x /= s;
+	v.y /= s;
+	v.z /= s;
+	return v;
 }
+
 
 Vector3& operator+=(Vector3& lhv, const Vector3& rhv) {
 	lhv.x += rhv.x;
@@ -62,19 +65,6 @@ Vector3& operator-=(Vector3& lhv, const Vector3& rhv) {
 	return lhv;
 }
 
-Vector3& operator*=(Vector3& v, float s) {
-	v.x *= s;
-	v.y *= s;
-	v.z *= s;
-	return v;
-}
-
-Vector3& operator/=(Vector3& v, float s) {
-	v.x /= s;
-	v.y /= s;
-	v.z /= s;
-	return v;
-}
 
 
 

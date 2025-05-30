@@ -48,7 +48,10 @@ public:
 
 	KamataEngine::Vector3 CarnerPosition(const KamataEngine::Vector3& center, Corner cornter);
 
+	void ground(const CollisionMapInfo& info);
 
+	KamataEngine::Vector3 GetVelosity() { return velosity_; }
+		;
 
 private:
 	KamataEngine::WorldTransform worldTransformPlayer_;
@@ -77,6 +80,12 @@ private:
 
 	static inline const float kBlank = 0.0f;
 
-	//マップチップフィールド
+	
+    static inline const float smallnumber = 0.01f;
+
+	
+	//マップチップフィールド着地時の速度減少率
+	static inline const float kAttenuationLoading = 0.1f;
+
 	MapChipField* mapchipField_ = nullptr;
 };
