@@ -362,13 +362,13 @@ void Player::ground(const CollisionMapInfo& info)
 	}
 	else 
 	{
-		MapChipType mapChipType;
+	/*	MapChipType mapChipType;*/
 		//真下の当たり判定
 		bool hit = false;
 
 		//左上点の当たり判定
-		kLeftBottom + Vector3(0, -smallnumber, 0);
-		kRightBottom + Vector3(0, -smallnumber, 0);
+		/*kLeftBottom + Vector3(0, -smallnumber, 0);
+		kRightBottom + Vector3(0, -smallnumber, 0);*/
 
 		//落下
 		if (!hit) {
