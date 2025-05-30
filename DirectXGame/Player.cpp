@@ -146,6 +146,7 @@ void Player::Update() {
 	MapChipLeft(collisionInfo);  // 左方向
 	MapChipRight(collisionInfo); // 右方向
 
+
 	ResolveCollision();
 
 	if (collisionInfo.isHitTop) {
@@ -258,6 +259,9 @@ void Player::MapChipDown(CollisionMapInfo& info) {
 		info.isMovement.y = std::min(0.0f, velosity_.y);
 		info.isHitBottom = true;
 	}
+
+
+
 }
 
 
@@ -362,13 +366,13 @@ void Player::ground(const CollisionMapInfo& info)
 	}
 	else 
 	{
-	/*	MapChipType mapChipType;*/
+		MapChipType mapChipType;
 		//真下の当たり判定
 		bool hit = false;
 
 		//左上点の当たり判定
-		/*kLeftBottom + Vector3(0, -smallnumber, 0);
-		kRightBottom + Vector3(0, -smallnumber, 0);*/
+	   kLeftBottom + Vector3(0, -smallnumber, 0);   //について判定する
+		kRightBottom + Vector3(0, -smallnumber, 0);	//について判定する
 
 		//落下
 		if (!hit) {

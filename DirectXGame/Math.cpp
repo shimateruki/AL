@@ -37,6 +37,23 @@ KamataEngine::Vector3 operator-(const KamataEngine::Vector3& objA, const KamataE
 	return sc;
 }
 
+KamataEngine::Vector3 operator+(KamataEngine::Vector3& v, float s) {
+	Vector3 result;
+	result.x = v.x + s;
+	result.y = v.y + s;
+	result.z = v.z + s;
+	return result;
+}
+
+Vector3 operator*(const Vector3& objA, const float objB) {
+	Vector3 sc = Vector3(0, 0, 0);
+	sc.x = objA.x + objB;
+	sc.y = objA.y + objB;
+	sc.z = objA.z + objB;
+	return sc;
+}
+
+
 Vector3& operator*=(Vector3& v, float s) {
 	v.x *= s;
 	v.y *= s;
@@ -50,6 +67,8 @@ Vector3& operator/=(Vector3& v, float s) {
 	v.z /= s;
 	return v;
 }
+
+
 
 
 Vector3& operator+=(Vector3& lhv, const Vector3& rhv) {
