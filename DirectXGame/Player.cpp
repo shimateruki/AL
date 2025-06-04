@@ -146,6 +146,8 @@ void Player::Update() {
 	MapChipLeft(collisionInfo);  // 左方向
 	MapChipRight(collisionInfo); // 右方向
 
+	
+
 
 	ResolveCollision();
 
@@ -366,13 +368,38 @@ void Player::ground(const CollisionMapInfo& info)
 	}
 	else 
 	{
-		MapChipType mapChipType;
-		//真下の当たり判定
-		bool hit = false;
 
-		//左上点の当たり判定
-	   kLeftBottom + Vector3(0, -smallnumber, 0);   //について判定する
-		kRightBottom + Vector3(0, -smallnumber, 0);	//について判定する
+
+		std::array<Vector3, knumCorner> positionsNew;
+		for (uint32_t i = 0; i < positionsNew.size(); ++i) {
+			positionsNew[i] = CarnerPosition(worldTransformPlayer_.translation_ + info.isMovement, static_cast<Corner>(i));
+		}
+
+		// 左移動あり?
+		if (info.isMovement.x >= 0) {
+			return;
+		}
+
+		
+		MapChipType mapchipType;
+		bool hit = false;
+		IndexSet indexSet;
+
+		// 左下
+		indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kLeftBottom]);
+		mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
+		if (mapchipType == MapChipType::kBlock_) {
+			hit = true;
+		}
+
+		
+	// 右下
+		indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kRightBottom]);
+		mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
+		if (mapchipType == MapChipType::kBlock_) {
+			hit = true;
+		}
+
 
 		//落下
 		if (!hit) {
