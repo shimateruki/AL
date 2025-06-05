@@ -54,10 +54,6 @@ void GameScene::Initialize() {
 
 }
 
-// 更新
-void GameScene::Update() {
-
-	player_->Update();
 
 
 
@@ -84,7 +80,7 @@ void GameScene::Update()
 		}
 	}
 	debaucamera_->Update();
-
+#ifdef _DEBUG
 
 	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 		if (!isDebugCameraActive_) {
@@ -95,6 +91,7 @@ void GameScene::Update()
 	}
 
 #endif // !_DEBUG
+
 	// カメラの処理
 	if (isDebugCameraActive_) {
 		camera_.matView = debaucamera_->GetCamera().matView;

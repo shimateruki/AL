@@ -6,6 +6,7 @@
 
 #include "MapChipField.h"
 #include "CameraController.h"
+#include "skydome.h"
 //ゲームシーン
 class GameScene
 {
