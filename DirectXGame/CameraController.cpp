@@ -12,13 +12,14 @@ void CameraController::Initialize(KamataEngine::Camera* camera)
 void CameraController::Update() 
 {
 	// 追従対象のワールドトランスフォームを参照
-	const WorldTransform& targetWorldTransform = target_->GetWorldTransformPlayer();
+	const WorldTransform& targetWorldTransform = target_->GetWorldTransform();
 
 	// 02_06 スライド29枚目で追加
-	const Vector3& targetVelocity = target_->GetVelosity();
+	const Vector3& targetVelocity = target_->GetVelocity();
+	
 
 	// 追従対象とオフセットからカメラの座標を計算
-	destination_ = targetWorldTransform.translation_ + targettooffset + targetVelocity* kVelocityBias;
+	destination_ = targetWorldTransform.translation_ + targettooffset + targetVelocity/** kVelocityBias*/;
 	
 	// 座標補間によりゆったり追従(数学関数追加)
 	camera_->translation_ =math_-> Lerp(camera_->translation_, destination_, kInterpolationRate);
@@ -43,7 +44,7 @@ void CameraController::Reset()
 {
 
 	// 追従対象のワールドトランスフォーム
-	const WorldTransform& targetWorldTransform = target_->GetWorldTransformPlayer();
+	const WorldTransform& targetWorldTransform = target_->GetWorldTransform();
 
 	destination_ = targetWorldTransform.translation_ + targettooffset;
 

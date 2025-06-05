@@ -1,91 +1,117 @@
 #pragma once
-#include"KamataEngine.h"
-#include "math.h"
 
-//前方宣言
-class MapChipField;
+#include "MapChipField.h" // マップチップフィールド
+#include "Math.h"         // Mathユーティリティクラス
 
-enum Corner {
-	kRightBottom,//右下
-	kLeftBottom, //左下
-	kRightTop,//右上
-	kLeftTop,//左上
 
-	knumCorner// 要素数
-};
+#include <array>   // std::array を使用
+#include <numbers> // std::numbers::pi_v を使用
+using namespace KamataEngine;
 
-//マップチップの当たり判定情報
+// マップチップとの当たり判定情報
 struct CollisionMapInfo {
-	KamataEngine::Vector3 isMovement; // プレイヤーの移動量
-	bool isHitTop = false;
-	bool isHitBottom = false;
-	bool isHitLeft = false;
-	bool isHitRight = false;
+	Vector3 isMovement;       // 計算後の最終的な移動量 (先生のmoveに相当)
+	bool isHitTop = false;    // 天井に当たったか (先生のceilingに相当)
+	bool isHitBottom = false; // 地面に当たったか (先生のlandingに相当)
+	bool hitWall = false;     // 左右の壁に当たったか (先生のhitWallに相当)
 };
 
-
-enum class LRDirection {
-	kRight,
-	kLeft
-};
-
-class Player
-{
+class Player {
 public:
-	void Initialize(KamataEngine::Model* model, KamataEngine::Camera* camera, KamataEngine::Vector3& position);
-	void Move();//移動処理
+	// 初期化
+	void Initialize(Model* model, Camera* camera, const Vector3& position); // const &position に修正
+
+	// 更新
 	void Update();
+
+	// 描画
 	void Draw();
-	void ResolveCollision();
-	const KamataEngine::WorldTransform &GetWorldTransformPlayer()const { return worldTransformPlayer_; }
+
+		// getter(02_06スライド11枚目で追加)
+	const WorldTransform& GetWorldTransform() const { return worldTransformPlayer_; }
+
+	// 02_06スライド28枚目で追加
+	const Vector3& GetVelocity() const { return velosity_; }
+
+	// 02_07 スライド4枚目
 	void SetMapChipField(MapChipField* mapChipField) { mapchipField_ = mapChipField; }
-	void MapChipUp(CollisionMapInfo& info);
-	void MapChipDown(CollisionMapInfo& info);
 
-	void MapChipLeft(CollisionMapInfo& info);
-
-	void MapChipRight(CollisionMapInfo& info);
-
-	KamataEngine::Vector3 CarnerPosition(const KamataEngine::Vector3& center, Corner cornter);
-
-	void ground(const CollisionMapInfo& info);
-
-	KamataEngine::Vector3 GetVelosity() { return velosity_; }
-		;
 
 private:
-	KamataEngine::WorldTransform worldTransformPlayer_;
-	KamataEngine::WorldTransform playerModel_;
-	KamataEngine:: Model*  model_ = nullptr;
-	uint32_t textureHandle_ = 0;
-	KamataEngine::Camera* camera_ = nullptr;
+	// 移動処理 (元のMove関数に、InputMoveのロジックを統合)
+	void Move();
+
+	// 衝突解決はUpdate内で直接行われるため、専用の関数は不要に（後述）
+
+	// 各方向のマップチップとの当たり判定（先生のCheckMapCollisionUp/Down/Left/Rightに相当）
+	void MapChipUp(CollisionMapInfo& info);
+	void MapChipDown(CollisionMapInfo& info);
+	void MapChipLeft(CollisionMapInfo& info);
+	void MapChipRight(CollisionMapInfo& info);
+
+	// 接地状態の更新 (先生のUpdateOnGroundに相当)
+	void UpdateOnGround(const CollisionMapInfo& info);
+	// 壁接触時の更新 (先生のUpdateOnWallに相当)
+	void UpdateOnWall(const CollisionMapInfo& info);
+
+	// キャラクターの四隅の座標を計算
+	enum  Corner {
+		kRightBottom,
+		kLeftBottom,
+		kRightTop,
+		kLeftTop,
+	};
+
+	static const uint32_t knumCorner = 4;
+	Vector3 CarnerPosition(const Vector3& center, Corner cornter);
+
+private:
+	// プレイヤーのワールド変換
+	WorldTransform worldTransformPlayer_;
+	// モデル
+	Model* model_ = nullptr;
+	// カメラ
+	Camera* camera_ = nullptr;
+
+	// 数学ユーティリティ
+	Math* math = nullptr; // Initialize()で適切に初期化すること
+
+	// 速度
+	Vector3 velosity_ = {};
+
+	// 定数
+	const float kAcceleration = 0.5f;         // 加速度
+	const float kAtteunuation = 0.2f;         // 減衰率 (走行時の摩擦)
+	const float kAttenuationLanding = 0.8f;   // 着地時の減衰率 (新しく追加)
+	const float kAttenuationWall = 0.8f;      // 壁接触時の減衰率 (新しく追加)
+	const float kLimitRunSpeed = 0.5f;        // 走行速度制限
+	const float kJumpAccleration = 20.0f;                                         // ジャンプ力
+	const float kGgravityAcceleration = 0.8f; // 重力加速度
+	const float kLimitFallSpeed = 0.5f;       // 最大落下速度
+
+	const float kBlank = 0.001f;            // めり込み防止の隙間 (新しく追加)
+	const float kGroundSearchHeight = 0.1f; // 地面検索の高さ (新しく追加)
+
+	// 接地フラグ
+	bool onGround_ = false;
+
+	// 旋回制御
+	enum class LRDirection {
+		kRight,
+		kLeft,
+	};
+	LRDirection lrDirection_ = LRDirection::kRight; // 左右方向
+	float turnTimer_ = 0.0f;                        // 旋回タイマー
+	const float kTimeTurn = 0.2f;                   // 旋回時間
+	float turnFirstRottationY_ = 0.0f;              // 旋回開始時のY軸回転
+
+	// プレイヤーのサイズ (当たり判定用)
+	const float kWidth = 1.0f;  // 幅
+	const float kHeight = 1.0f; // 高さ
+
+	// マップチップフィールドへのポインタ
+	MapChipField* mapchipField_ = nullptr; // Initialize()で設定すること
+
+public:
 	
-	Math* math;
-	KamataEngine::Vector3 velosity_ = {};
-	static inline const float kAcceleration = 0.01f;//加速度
-	static inline const float kAtteunuation = 0.1f;//速度減少量
-	static inline const float kLimitRunSpeed = 5.0f;//最大速度
-	LRDirection lrDirection_ = LRDirection::kRight;//方向
-	float turnFirstRottationY_ = 0.0f;//旋回開始時の角度
-	float turnTimer_ = 0.0f;//旋回タイマー
-	static inline const float kTimeTurn = 0.3f;//旋回時間
-	bool onGround_ = true;//着地フラグ
-	static inline const float kGgravityAcceleration = 9.8f;// 重力加速度
-	static inline const float kLimitFallSpeed = 5.0f;//最大落下加速度
-	static inline const float kJumpAccleration = 1.0f;     // ジャンプ加速
-
-	// キャラクターの当たり判定
-	static inline const float kWidth = 0.8f;
-	static inline const float kHeight = 0.8f;
-
-	static inline const float kBlank = 0.0f;
-
-	
-    static inline const float smallnumber = 0.01f;
-
-	
-	//マップチップフィールド着地時の速度減少率
-	static inline const float kAttenuationLoading = 0.1f;
-
-	MapChipField* mapchipField_ = nullptr;
 };

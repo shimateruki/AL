@@ -6,11 +6,6 @@ enum class MapChipType {
 	kBlank_,kBlock_
 };
 
-struct IndexSet
-{
-	uint32_t xIndex;
-	uint32_t yIndex;
-};
 
 struct MapChipData {
 	std::vector<std::vector<MapChipType>> data;
@@ -22,17 +17,23 @@ std::map<std::string, MapChipType> mapChipTable = {
 };
 }
 
-struct Rect {
-
-	float left = 0.0f;
-	float right = 1.0f;
-	float bottom = 0.0f;
-	float top = 1.0f;
-};
 
 class MapChipField
 {
 public:
+	struct IndexSet {
+		uint32_t xIndex;
+		uint32_t yIndex;
+	};
+
+	struct Rect {
+
+		float left = 0.0f;
+		float right = 1.0f;
+		float bottom = 0.0f;
+		float top = 1.0f;
+	};
+
 	MapChipType GetMapChipTypeByindex(uint32_t xindex, uint32_t yIndex);
 	void ResetMapChipData();
 	void LoadMapChipCsv(const std::string& filePath);
