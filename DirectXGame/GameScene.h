@@ -3,10 +3,13 @@
 #include "KamataEngine.h"
 #include "Player.h"
 #include "math.h"
-#include "skydome.h"
-#include <vector>
-// ゲームシーン
-class GameScene {
+
+#include "MapChipField.h"
+#include "CameraController.h"
+//ゲームシーン
+class GameScene
+{
+
 public:
 	// 初期化
 	void Initialize();
@@ -17,11 +20,13 @@ public:
 	// 描画
 	void Draw();
 
+	void GenerrateBlock();
+
 	~GameScene();
 
 private:
 	uint32_t textureHandel_ = 0;
-	KamataEngine::Model* model_ = nullptr;
+	KamataEngine::Model* blockModel_ = nullptr;
 	KamataEngine::WorldTransform worldTransform_;
 	KamataEngine::Camera camera_;
 	Player* player_ = nullptr;
@@ -33,8 +38,15 @@ private:
 	Skydome* skydome_ = nullptr;
 	KamataEngine::Model* playerModel_ = nullptr;
 	KamataEngine::Model* modelSkydome_ = nullptr;
-	Block* blocks_[10][20];                     // Blockクラスで管理
-	KamataEngine::Model* blockModel_ = nullptr; // 共通モデル
+
+	
+
+	//マップチップフィールド
+	MapChipField* mapChipField_;
+
+CameraController* CController_ = nullptr;
 
 	Math* math;
+
 };
+

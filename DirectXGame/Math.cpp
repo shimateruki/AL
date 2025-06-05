@@ -3,6 +3,91 @@
 
 using namespace KamataEngine;
 
+
+
+float Math::EaseInOutSine(float t, float x1, float x2) 
+{
+	t = std::clamp(t, 0.0f, 1.0f);
+	float easeT = t * t * (3.0f - 2.0f * t);
+	return (1.0f - easeT) * x1 + easeT * x2;
+}
+
+KamataEngine::Vector3 Math::Lerp(const KamataEngine::Vector3& a, const KamataEngine::Vector3& b, float t) { 
+	return {a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t}; }
+
+
+
+
+
+Vector3 operator+(const Vector3& objA, const Vector3& objB) 
+{
+	Vector3 sc = Vector3(0, 0,0);
+	sc.x = objA.x + objB.x;
+	sc.y = objA.y + objB.y;
+	sc.z = objA.z + objB.z;
+	return sc;
+}
+
+KamataEngine::Vector3 operator-(const KamataEngine::Vector3& objA, const KamataEngine::Vector3& objB) 
+{
+	Vector3 sc = Vector3(0, 0, 0);
+	sc.x = objA.x - objB.x;
+	sc.y = objA.y - objB.y;
+	sc.z = objA.z - objB.z;
+	return sc;
+}
+
+KamataEngine::Vector3 operator+(KamataEngine::Vector3& v, float s) {
+	Vector3 result;
+	result.x = v.x + s;
+	result.y = v.y + s;
+	result.z = v.z + s;
+	return result;
+}
+
+Vector3 operator*(const Vector3& objA, const float objB) {
+	Vector3 sc = Vector3(0, 0, 0);
+	sc.x = objA.x + objB;
+	sc.y = objA.y + objB;
+	sc.z = objA.z + objB;
+	return sc;
+}
+
+
+Vector3& operator*=(Vector3& v, float s) {
+	v.x *= s;
+	v.y *= s;
+	v.z *= s;
+	return v;
+}
+
+Vector3& operator/=(Vector3& v, float s) {
+	v.x /= s;
+	v.y /= s;
+	v.z /= s;
+	return v;
+}
+
+
+
+
+Vector3& operator+=(Vector3& lhv, const Vector3& rhv) {
+	lhv.x += rhv.x;
+	lhv.y += rhv.y;
+	lhv.z += rhv.z;
+	return lhv;
+}
+
+Vector3& operator-=(Vector3& lhv, const Vector3& rhv) {
+	lhv.x -= rhv.x;
+	lhv.y -= rhv.y;
+	lhv.z -= rhv.z;
+	return lhv;
+}
+
+
+
+
 Matrix4x4 Math::MakeScaleMatrix(const Vector3& scale) {
 
 	Matrix4x4 result{scale.x, 0.0f, 0.0f, 0.0f, 0.0f, scale.y, 0.0f, 0.0f, 0.0f, 0.0f, scale.z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
