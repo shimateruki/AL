@@ -1,5 +1,4 @@
 #pragma once
-
 #include "MapChipField.h" // マップチップフィールド
 #include "Math.h"         // Mathユーティリティクラス
 
@@ -22,6 +21,7 @@ public:
 	void Initialize(Model* model, Camera* camera, const Vector3& position); // const &position に修正
 
 	// 更新
+
 	void Update();
 
 	// 描画
@@ -38,6 +38,7 @@ public:
 
 
 private:
+
 	// 移動処理 (元のMove関数に、InputMoveのロジックを統合)
 	void Move();
 
@@ -115,3 +116,4 @@ private:
 public:
 	
 };
+

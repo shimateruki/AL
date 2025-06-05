@@ -1,14 +1,14 @@
 #include "GameScene.h"
 
-
-
 using namespace KamataEngine;
 
 void GameScene::Initialize() {
 	textureHandel_ = TextureManager::Load("sample.png");
 
 	// モデルロード
+
 	blockModel_= Model::CreateFromOBJ("block", true);
+
 	modelSkydome_ = Model::CreateFromOBJ("skydome", true);
 	playerModel_ = Model::CreateFromOBJ("player", true);
 
@@ -30,9 +30,11 @@ void GameScene::Initialize() {
 	player_->Initialize(playerModel_, &camera_, playerPosition);
 	player_->SetMapChipField(mapChipField_);
 
+
 	// スカイドーム
 	skydome_ = new Skydome();
 	skydome_->Initialize(modelSkydome_, &camera_);
+
 
 
 	CController_ = new CameraController(); // 生成
@@ -47,8 +49,15 @@ void GameScene::Initialize() {
 	GenerrateBlock();
 
 	
+
+	
+
 }
 
+// 更新
+void GameScene::Update() {
+
+	player_->Update();
 
 
 
@@ -62,7 +71,7 @@ void GameScene::Update()
 
 
 	
-// ブロックの更新
+
 
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
 		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
@@ -71,51 +80,45 @@ void GameScene::Update()
 			}
 			worldTransformBlocks->matWorld_ = math->MakeAffineMatrix(worldTransformBlocks->scale_, worldTransformBlocks->rotation_, worldTransformBlocks->translation_);
 			worldTransformBlocks->TransferMatrix();
+
 		}
 	}
 	debaucamera_->Update();
-#ifdef _DEBUG
+
 
 	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 		if (!isDebugCameraActive_) {
 			isDebugCameraActive_ = true;
-		}
-		else 
-		{
+		} else {
 			isDebugCameraActive_ = false;
 		}
-		
-
 	}
 
-
 #endif // !_DEBUG
-	//カメラの処理
-	if (isDebugCameraActive_) 
-	{
+	// カメラの処理
+	if (isDebugCameraActive_) {
 		camera_.matView = debaucamera_->GetCamera().matView;
 		camera_.matProjection = debaucamera_->GetCamera().matProjection;
 
+
 		//ビュープロジェクション行列の転送
+
 		camera_.TransferMatrix();
-	}
-	else 
-	{
+	} else {
 		camera_.UpdateMatrix();
 	}
 
-
 	skydome_->Update();
-	
 }
 
-//描画
+// 描画
 
 void GameScene::Draw()
 
 {
 	DirectXCommon* dxcommon = DirectXCommon::GetInstance();
 	Model::PreDraw(dxcommon->GetCommandList());
+
 	 player_->Draw();
 
 	 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
@@ -129,12 +132,11 @@ void GameScene::Draw()
 	 }
 
 
-skydome_->Draw();
+	skydome_->Draw();
 
 	Model::PostDraw();
-
-	
 }
+
 void GameScene::GenerrateBlock() 
 {
 	const uint32_t kNumBlockVirtal = mapChipField_->GetNumBlockVirtcal();
@@ -167,16 +169,11 @@ GameScene::~GameScene()
 	delete player_;
 	delete mapChipField_;
 
-	for (std::vector<WorldTransform*>& worldTransformBlockLine:worldTransformBlocks_) 
-	{
-		for (WorldTransform* worldTransformBlocks:worldTransformBlockLine ) 
-		{
+
+	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
+		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
 			delete worldTransformBlocks;
 		}
-
 	}
 	worldTransformBlocks_.clear();
-	
 }
-
-

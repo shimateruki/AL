@@ -394,3 +394,5 @@ Vector3 Player::CarnerPosition(const Vector3& center, Corner cornter) {
 
 	return center + offSetTable[static_cast<uint32_t>(cornter)];
 }
+
+
