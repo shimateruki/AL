@@ -1,87 +1,83 @@
-#include "GameScene.h"
+#include "GameScene.h" // GameSceneクラスのヘッダーファイルをインクルード
 
-using namespace KamataEngine;
+    using namespace KamataEngine; // KamataEngine名前空間を使用
 
+// GameSceneの初期化処理
 void GameScene::Initialize() {
+	// テクスチャのロード
 	textureHandel_ = TextureManager::Load("sample.png");
 
-	// モデルロード
+	// モデルのロード
+	blockModel_ = Model::CreateFromOBJ("block", true);     // ブロックモデルの読み込み
+	modelSkydome_ = Model::CreateFromOBJ("skydome", true); // スカイドームモデルの読み込み
+	playerModel_ = Model::CreateFromOBJ("player", true);   // プレイヤーモデルの読み込み
+	enemy_model_ = Model::CreateFromOBJ("enemy", true);    // 敵モデルの読み込み (02_09 10枚目)
 
-	blockModel_= Model::CreateFromOBJ("block", true);
+	// カメラの設定と初期化
+	camera_.farZ = 1280.0f; // カメラのZ軸方向の最も遠いクリップ面を設定
+	camera_.Initialize();   // カメラの初期化
 
-	modelSkydome_ = Model::CreateFromOBJ("skydome", true);
-	playerModel_ = Model::CreateFromOBJ("player", true);
+	// デバッグカメラの生成と初期化
+	debaucamera_ = new DebugCamera(100, 50); // デバッグカメラのインスタンスを生成
+	debaucamera_->SetFarZ(1280.0f);          // デバッグカメラのZ軸方向の最も遠いクリップ面を設定
 
-	// カメラ
-	camera_.farZ = 1280.0f;
-	camera_.Initialize();
+	// マップチップフィールドの生成とCSVファイルの読み込み
+	mapChipField_ = new MapChipField();                    // MapChipFieldのインスタンスを生成
+	mapChipField_->LoadMapChipCsv("Resources/blocks.csv"); // マップチップのCSVデータを読み込み
 
-	// Debugカメラ
-	debaucamera_ = new DebugCamera(100, 50);
-	debaucamera_->SetFarZ(1280.0f);
+	// プレイヤーの生成と初期化
+	player_ = new Player();                                              // Playerのインスタンスを生成
+	Vector3 playerPosition = mapChipField_->GetChipPositionIndex(1, 18); // マップチップのインデックスからプレイヤーの初期位置を取得
+	player_->Initialize(playerModel_, &camera_, playerPosition);         // プレイヤーを初期化（モデル、カメラ、初期位置を設定）
+	player_->SetMapChipField(mapChipField_);                             // プレイヤーにマップチップフィールドを設定
 
-		// マップチップフィールド
-	mapChipField_ = new MapChipField();
-	mapChipField_->LoadMapChipCsv("Resources/blocks.csv");
+	// 敵クラスの生成 (02_09 10枚目)
+	enemy_ = new Enemy(); // Enemyのインスタンスを生成
 
-	// プレイヤー
-	player_ = new Player();
-	Vector3 playerPosition = mapChipField_->GetChipPositionIndex(1, 18);
-	player_->Initialize(playerModel_, &camera_, playerPosition);
-	player_->SetMapChipField(mapChipField_);
+	// 敵の位置設定と敵クラスの初期化 (02_09 10枚目)
+	Vector3 enemyPosition = mapChipField_->GetChipPositionIndex(20, 18); // マップチップのインデックスから敵の初期位置を取得
+	enemy_->Initialize(enemy_model_, &camera_, enemyPosition);           // 敵を初期化（モデル、カメラ、初期位置を設定）
 
+	// スカイドームの生成と初期化
+	skydome_ = new Skydome();                      // Skydomeのインスタンスを生成
+	skydome_->Initialize(modelSkydome_, &camera_); // スカイドームを初期化（モデル、カメラを設定）
 
-	// スカイドーム
-	skydome_ = new Skydome();
-	skydome_->Initialize(modelSkydome_, &camera_);
+	// カメラコントローラーの生成と初期化
+	CController_ = new CameraController(); // CameraControllerのインスタンスを生成
+	CController_->Initialize(&camera_);    // カメラコントローラーを初期化（カメラを設定）
+	CController_->SetTarget(player_);      // 追従対象をプレイヤーに設定
+	CController_->Reset();                 // カメラコントローラーをリセット
 
+	// カメラの可動範囲を設定
+	CameraController::Rect cameraArea = {12.0f, 100 - 12.0f, 6.0f, 6.0f}; // 可動範囲の矩形を定義
+	CController_->SetMovableSrea(cameraArea);                             // カメラの可動範囲を設定
 
-
-	CController_ = new CameraController(); // 生成
-	CController_->Initialize(&camera_);     // 初期化
-	CController_->SetTarget(player_);      // 追従対象セット
-	CController_->Reset(); 
-
-
-		CameraController::Rect cameraArea = {12.0f, 100 - 12.0f, 6.0f, 6.0f};
-	CController_->SetMovableSrea(cameraArea);
-
-	GenerrateBlock();
-
-	
-
-	
-
+	// ブロックの生成
+	GenerrateBlock(); // マップチップデータに基づいてブロックを生成
 }
 
+// 更新処理
+void GameScene::Update() {
+	player_->Update(); // プレイヤーの更新処理
+	enemy_->Update();  // 敵の更新処理
 
+	CController_->Update(); // カメラコントローラーの更新処理
 
-
-//更新
-void GameScene::Update() 
-{
-
-	player_->Update(); 
-
-	CController_->Update();
-
-
-	
-
-
+	// ブロックのワールド行列を更新し、GPUに転送
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
 		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
 			if (!worldTransformBlocks) {
-				continue;
+				continue; // nullptrの場合はスキップ
 			}
+			// ワールド行列を計算（スケール、回転、平行移動）
 			worldTransformBlocks->matWorld_ = math->MakeAffineMatrix(worldTransformBlocks->scale_, worldTransformBlocks->rotation_, worldTransformBlocks->translation_);
-			worldTransformBlocks->TransferMatrix();
-
+			worldTransformBlocks->TransferMatrix(); // 行列データをGPUに転送
 		}
 	}
-	debaucamera_->Update();
-#ifdef _DEBUG
+	debaucamera_->Update(); // デバッグカメラの更新処理
 
+#ifdef _DEBUG // デバッグビルド時のみ有効なコード
+	// スペースキーが押されたらデバッグカメラの有効/無効を切り替える
 	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 		if (!isDebugCameraActive_) {
 			isDebugCameraActive_ = true;
@@ -89,88 +85,81 @@ void GameScene::Update()
 			isDebugCameraActive_ = false;
 		}
 	}
-
 #endif // !_DEBUG
 
 	// カメラの処理
-	if (isDebugCameraActive_) {
-		camera_.matView = debaucamera_->GetCamera().matView;
-		camera_.matProjection = debaucamera_->GetCamera().matProjection;
-
-
-		//ビュープロジェクション行列の転送
-
-		camera_.TransferMatrix();
-	} else {
-		camera_.UpdateMatrix();
+	if (isDebugCameraActive_) {                                          // デバッグカメラが有効な場合
+		camera_.matView = debaucamera_->GetCamera().matView;             // デバッグカメラのビュー行列を設定
+		camera_.matProjection = debaucamera_->GetCamera().matProjection; // デバッグカメラの射影行列を設定
+		camera_.TransferMatrix();                                        // ビュープロジェクション行列をGPUに転送
+	} else {                                                             // 通常カメラが有効な場合
+		camera_.UpdateMatrix();                                          // 通常カメラの行列を更新
 	}
 
-	skydome_->Update();
+	skydome_->Update(); // スカイドームの更新処理
 }
 
-// 描画
+// 描画処理
+void GameScene::Draw() {
+	DirectXCommon* dxcommon = DirectXCommon::GetInstance(); // DirectXCommonのインスタンスを取得
+	Model::PreDraw(dxcommon->GetCommandList());             // モデル描画の前処理（コマンドリストの設定など）
 
-void GameScene::Draw()
+	player_->Draw(); // プレイヤーの描画処理
+	enemy_->Draw();  // 敵の描画処理
 
-{
-	DirectXCommon* dxcommon = DirectXCommon::GetInstance();
-	Model::PreDraw(dxcommon->GetCommandList());
+	// ブロックの描画
+	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
+		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
+			if (!worldTransformBlocks) {
+				continue; // nullptrの場合はスキップ
+			}
+			blockModel_->Draw(*worldTransformBlocks, camera_); // ブロックモデルを描画
+		}
+	}
 
-	 player_->Draw();
+	skydome_->Draw(); // スカイドームの描画処理
 
-	 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
-		 for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
-			 if (!worldTransformBlocks) {
-				 continue;
-			 }
-
-			 blockModel_->Draw(*worldTransformBlocks, camera_);
-		 }
-	 }
-
-
-	skydome_->Draw();
-
-	Model::PostDraw();
+	Model::PostDraw(); // モデル描画の後処理
 }
 
-void GameScene::GenerrateBlock() 
-{
-	const uint32_t kNumBlockVirtal = mapChipField_->GetNumBlockVirtcal();
-	const uint32_t kNumBlockHorizotal = mapChipField_->GetNumBlockHorizonal();
+// ブロックの生成処理
+void GameScene::GenerrateBlock() {
+	const uint32_t kNumBlockVirtal = mapChipField_->GetNumBlockVirtcal();      // マップチップの垂直方向のブロック数を取得
+	const uint32_t kNumBlockHorizotal = mapChipField_->GetNumBlockHorizonal(); // マップチップの水平方向のブロック数を取得
 
-	worldTransformBlocks_.resize(kNumBlockVirtal);
+	worldTransformBlocks_.resize(kNumBlockVirtal); // 垂直方向のサイズにリサイズ
 	for (uint32_t i = 0; i < kNumBlockVirtal; ++i) {
-		worldTransformBlocks_[i].resize(kNumBlockHorizotal);
+		worldTransformBlocks_[i].resize(kNumBlockHorizotal); // 水平方向のサイズにリサイズ
 	}
 
+	// マップチップのデータに基づいてブロックを配置
 	for (uint32_t i = 0; i < kNumBlockVirtal; ++i) {
 		for (uint32_t j = 0; j < kNumBlockHorizotal; ++j) {
-
+			// マップチップのタイプがブロックの場合
 			if (mapChipField_->GetMapChipTypeByindex(j, i) == MapChipType::kBlock_) {
-				WorldTransform* worldTransform = new WorldTransform();
-				worldTransform->Initialize();
-				worldTransformBlocks_[i][j] = worldTransform;
-				worldTransformBlocks_[i][j]->translation_ = mapChipField_->GetChipPositionIndex(j, i);
+				WorldTransform* worldTransform = new WorldTransform();                                 // 新しいWorldTransformインスタンスを生成
+				worldTransform->Initialize();                                                          // 初期化
+				worldTransformBlocks_[i][j] = worldTransform;                                          // 配列に格納
+				worldTransformBlocks_[i][j]->translation_ = mapChipField_->GetChipPositionIndex(j, i); // ブロックのワールド座標を設定
 			}
 		}
 	}
-	
-	
 }
-GameScene::~GameScene()
-{
-	delete blockModel_; 
-	delete debaucamera_;
-	delete modelSkydome_;
-	delete player_;
-	delete mapChipField_;
 
+// デストラクタ
+GameScene::~GameScene() {
+	// 生成したインスタンスの解放
+	delete blockModel_;   // ブロックモデルの解放
+	delete debaucamera_;  // デバッグカメラの解放
+	delete modelSkydome_; // スカイドームモデルの解放
+	delete player_;       // プレイヤーの解放
+	delete mapChipField_; // マップチップフィールドの解放
 
+	// 生成したブロックのWorldTransformインスタンスを全て解放
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
 		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
 			delete worldTransformBlocks;
 		}
 	}
-	worldTransformBlocks_.clear();
+	worldTransformBlocks_.clear(); // ベクターをクリア
 }
