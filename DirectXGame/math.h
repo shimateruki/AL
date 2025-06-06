@@ -14,6 +14,10 @@ KamataEngine::Vector3& operator-=(KamataEngine::Vector3& lhs, const KamataEngine
 KamataEngine::Vector3& operator*=(KamataEngine::Vector3& v, float s);
 KamataEngine::Vector3& operator/=(KamataEngine::Vector3& v, float s);
 
+struct AABB {
+	KamataEngine::Vector3 min;
+	KamataEngine::Vector3 max;
+};
 class Math {
 public:
 
@@ -21,7 +25,8 @@ public:
 
 float EaseInOutSine(float t, float x1, float x2);
 	KamataEngine::Vector3 Lerp(const KamataEngine::Vector3& a, const KamataEngine::Vector3& b, float t);
-	KamataEngine::Matrix4x4 MakeScaleMatrix(const KamataEngine::Vector3& scale);
+KamataEngine::Matrix4x4 makeIdentity4x4();
+KamataEngine::Matrix4x4 MakeScaleMatrix(const KamataEngine::Vector3& scale);
 
 	KamataEngine::Matrix4x4 MakeRotateXMatrix(float theta);
 
@@ -39,4 +44,5 @@ float EaseInOutSine(float t, float x1, float x2);
 
 	KamataEngine::Matrix4x4 MakeOrthographicMatrix(float left, float top, float right, float bottom, float nearClip, float farClip);
 	void worldTransFormUpdate(KamataEngine::WorldTransform& worldTransform);
+	bool IsCollision(const AABB& aabb1, const AABB& aabb2);
 };

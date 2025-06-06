@@ -47,3 +47,24 @@ void Enemy::Draw() {
 	// 敵のモデルを描画 
 	model_->Draw(worldTransformEnemy_, *camera_);
 }
+
+Vector3 Enemy::GetWorldPosition() {
+	// ワールド座標を入れる変数
+	Vector3 worldPos;
+	// ワールド行列の平行移動成分を取得
+	worldPos.x =worldTransformEnemy_.matWorld_.m[3][0]; // 行列の4行1列目
+	worldPos.y =worldTransformEnemy_.matWorld_.m[3][1]; // 行列の4行2列目
+	worldPos.z =worldTransformEnemy_.matWorld_.m[3][2]; // 行列の4行3列目
+	return worldPos;
+}
+
+AABB Enemy::GetAABB() {
+	Vector3 worldPos = GetWorldPosition();
+	AABB aabb;
+	aabb.min = {worldPos.x - kWidth / 2.0f, worldPos.y - kHeight / 2.0f, worldPos.z - kWidth / 2.0f};
+	aabb.max = {worldPos.x + kWidth / 2.0f, worldPos.y + kHeight / 2.0f, worldPos.z + kWidth / 2.0f};
+	return aabb;
+}
+
+void Enemy::onCollision(const Player* player) 
+{ (void)player; }

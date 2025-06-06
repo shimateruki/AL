@@ -27,6 +27,9 @@ public:
 	// ブロック生成処理
 	void GenerrateBlock();
 
+	//すべてのあたり判定を行う
+	void CheakAllcollision();
+
 	// デストラクタ
 	~GameScene();
 
@@ -45,10 +48,12 @@ private:
 	KamataEngine::Model* playerModel_ = nullptr;                                   // プレイヤーのモデル
 	KamataEngine::Model* modelSkydome_ = nullptr;                                  // スカイドームのモデル
 
+
 	// エネミークラス
-	Enemy* enemy_ = nullptr; // 敵オブジェクト
+	std::list<Enemy*> enemys_; // 敵オブジェクト
 	// エネミーモデル
 	KamataEngine::Model* enemy_model_ = nullptr; // 敵のモデル
+	const int kEnemyMax= 3;
 
 	// マップチップフィールド
 	MapChipField* mapChipField_ = nullptr; // マップチップフィールドオブジェクト

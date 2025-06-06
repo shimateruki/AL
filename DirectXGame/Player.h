@@ -15,6 +15,8 @@ struct CollisionMapInfo {
 	bool hitWall = false;     // 左右の壁に当たったか (先生のhitWallに相当)
 };
 
+class Enemy;
+
 class Player {
 public:
 	// 初期化
@@ -35,8 +37,10 @@ public:
 
 	// 02_07 スライド4枚目
 	void SetMapChipField(MapChipField* mapChipField) { mapchipField_ = mapChipField; }
-
-
+	Vector3 GetWorldPosition();
+	AABB GetAABB();
+	void OnCollision(const Enemy* enemy);
+ 
 private:
 
 	// 移動処理 (元のMove関数に、InputMoveのロジックを統合)
@@ -66,6 +70,8 @@ private:
 	static const uint32_t knumCorner = 4;
 	Vector3 CarnerPosition(const Vector3& center, Corner cornter);
 
+
+
 private:
 	// プレイヤーのワールド変換
 	WorldTransform worldTransformPlayer_;
@@ -90,9 +96,10 @@ private:
 	const float kGgravityAcceleration = 0.8f; // 重力加速度
 	const float kLimitFallSpeed = 0.5f;       // 最大落下速度
 
-	const float kBlank = 0.001f;            // めり込み防止の隙間 (新しく追加)
+	const float kBlank = 0.1f;            // めり込み防止の隙間 (新しく追加)
 	const float kGroundSearchHeight = 0.1f; // 地面検索の高さ (新しく追加)
-
+	
+	
 	// 接地フラグ
 	bool onGround_ = false;
 
@@ -108,7 +115,9 @@ private:
 
 	// プレイヤーのサイズ (当たり判定用)
 	const float kWidth = 1.0f;  // 幅
-	const float kHeight = 1.0f; // 高さ
+	const float kHeight = 0.8f; // 高さ
+
+
 
 	// マップチップフィールドへのポインタ
 	MapChipField* mapchipField_ = nullptr; // Initialize()で設定すること
