@@ -5,6 +5,7 @@
 
 using namespace KamataEngine; // KamataEngine名前空間を使用
 
+class Player;
 // 敵クラス 
 class Enemy {
 
@@ -18,6 +19,11 @@ public:
 
 	// 描画処理 
 	void Draw();
+
+	Vector3 GetWorldPosition();
+
+	AABB GetAABB();
+	void onCollision(const Player* player);
 
 private:
 	// 敵のワールド変換 
@@ -49,4 +55,6 @@ private:
 
 	// 数学ユーティリティオブジェクト
 	Math* math = nullptr;
+	const float kWidth = 1.0f;  // 幅
+	const float kHeight = 1.0f; // 高さ
 };

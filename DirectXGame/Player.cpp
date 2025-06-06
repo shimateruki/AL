@@ -23,6 +23,18 @@ void Player::Initialize(Model* model, Camera* camera, const Vector3& position) {
 	onGround_ = false; // 初期状態は空中または地面にいるか不明とする
 }
 
+Vector3 Player::GetWorldPosition() 
+{
+	//ワールド座標を入れる変数
+	Vector3 worldPos;
+	//ワールド行列の平行移動成分を取得
+	worldPos.x = worldTransformPlayer_.matWorld_.m[3][0]; // 行列の4行1列目
+	worldPos.y = worldTransformPlayer_.matWorld_.m[3][1]; // 行列の4行2列目
+	worldPos.z = worldTransformPlayer_.matWorld_.m[3][2]; // 行列の4行3列目
+	    return worldPos;
+
+}
+
 // 移動処理（先生のInputMoveロジックを統合）
 void Player::Move() {
 	if (onGround_) { // 接地状態の場合
@@ -161,12 +173,14 @@ void Player::MapChipUp(CollisionMapInfo& info) {
 	}
 
 	if (hit) {
+
 		// 現在座標が壁の外か判定（すでにブロック内にめり込んでいる場合）
 		MapChipField::IndexSet indexSetNow;
 		indexSetNow = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ + Vector3(0, +kHeight / 2.0f, 0));
 
 		// 衝突したマップチップのYインデックスと現在のYインデックスが異なる場合（つまり、新しいマップチップに当たろうとしている）
 		if (indexSetNow.yIndex != indexSet.yIndex) {
+			indexSetNow = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ +info.isMovement+ Vector3(0, +kHeight / 2.0f, 0));
 			MapChipField::Rect rect = mapchipField_->GetRectByIndex(indexSet.xIndex, indexSet.yIndex);
 			// めり込みを排除する方向に移動量を設定する (天井の底面に合わせる)
 			info.isMovement.y = std::max(0.0f, rect.bottom - (worldTransformPlayer_.translation_.y + kHeight / 2.0f) - kBlank);
@@ -217,6 +231,7 @@ void Player::MapChipDown(CollisionMapInfo& info) {
 
 		// 衝突したマップチップのYインデックスと現在のYインデックスが異なる場合
 		if (indexSetNow.yIndex != indexSet.yIndex) {
+			  indexSet= mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ + Vector3(0, -kHeight / 2.0f, 0));
 			MapChipField::Rect rect = mapchipField_->GetRectByIndex(indexSet.xIndex, indexSet.yIndex);
 			// めり込みを排除する方向に移動量を設定する (地面の上面に合わせる)
 			info.isMovement.y = std::min(0.0f, rect.top - (worldTransformPlayer_.translation_.y - kHeight / 2.0f) + kBlank);
@@ -267,9 +282,10 @@ void Player::MapChipLeft(CollisionMapInfo& info) {
 
 		// 衝突したマップチップのXインデックスと現在のXインデックスが異なる場合
 		if (indexSetNow.xIndex != indexSet.xIndex) {
+			indexSet = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ + info.isMovement + Vector3(-kWidth / 2.0f, 0, 0));
 			MapChipField::Rect rect = mapchipField_->GetRectByIndex(indexSet.xIndex, indexSet.yIndex);
 			// めり込みを排除する方向に移動量を設定する (壁の右面に合わせる)
-			info.isMovement.x = std::max(0.0f, rect.right - (worldTransformPlayer_.translation_.x - kWidth / 2.0f) - kBlank);
+			info.isMovement.x = std::max(0.0f, rect.right - (worldTransformPlayer_.translation_.x - kWidth / 2.0f) + kBlank);
 			info.hitWall = true;
 		} else {
 			// すでに同じブロック内にいる場合は、めり込み量を0に
@@ -317,9 +333,10 @@ void Player::MapChipRight(CollisionMapInfo& info) {
 
 		// 衝突したマップチップのXインデックスと現在のXインデックスが異なる場合
 		if (indexSetNow.xIndex != indexSet.xIndex) {
+			indexSetNow = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ +info.isMovement+ Vector3(+kWidth / 2.0f, 0, 0));
 			MapChipField::Rect rect = mapchipField_->GetRectByIndex(indexSet.xIndex, indexSet.yIndex);
 			// めり込みを排除する方向に移動量を設定する (壁の左面に合わせる)
-			info.isMovement.x = std::min(0.0f, rect.left - (worldTransformPlayer_.translation_.x + kWidth / 2.0f) - kBlank);
+			info.isMovement.x = std::min(0.0f, rect.left - (worldTransformPlayer_.translation_.x + kWidth / 2.0f) + kBlank);
 			info.hitWall = true;
 		} else {
 			// すでに同じブロック内にいる場合は、めり込み量を0に
@@ -393,6 +410,21 @@ Vector3 Player::CarnerPosition(const Vector3& center, Corner cornter) {
 	};
 
 	return center + offSetTable[static_cast<uint32_t>(cornter)];
+}
+
+AABB Player::GetAABB() 
+{
+	Vector3 worldPos = GetWorldPosition();
+	AABB aabb;
+	aabb.min = {worldPos.x - kWidth / 2.0f, worldPos.y - kHeight / 2.0f, worldPos.z - kWidth / 2.0f};
+	aabb.max = {worldPos.x + kWidth / 2.0f, worldPos.y + kHeight / 2.0f, worldPos.z + kWidth / 2.0f};
+	return aabb;
+}
+
+void Player::OnCollision(const Enemy* enemy) 
+{
+	(void)enemy;
+	velosity_ += Vector3(0.0f, 0.1f, 0.0f);
 }
 
 
