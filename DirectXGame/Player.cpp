@@ -173,14 +173,14 @@ void Player::MapChipUp(CollisionMapInfo& info) {
 	}
 
 	if (hit) {
-
+		indexSet = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ + info.isMovement + Vector3(0, +kHeight / 2.0f, 0));
 		// 現在座標が壁の外か判定（すでにブロック内にめり込んでいる場合）
 		MapChipField::IndexSet indexSetNow;
 		indexSetNow = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ + Vector3(0, +kHeight / 2.0f, 0));
 
 		// 衝突したマップチップのYインデックスと現在のYインデックスが異なる場合（つまり、新しいマップチップに当たろうとしている）
 		if (indexSetNow.yIndex != indexSet.yIndex) {
-			indexSetNow = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ +info.isMovement+ Vector3(0, +kHeight / 2.0f, 0));
+		
 			MapChipField::Rect rect = mapchipField_->GetRectByIndex(indexSet.xIndex, indexSet.yIndex);
 			// めり込みを排除する方向に移動量を設定する (天井の底面に合わせる)
 			info.isMovement.y = std::max(0.0f, rect.bottom - (worldTransformPlayer_.translation_.y + kHeight / 2.0f) - kBlank);
@@ -225,13 +225,14 @@ void Player::MapChipDown(CollisionMapInfo& info) {
 	}
 
 	if (hit) {
+		indexSet = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ + info.isMovement + Vector3(0, -kHeight / 2.0f, 0));
 		// 現在座標が壁の外か判定（すでにブロック内にめり込んでいる場合）
 		MapChipField::IndexSet indexSetNow;
 		indexSetNow = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ + Vector3(0, -kHeight / 2.0f, 0));
 
 		// 衝突したマップチップのYインデックスと現在のYインデックスが異なる場合
 		if (indexSetNow.yIndex != indexSet.yIndex) {
-			  indexSet= mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ + Vector3(0, -kHeight / 2.0f, 0));
+			
 			MapChipField::Rect rect = mapchipField_->GetRectByIndex(indexSet.xIndex, indexSet.yIndex);
 			// めり込みを排除する方向に移動量を設定する (地面の上面に合わせる)
 			info.isMovement.y = std::min(0.0f, rect.top - (worldTransformPlayer_.translation_.y - kHeight / 2.0f) + kBlank);
@@ -276,13 +277,14 @@ void Player::MapChipLeft(CollisionMapInfo& info) {
 	}
 
 	if (hit) {
+		indexSet = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ + info.isMovement + Vector3(-kWidth / 2.0f, 0, 0));
 		// 現在座標が壁の外か判定（すでにブロック内にめり込んでいる場合）
 		MapChipField::IndexSet indexSetNow;
 		indexSetNow = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ + Vector3(-kWidth / 2.0f, 0, 0));
 
 		// 衝突したマップチップのXインデックスと現在のXインデックスが異なる場合
 		if (indexSetNow.xIndex != indexSet.xIndex) {
-			indexSet = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ + info.isMovement + Vector3(-kWidth / 2.0f, 0, 0));
+		
 			MapChipField::Rect rect = mapchipField_->GetRectByIndex(indexSet.xIndex, indexSet.yIndex);
 			// めり込みを排除する方向に移動量を設定する (壁の右面に合わせる)
 			info.isMovement.x = std::max(0.0f, rect.right - (worldTransformPlayer_.translation_.x - kWidth / 2.0f) + kBlank);
@@ -327,13 +329,15 @@ void Player::MapChipRight(CollisionMapInfo& info) {
 	}
 
 	if (hit) {
+
+		indexSet = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ + info.isMovement + Vector3(+kWidth / 2.0f, 0, 0));
+
 		// 現在座標が壁の外か判定（すでにブロック内にめり込んでいる場合）
 		MapChipField::IndexSet indexSetNow;
 		indexSetNow = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ + Vector3(+kWidth / 2.0f, 0, 0));
 
 		// 衝突したマップチップのXインデックスと現在のXインデックスが異なる場合
 		if (indexSetNow.xIndex != indexSet.xIndex) {
-			indexSetNow = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ +info.isMovement+ Vector3(+kWidth / 2.0f, 0, 0));
 			MapChipField::Rect rect = mapchipField_->GetRectByIndex(indexSet.xIndex, indexSet.yIndex);
 			// めり込みを排除する方向に移動量を設定する (壁の左面に合わせる)
 			info.isMovement.x = std::min(0.0f, rect.left - (worldTransformPlayer_.translation_.x + kWidth / 2.0f) + kBlank);
