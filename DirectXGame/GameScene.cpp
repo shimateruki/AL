@@ -1,6 +1,6 @@
 #include "GameScene.h" // GameSceneクラスのヘッダーファイルをインクルード
 
-    using namespace KamataEngine; // KamataEngine名前空間を使用
+using namespace KamataEngine; // KamataEngine名前空間を使用
 
 // GameSceneの初期化処理
 void GameScene::Initialize() {
@@ -8,10 +8,11 @@ void GameScene::Initialize() {
 	textureHandel_ = TextureManager::Load("sample.png");
 
 	// モデルのロード
-	blockModel_ = Model::CreateFromOBJ("block", true);     // ブロックモデルの読み込み
-	modelSkydome_ = Model::CreateFromOBJ("skydome", true); // スカイドームモデルの読み込み
-	playerModel_ = Model::CreateFromOBJ("player", true);   // プレイヤーモデルの読み込み
-	enemy_model_ = Model::CreateFromOBJ("enemy", true);    // 敵モデルの読み込み 
+	blockModel_ = Model::CreateFromOBJ("block", true);                 // ブロックモデルの読み込み
+	modelSkydome_ = Model::CreateFromOBJ("skydome", true);             // スカイドームモデルの読み込み
+	playerModel_ = Model::CreateFromOBJ("player", true);               // プレイヤーモデルの読み込み
+	enemy_model_ = Model::CreateFromOBJ("enemy", true);                // 敵モデルの読み込み
+	deatparticlesModel_ = Model::CreateFromOBJ("deathParticle", true); // パーティクルモデル
 
 	// カメラの設定と初期化
 	camera_.farZ = 1280.0f; // カメラのZ軸方向の最も遠いクリップ面を設定
@@ -31,14 +32,16 @@ void GameScene::Initialize() {
 	player_->Initialize(playerModel_, &camera_, playerPosition);         // プレイヤーを初期化（モデル、カメラ、初期位置を設定）
 	player_->SetMapChipField(mapChipField_);                             // プレイヤーにマップチップフィールドを設定
 	for (int i = 0; i < kEnemyMax; i++) {
-		// 敵クラスの生成 
-	Enemy*  newEnemy = new Enemy(); // Enemyのインスタンスを生成
-		// 敵の位置設定と敵クラスの初期化 
-		Vector3 enemyPosition = mapChipField_->GetChipPositionIndex(20, 12+i); // マップチップのインデックスから敵の初期位置を取得
-		newEnemy->Initialize(enemy_model_, &camera_, enemyPosition);     // 敵を初期化（モデル、カメラ、初期位置を設定）
+		// 敵クラスの生成
+		Enemy* newEnemy = new Enemy(); // Enemyのインスタンスを生成
+		// 敵の位置設定と敵クラスの初期化
+		Vector3 enemyPosition = mapChipField_->GetChipPositionIndex(20, 12 + i); // マップチップのインデックスから敵の初期位置を取得
+		newEnemy->Initialize(enemy_model_, &camera_, enemyPosition);             // 敵を初期化（モデル、カメラ、初期位置を設定）
 		enemys_.push_back(newEnemy);
 	}
-	
+	// パーティクルの生成
+	deatparticles_ = new DeathParticles();
+	deatparticles_->Initialize(deatparticlesModel_, &camera_, player_, playerPosition);
 
 	// スカイドームの生成と初期化
 	skydome_ = new Skydome();                      // Skydomeのインスタンスを生成
@@ -60,12 +63,12 @@ void GameScene::Initialize() {
 
 // 更新処理
 void GameScene::Update() {
-	player_->Update(); // プレイヤーの更新処理
+	player_->Update();             // プレイヤーの更新処理
 	for (Enemy* enemy : enemys_) { // C++11以降の範囲ベースforループ
 		enemy->Update();
 	}
 	CheakAllcollision();
-
+	deatparticles_->Update();
 
 	CController_->Update(); // カメラコントローラーの更新処理
 
@@ -115,6 +118,7 @@ void GameScene::Draw() {
 	for (Enemy* enemy : enemys_) { // C++11以降の範囲ベースforループ
 		enemy->Draw();
 	}
+	deatparticles_->Draw();
 
 	// ブロックの描画
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
@@ -155,10 +159,8 @@ void GameScene::GenerrateBlock() {
 	}
 }
 
-
-void GameScene::CheakAllcollision() 
-{
-	//判定対象１と２の座標
+void GameScene::CheakAllcollision() {
+	// 判定対象１と２の座標
 	AABB aabb1, aabb2;
 	aabb1 = player_->GetAABB();
 	for (Enemy* enemy : enemys_) {
@@ -172,7 +174,6 @@ void GameScene::CheakAllcollision()
 	}
 }
 
-
 // デストラクタ
 GameScene::~GameScene() {
 	// 生成したインスタンスの解放
@@ -181,6 +182,7 @@ GameScene::~GameScene() {
 	delete modelSkydome_; // スカイドームモデルの解放
 	delete player_;       // プレイヤーの解放
 	delete mapChipField_; // マップチップフィールドの解放
+	delete deatparticles_;//パーティクルの解放
 
 	// 生成したブロックのWorldTransformインスタンスを全て解放
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {

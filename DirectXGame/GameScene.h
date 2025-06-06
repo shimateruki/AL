@@ -10,6 +10,7 @@
 #include "Enemy.h"            // Enemyクラスの定義 (02_09 10枚目)
 #include "MapChipField.h"     // MapChipFieldクラスの定義
 #include "skydome.h"          // Skydomeクラスの定義
+#include "DeathParticles.h"
 
     // ゲームシーンクラス
     class GameScene {
@@ -54,6 +55,9 @@ private:
 	// エネミーモデル
 	KamataEngine::Model* enemy_model_ = nullptr; // 敵のモデル
 	const int kEnemyMax= 3;
+
+	DeathParticles* deatparticles_ = nullptr;
+	KamataEngine::Model* deatparticlesModel_ = nullptr;
 
 	// マップチップフィールド
 	MapChipField* mapChipField_ = nullptr; // マップチップフィールドオブジェクト

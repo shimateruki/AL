@@ -45,4 +45,5 @@ KamataEngine::Matrix4x4 MakeScaleMatrix(const KamataEngine::Vector3& scale);
 	KamataEngine::Matrix4x4 MakeOrthographicMatrix(float left, float top, float right, float bottom, float nearClip, float farClip);
 	void worldTransFormUpdate(KamataEngine::WorldTransform& worldTransform);
 	bool IsCollision(const AABB& aabb1, const AABB& aabb2);
+	KamataEngine::Vector3 Transform(const KamataEngine::Vector3& vector, const KamataEngine::Matrix4x4& matrix);
 };
