@@ -5,6 +5,8 @@ void DeathParticles::Initialize(Model* model, Camera* camera, const Player* play
 {
 	camera_ = camera;
 	model_ = model;
+	objectColor_.Initialize();
+	color_ = {1, 1, 1, 1};
 	player;
 	for (auto& worldTransform : worldTransform_) 
 	{
@@ -14,6 +16,7 @@ void DeathParticles::Initialize(Model* model, Camera* camera, const Player* play
 }
 
 void DeathParticles::Update() {
+
 
 	//移動処理
 	for (uint32_t i = 0; i < kNumParticles; i++) 
@@ -42,7 +45,9 @@ void DeathParticles::Update() {
 	{
 		return;
 	}
-
+	float normalizedTime = counter_ / kDuration;              // 0.0f から 1.0f の間の値
+	color_.w = std::clamp(1.0f - normalizedTime, 0.0f, 1.0f); // 1.0fから減らしてい
+	objectColor_.SetColor(color_);
 
 	for (auto& worldTransform : worldTransform_) 
 	{
@@ -56,7 +61,7 @@ void DeathParticles::Draw()
 		return;
 	}
 	for (auto& worldTransform : worldTransform_) {
-		model_->Draw(worldTransform, *camera_);
+		model_->Draw(worldTransform, *camera_ ,&objectColor_);
 	}
 	
 }

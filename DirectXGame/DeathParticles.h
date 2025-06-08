@@ -3,6 +3,7 @@
 #include <array>
 #include "math.h"
 #include <numbers> // std::numbers::pi_v を使用するためにインクルード
+
 using namespace KamataEngine;
 class Player;
 
@@ -30,7 +31,7 @@ private:
 	std::array<WorldTransform, kNumParticles> worldTransform_;
 	Math* math;
 	//存在時間
-	static inline const float kDuration = 5.0f;
+	static inline const float kDuration = 1.0f;
 	//移動のスピード
 	static inline const float kSpeed = 0.1f;
 	//分割した一個分の角度
@@ -40,5 +41,8 @@ private:
 	bool isFinished_ = false;
 	//時間経過カウント
 	float counter_ = 0.0f;
+
+	KamataEngine::ObjectColor objectColor_;
+	KamataEngine::Vector4 color_;
 
 };
