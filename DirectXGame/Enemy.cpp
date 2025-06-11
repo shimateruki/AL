@@ -35,6 +35,7 @@ void Enemy::Update() {
 	walkTimer += 1.0f / 60.0f;
 
 	// 歩行モーションのためのX軸周りの回転アニメーション 
+	// 
 	// sin波を使って腕や足の動きを表現するようなアニメーション
 	worldTransformEnemy_.rotation_.x = std::sin(std::numbers::pi_v<float> * 2.0f * walkTimer / kWalkMotionTime);
 
