@@ -59,80 +59,175 @@ void GameScene::Initialize() {
 
 	// ブロックの生成
 	GenerrateBlock(); // マップチップデータに基づいてブロックを生成
+
+	//ゲームプレイフェーズから開始
+	phase_ = Phase::kPlay;
+	finishedTimer = 0;
+
 }
 
 // 更新処理
 void GameScene::Update() {
-	player_->Update();             // プレイヤーの更新処理
-	for (Enemy* enemy : enemys_) { // C++11以降の範囲ベースforループ
-		enemy->Update();
-	}
-	CheakAllcollision();
-	deatparticles_->Update();
-
-	CController_->Update(); // カメラコントローラーの更新処理
-
-	// ブロックのワールド行列を更新し、GPUに転送
-	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
-		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
-			if (!worldTransformBlocks) {
-				continue; // nullptrの場合はスキップ
-			}
-			// ワールド行列を計算（スケール、回転、平行移動）
-			worldTransformBlocks->matWorld_ = math->MakeAffineMatrix(worldTransformBlocks->scale_, worldTransformBlocks->rotation_, worldTransformBlocks->translation_);
-			worldTransformBlocks->TransferMatrix(); // 行列データをGPUに転送
+	ChangePhase();
+	switch (phase_) {
+	case Phase::kPlay:
+		player_->Update();             // プレイヤーの更新処理
+		for (Enemy* enemy : enemys_) { // C++11以降の範囲ベースforループ
+			enemy->Update();
 		}
-	}
-	debaucamera_->Update(); // デバッグカメラの更新処理
+
+		
+
+		CheakAllcollision();
+	
+
+		CController_->Update(); // カメラコントローラーの更新処理
+
+		// ブロックのワールド行列を更新し、GPUに転送
+		for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
+			for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
+				if (!worldTransformBlocks) {
+					continue; // nullptrの場合はスキップ
+				}
+				// ワールド行列を計算（スケール、回転、平行移動）
+				worldTransformBlocks->matWorld_ = math->MakeAffineMatrix(worldTransformBlocks->scale_, worldTransformBlocks->rotation_, worldTransformBlocks->translation_);
+				worldTransformBlocks->TransferMatrix(); // 行列データをGPUに転送
+			}
+		}
+		debaucamera_->Update(); // デバッグカメラの更新処理
 
 #ifdef _DEBUG // デバッグビルド時のみ有効なコード
-	// スペースキーが押されたらデバッグカメラの有効/無効を切り替える
-	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
-		if (!isDebugCameraActive_) {
-			isDebugCameraActive_ = true;
-		} else {
-			isDebugCameraActive_ = false;
+		// スペースキーが押されたらデバッグカメラの有効/無効を切り替える
+		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+			if (!isDebugCameraActive_) {
+				isDebugCameraActive_ = true;
+			} else {
+				isDebugCameraActive_ = false;
+			}
 		}
-	}
 #endif // !_DEBUG
 
-	// カメラの処理
-	if (isDebugCameraActive_) {                                          // デバッグカメラが有効な場合
-		camera_.matView = debaucamera_->GetCamera().matView;             // デバッグカメラのビュー行列を設定
-		camera_.matProjection = debaucamera_->GetCamera().matProjection; // デバッグカメラの射影行列を設定
-		camera_.TransferMatrix();                                        // ビュープロジェクション行列をGPUに転送
-	} else {                                                             // 通常カメラが有効な場合
-		camera_.UpdateMatrix();                                          // 通常カメラの行列を更新
+		// カメラの処理
+		if (isDebugCameraActive_) {                                          // デバッグカメラが有効な場合
+			camera_.matView = debaucamera_->GetCamera().matView;             // デバッグカメラのビュー行列を設定
+			camera_.matProjection = debaucamera_->GetCamera().matProjection; // デバッグカメラの射影行列を設定
+			camera_.TransferMatrix();                                        // ビュープロジェクション行列をGPUに転送
+		} else {                                                             // 通常カメラが有効な場合
+			camera_.UpdateMatrix();                                          // 通常カメラの行列を更新
+		}
+
+		skydome_->Update(); // スカイドームの更新処理
+		break;
+
+	case Phase::kDeath:
+		finishedTimer++;
+		for (Enemy* enemy : enemys_) { // C++11以降の範囲ベースforループ
+			enemy->Update();
+		}
+
+		// ブロックのワールド行列を更新し、GPUに転送
+		for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
+			for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
+				if (!worldTransformBlocks) {
+					continue; // nullptrの場合はスキップ
+				}
+				// ワールド行列を計算（スケール、回転、平行移動）
+				worldTransformBlocks->matWorld_ = math->MakeAffineMatrix(worldTransformBlocks->scale_, worldTransformBlocks->rotation_, worldTransformBlocks->translation_);
+				worldTransformBlocks->TransferMatrix(); // 行列データをGPUに転送
+			}
+		}
+		debaucamera_->Update(); // デバッグカメラの更新処理
+
+#ifdef _DEBUG // デバッグビルド時のみ有効なコード
+		// スペースキーが押されたらデバッグカメラの有効/無効を切り替える
+		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+			if (!isDebugCameraActive_) {
+				isDebugCameraActive_ = true;
+			} else {
+				isDebugCameraActive_ = false;
+			}
+		}
+#endif // !_DEBUG
+
+		// カメラの処理
+		if (isDebugCameraActive_) {                                          // デバッグカメラが有効な場合
+			camera_.matView = debaucamera_->GetCamera().matView;             // デバッグカメラのビュー行列を設定
+			camera_.matProjection = debaucamera_->GetCamera().matProjection; // デバッグカメラの射影行列を設定
+			camera_.TransferMatrix();                                        // ビュープロジェクション行列をGPUに転送
+		} else {                                                             // 通常カメラが有効な場合
+			camera_.UpdateMatrix();                                          // 通常カメラの行列を更新
+		}
+
+		skydome_->Update(); // スカイドームの更新処理
+		if (finishedTimer >=120) {
+			finished_ = true;
+		}
+		break;
+
 	}
 
-	skydome_->Update(); // スカイドームの更新処理
+	
+	
+
 }
 
 // 描画処理
 void GameScene::Draw() {
 	DirectXCommon* dxcommon = DirectXCommon::GetInstance(); // DirectXCommonのインスタンスを取得
-	Model::PreDraw(dxcommon->GetCommandList());             // モデル描画の前処理（コマンドリストの設定など）
+	switch (phase_) {
+	case Phase::kPlay:
+		Model::PreDraw(dxcommon->GetCommandList()); // モデル描画の前処理（コマンドリストの設定など）
 
-	player_->Draw(); // プレイヤーの描画処理
+		player_->Draw(); // プレイヤーの描画処理
 
-	for (Enemy* enemy : enemys_) { // C++11以降の範囲ベースforループ
-		enemy->Draw();
-	}
-	deatparticles_->Draw();
-
-	// ブロックの描画
-	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
-		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
-			if (!worldTransformBlocks) {
-				continue; // nullptrの場合はスキップ
-			}
-			blockModel_->Draw(*worldTransformBlocks, camera_); // ブロックモデルを描画
+		for (Enemy* enemy : enemys_) { // C++11以降の範囲ベースforループ
+			enemy->Draw();
 		}
+		deatparticles_->Draw();
+
+		// ブロックの描画
+		for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
+			for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
+				if (!worldTransformBlocks) {
+					continue; // nullptrの場合はスキップ
+				}
+				blockModel_->Draw(*worldTransformBlocks, camera_); // ブロックモデルを描画
+			}
+		}
+
+		skydome_->Draw(); // スカイドームの描画処理
+
+		Model::PostDraw(); // モデル描画の後処理
+		break;
+	case Phase::kDeath:
+		Model::PreDraw(dxcommon->GetCommandList()); // モデル描画の前処理（コマンドリストの設定など）
+
+
+
+		for (Enemy* enemy : enemys_) { // C++11以降の範囲ベースforループ
+			enemy->Draw();
+		}
+		deatparticles_->Draw();
+
+		// ブロックの描画
+		for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
+			for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
+				if (!worldTransformBlocks) {
+					continue; // nullptrの場合はスキップ
+				}
+				blockModel_->Draw(*worldTransformBlocks, camera_); // ブロックモデルを描画
+			}
+		}
+
+		skydome_->Draw(); // スカイドームの描画処理
+
+		Model::PostDraw(); // モデル描画の後処理
+		break;
+	default:
+		break;
 	}
 
-	skydome_->Draw(); // スカイドームの描画処理
 
-	Model::PostDraw(); // モデル描画の後処理
 }
 
 // ブロックの生成処理
@@ -171,6 +266,27 @@ void GameScene::CheakAllcollision() {
 			player_->OnCollision(enemy);
 			enemy->onCollision(player_);
 		}
+	}
+}
+
+void GameScene::ChangePhase() 
+{
+	switch (phase_) {
+	case Phase::kPlay:
+		if (player_->IsDead()) {
+			// 死亡演出フェーズに切り替え
+			phase_ = Phase::kDeath;
+			const Vector3& deatParticlesPosition = player_->GetWorldPosition();
+			deatparticles_->Initialize(deatparticlesModel_, &camera_, player_, deatParticlesPosition);
+		
+
+		}
+
+		break;
+	case Phase::kDeath:
+		deatparticles_->Update();
+		break;
+
 	}
 }
 
