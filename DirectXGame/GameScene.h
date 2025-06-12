@@ -12,6 +12,14 @@
 #include "skydome.h"          // Skydomeクラスの定義
 #include "DeathParticles.h"
 
+enum class Phase {
+
+	kPlay,//ゲームプレイ
+	kDeath//デス演出
+};
+
+
+
     // ゲームシーンクラス
     class GameScene {
 
@@ -30,6 +38,11 @@ public:
 
 	//すべてのあたり判定を行う
 	void CheakAllcollision();
+
+	//フェーズの切り替え
+	void ChangePhase();
+
+	bool isFinished() const { return finished_; }
 
 	// デストラクタ
 	~GameScene();
@@ -65,4 +78,9 @@ private:
 	CameraController* CController_ = nullptr; // カメラコントローラーオブジェクト
 
 	Math* math = nullptr; // 数学ユーティリティオブジェクト（Mathクラスのインスタンス）
-};
+
+	Phase phase_;
+	//終了フラグ
+	bool finished_ = false;
+	float finishedTimer;
+	};

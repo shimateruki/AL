@@ -40,6 +40,11 @@ public:
 	Vector3 GetWorldPosition();
 	AABB GetAABB();
 	void OnCollision(const Enemy* enemy);
+
+	bool IsDead() const { return isDead_; }
+	// player.h （修正後の宣言）
+	WorldTransform& GetWorldTransform() { return worldTransformPlayer_; }
+
  
 private:
 
@@ -69,6 +74,7 @@ private:
 
 	static const uint32_t knumCorner = 4;
 	Vector3 CarnerPosition(const Vector3& center, Corner cornter);
+
 
 
 
@@ -116,6 +122,8 @@ private:
 	// プレイヤーのサイズ (当たり判定用)
 	const float kWidth = 1.0f;  // 幅
 	const float kHeight = 0.8f; // 高さ
+
+	bool isDead_ = false;
 
 
 
