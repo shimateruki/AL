@@ -7,6 +7,7 @@ using namespace KamataEngine;
 
 
 
+
 enum class Scene {
 	kUnknown = 0, 
 	kTitle,
@@ -96,7 +97,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			}
 			break;
 		case Scene::kGame:
-			if (gameScene != nullptr) { 
+
+			if (gameScene != nullptr) {
 				gameScene->Update();
 			}
 			break;
@@ -115,8 +117,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			}
 			break;
 		case Scene::kGame:
-			if (gameScene != nullptr) { 
-				gameScene->Draw();
+
+			if (gameScene != nullptr) {
+cene->Draw();
 			}
 			break;
 		}
