@@ -119,7 +119,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		case Scene::kGame:
 
 			if (gameScene != nullptr) {
-cene->Draw();
+            gameScene->Draw();
 			}
 			break;
 		}
