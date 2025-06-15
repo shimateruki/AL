@@ -11,11 +11,14 @@
 #include "MapChipField.h"     // MapChipFieldクラスの定義
 #include "skydome.h"          // Skydomeクラスの定義
 #include "DeathParticles.h"
+#include "Fade.h"
 
 enum class Phase {
 
+	kFadeIn,
 	kPlay,//ゲームプレイ
-	kDeath//デス演出
+	kDeath,//デス演出
+	kFadeOut,
 };
 
 
@@ -79,8 +82,11 @@ private:
 
 	Math* math = nullptr; // 数学ユーティリティオブジェクト（Mathクラスのインスタンス）
 
-	Phase phase_;
+
 	//終了フラグ
 	bool finished_ = false;
-	float finishedTimer;
+	 Phase phase_ = Phase::kFadeIn; // 現在のゲームシーンのフェーズ
+	Fade* fade_ = nullptr;                                                  // フェードオブジェクトのポインタ
+	bool isSceneFinished_ = false;                                          // シーン終了判定フラグ
+	int finishedTimer = 0;                                                  // kDeathフェーズで使っていたタイマー
 	};
