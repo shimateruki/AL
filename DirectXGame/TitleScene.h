@@ -2,13 +2,21 @@
 #include "KamataEngine.h"
 #include "math.h"
 #include "Player.h"
+#include "Fade.h"
 
 class TitleScene 
 {
 public:
+	enum class Phase {
+		kFadeIn,
+		kMain,
+		kfadeOut
+
+	};
 	void Initialize();
 	void Update();
 	void Draw();
+	 ~TitleScene();
 	bool isfinished() const { return finished_; }
 
 private:
@@ -27,5 +35,6 @@ private:
 	float floatingSpeed_;      // 揺れの速さ（速いほど振動が頻繁になる）
 	Vector3 baseTextPos_;      // 文字の基準位置（この位置を中心に揺れる）
 	bool finished_ = false;
-
+	Fade* fade_ = nullptr;
+	Phase phase_ = Phase::kFadeIn;
 };
