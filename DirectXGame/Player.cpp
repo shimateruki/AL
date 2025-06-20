@@ -35,6 +35,9 @@ Vector3 Player::GetWorldPosition()
 
 }
 
+void Player::BehaviorAtcckInitialize() 
+{ attckParmeter_ = 0; }
+
 // 移動処理（先生のInputMoveロジックを統合）
 void Player::Move() {
 	if (onGround_) { // 接地状態の場合
@@ -87,47 +90,79 @@ void Player::Move() {
 	}
 }
 
+void Player::attckMove() {
+	if (onGround_) { // 接地状態の場合
+		// 左右移動操作
+		if (Input::GetInstance()->PushKey(DIK_RIGHT) || Input::GetInstance()->PushKey(DIK_LEFT)) {
+			Vector3 acceleration = {};
+			if (Input::GetInstance()->PushKey(DIK_RIGHT)) {
+				if (velosity_.x < 0.0f) {
+					velosity_.x *= (1.0f - kAtteunuation); // 旋回最初は減衰
+				}
+				acceleration.x += kAcceleration / 60.0f; // フレームレートで割る
+				if (lrDirection_ != LRDirection::kRight) {
+					lrDirection_ = LRDirection::kRight;
+					turnFirstRottationY_ = worldTransformPlayer_.rotation_.y;
+					turnTimer_ = kTimeTurn;
+				}
+			} else if (Input::GetInstance()->PushKey(DIK_LEFT)) {
+				if (velosity_.x > 0.0f) {
+					velosity_.x *= (1.0f - kAtteunuation); // 旋回最初は減衰
+				}
+				acceleration.x -= kAcceleration / 60.0f; // フレームレートで割る
+				if (lrDirection_ != LRDirection::kLeft) {
+					lrDirection_ = LRDirection::kLeft;
+					turnFirstRottationY_ = worldTransformPlayer_.rotation_.y;
+					turnTimer_ = kTimeTurn;
+				}
+			}
+			velosity_ += acceleration;
+			velosity_.x = std::clamp(velosity_.x, -kLimitRunSpeed, kLimitRunSpeed);
+		} else {
+			// 非入力時は移動減衰
+			velosity_.x *= (1.0f - kAtteunuation);
+		}
+
+		// ほぼ0の場合に0にする
+		if (std::abs(velosity_.x) <= 0.0001f) {
+			velosity_.x = 0.0f;
+		}
+
+		// ジャンプ
+		if (Input::GetInstance()->PushKey(DIK_UP)) {
+			velosity_.y += kJumpAccleration / 60.0f; // ジャンプ初期速度 (フレームレートで割る)
+		}
+	} else { // 空中状態の場合
+		// 重力適用
+		velosity_.y += -kGgravityAcceleration / 60.0f;         // 1フレームあたりの重力加速度
+		velosity_.y = std::max(velosity_.y, -kLimitFallSpeed); // 最大落下速度制限
+	}
+}
+
 void Player::Update() {
-	// 移動入力と速度計算
-	Move();
-
-	// 衝突情報を初期化
-	CollisionMapInfo collisionInfo = {};
-	collisionInfo.isMovement = velosity_; // 現在の速度を予測移動量としてセット
-
-	// 各方向のマップチップとの当たり判定（衝突によってcollisionInfo.isMovementが調整される）
-	
-	MapChipUp(collisionInfo);    // 上方向
-	MapChipDown(collisionInfo);  // 下方向（地面）
-	MapChipLeft(collisionInfo);  // 左方向
-	MapChipRight(collisionInfo); // 右方向
-
-	// 調整された移動量をプレイヤーの位置に適用
-	worldTransformPlayer_.translation_ += collisionInfo.isMovement;
-
-	// 天井接触によるY速度のリセット
-	if (collisionInfo.isHitTop) {
-		velosity_.y = 0;
+	//初期化
+	if (behaviorRequest_ != Behavior::kUnKnow) {
+		//振る舞いを変更する
+		behavior_ = behaviorRequest_;
+		switch (behavior_) {
+		case Player::Behavior::kRoot:
+			BehaviorRootInitialize();
+			break;
+		case Player::Behavior::kAttack:
+			BehaviorAtcckInitialize();
+			break;
+		}
+		behaviorRequest_ = Behavior::kUnKnow;
 	}
 
-	// 壁接触時の横方向減衰
-	UpdateOnWall(collisionInfo);
+	switch (behavior_) {
+	case Player::Behavior::kRoot:
+		BehaviorRootUpdate();
+		break;
+	case Player::Behavior::kAttack:
+		BehaviorAttckUpdate();
+		break;
 
-	// 接地状態の更新
-	UpdateOnGround(collisionInfo);
-
-	// 旋回制御
-	if (turnTimer_ > 0.0f) {
-		turnTimer_ = std::max(turnTimer_ - (1.0f / 60.0f), 0.0f); // 1フレームあたりの時間を減らす
-
-		float destinationRotationYTable[] = {
-		    std::numbers::pi_v<float> / 2.0f,       // kRight
-		    std::numbers::pi_v<float> * 3.0f / 2.0f // kLeft
-		};
-		float destinationRotationY = destinationRotationYTable[static_cast<uint32_t>(lrDirection_)];
-
-		float t = 1.0f - (turnTimer_ / kTimeTurn); // 0.0fから1.0fへ変化する補間係数
-		worldTransformPlayer_.rotation_.y = math->EaseInOutSine(t, turnFirstRottationY_, destinationRotationY);
 	}
 
 	// ワールド行列更新
@@ -401,6 +436,105 @@ void Player::UpdateOnGround(const CollisionMapInfo& info) {
 void Player::UpdateOnWall(const CollisionMapInfo& info) {
 	if (info.hitWall) {
 		velosity_.x *= (1.0f - kAttenuationWall); // 壁接触時の横方向減衰
+	}
+}
+
+void Player::BehaviorRootUpdate() 
+{
+	// 移動入力と速度計算
+	Move();
+
+	// 衝突情報を初期化
+	CollisionMapInfo collisionInfo = {};
+	collisionInfo.isMovement = velosity_; // 現在の速度を予測移動量としてセット
+
+	// 各方向のマップチップとの当たり判定（衝突によってcollisionInfo.isMovementが調整される）
+
+	MapChipUp(collisionInfo);    // 上方向
+	MapChipDown(collisionInfo);  // 下方向（地面）
+	MapChipLeft(collisionInfo);  // 左方向
+	MapChipRight(collisionInfo); // 右方向
+
+	// 調整された移動量をプレイヤーの位置に適用
+	worldTransformPlayer_.translation_ += collisionInfo.isMovement;
+
+	// 天井接触によるY速度のリセット
+	if (collisionInfo.isHitTop) {
+		velosity_.y = 0;
+	}
+
+	// 壁接触時の横方向減衰
+	UpdateOnWall(collisionInfo);
+
+	// 接地状態の更新
+	UpdateOnGround(collisionInfo);
+
+	// 旋回制御
+	if (turnTimer_ > 0.0f) {
+		turnTimer_ = std::max(turnTimer_ - (1.0f / 60.0f), 0.0f); // 1フレームあたりの時間を減らす
+
+		float destinationRotationYTable[] = {
+		    std::numbers::pi_v<float> / 2.0f,       // kRight
+		    std::numbers::pi_v<float> * 3.0f / 2.0f // kLeft
+		};
+		float destinationRotationY = destinationRotationYTable[static_cast<uint32_t>(lrDirection_)];
+
+		float t = 1.0f - (turnTimer_ / kTimeTurn); // 0.0fから1.0fへ変化する補間係数
+		worldTransformPlayer_.rotation_.y = math->EaseInOutSine(t, turnFirstRottationY_, destinationRotationY);
+	}
+	//攻撃キーを押したら
+	if ((Input::GetInstance()->PushKey(DIK_SPACE))){
+		//攻撃とヘイビアをリクエスト
+		behaviorRequest_ = Behavior::kAttack;
+	}
+}
+
+void Player::BehaviorAttckUpdate() 
+{
+	// 衝突情報を初期化
+	CollisionMapInfo collisionInfo = {};
+	Vector3 velosity = {5.0f, 0.0f, 0.0f};
+	//予備動作
+	attckParmeter_++;
+	float t;
+	switch (attackPhase_) {
+	case Player::AttackPhase::reservoir:
+	default:
+		 t = static_cast<float>(attckParmeter_) / 10.0f;
+		worldTransformPlayer_.scale_.z = math->EaseInOutSine(t, 1.0f, 0.3f);
+		worldTransformPlayer_.scale_.y = math->EaseInOutSine(t, 1.0f, 1.0f);
+		//全身動作へ移行
+		if (attckParmeter_ >= 10.0f) {
+			attackPhase_ = AttackPhase::rush;
+			attckParmeter_ = 0;//カウンターをリセット
+		}
+		break;
+	case Player::AttackPhase::rush:
+	 t = static_cast<float>(attckParmeter_) / 10.0f;
+		worldTransformPlayer_.scale_.z = math->EaseInOutSine(t, 0.3f, 1.3f);
+		worldTransformPlayer_.scale_.y = math->EaseInOutSine(t, 1.0f, 0.7f);
+		if (lrDirection_ != LRDirection::kRight) {
+			velosity += attckVelosity;
+		} else {
+			velosity -= attckVelosity; 
+		}
+		// 全身動作へ移行
+		if (attckParmeter_ >= 10.0f) {
+			attackPhase_ = AttackPhase::rush;
+			attckParmeter_ = 0; // カウンターをリセット
+		}
+		break;
+	case Player::AttackPhase::reverberation:
+	 t = static_cast<float>(attckParmeter_) / 10.0f;
+
+			worldTransformPlayer_.scale_.z = math->EaseInOutSine(t, 1.3f, 1.0f);
+		worldTransformPlayer_.scale_.y = math->EaseInOutSine(t, 0.7f, 1.0f);
+		break;
+	}
+	collisionInfo.isMovement = velosity;
+	//限定の時間経過で攻撃終了して通常状態へ戻す
+	if (attckParmeter_ >= 30.0f) {
+		behaviorRequest_ = Behavior::kRoot;
 	}
 }
 
