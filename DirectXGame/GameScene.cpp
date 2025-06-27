@@ -13,6 +13,7 @@ void GameScene::Initialize() {
 	playerModel_ = Model::CreateFromOBJ("player", true);               // プレイヤーモデルの読み込み
 	enemy_model_ = Model::CreateFromOBJ("enemy", true);                // 敵モデルの読み込み
 	deatparticlesModel_ = Model::CreateFromOBJ("deathParticle", true); // パーティクルモデル
+	playerAttackModel_ = Model::CreateFromOBJ("attack_effect", true);
 
 	// カメラの設定と初期化
 	camera_.farZ = 1280.0f; // カメラのZ軸方向の最も遠いクリップ面を設定
@@ -26,10 +27,11 @@ void GameScene::Initialize() {
 	mapChipField_ = new MapChipField();                    // MapChipFieldのインスタンスを生成
 	mapChipField_->LoadMapChipCsv("Resources/blocks.csv"); // マップチップのCSVデータを読み込み
 
+
 	// プレイヤーの生成と初期化
 	player_ = new Player();                                              // Playerのインスタンスを生成
 	Vector3 playerPosition = mapChipField_->GetChipPositionIndex(1, 18); // マップチップのインデックスからプレイヤーの初期位置を取得
-	player_->Initialize(playerModel_, &camera_, playerPosition);         // プレイヤーを初期化（モデル、カメラ、初期位置を設定）
+	player_->Initialize(playerModel_, &camera_, playerPosition,playerAttackModel_);         // プレイヤーを初期化（モデル、カメラ、初期位置を設定）
 	player_->SetMapChipField(mapChipField_);                             // プレイヤーにマップチップフィールドを設定
 	for (int i = 0; i < kEnemyMax; i++) {
 		// 敵クラスの生成
