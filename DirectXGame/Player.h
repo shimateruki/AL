@@ -20,7 +20,7 @@ class Enemy;
 class Player {
 public:
 	// 初期化
-	void Initialize(Model* model, Camera* camera, const Vector3& position); // const &position に修正
+	void Initialize(Model* model, Camera* camera, const Vector3& position, KamataEngine::Model* modelAttack); // const &position に修正
 
 	// 更新
 
@@ -147,7 +147,8 @@ private:
 	LRDirection lrDirection_ = LRDirection::kRight; // 左右方向
 	float turnTimer_ = 0.0f;                        // 旋回タイマー
 	const float kTimeTurn = 0.2f;                   // 旋回時間
-	float turnFirstRottationY_ = 0.0f;              // 旋回開始時のY軸回転
+	float turnFirstRottationY_ = 0.0f;  
+	// 旋回開始時のY軸回転
 
 	// プレイヤーのサイズ (当たり判定用)
 	const float kWidth = 1.0f;  // 幅
@@ -159,7 +160,8 @@ private:
 
 	// マップチップフィールドへのポインタ
 	MapChipField* mapchipField_ = nullptr; // Initialize()で設定すること
-
+	KamataEngine::Model *modelAttack_;      // 攻撃用のモデル（必要に応じて）
+	KamataEngine::WorldTransform worldTransformAttack_; // 攻撃用のワールド変換
 public:
 	
 };

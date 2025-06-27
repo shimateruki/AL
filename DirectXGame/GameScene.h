@@ -63,9 +63,10 @@ private:
 	std::vector<std::vector<KamataEngine::WorldTransform*>> worldTransformBlocks_; // マップ内のブロックのワールド変換を格納する2Dベクター
 	Skydome* skydome_ = nullptr;                                                   // スカイドームオブジェクト
 	KamataEngine::Model* playerModel_ = nullptr;                                   // プレイヤーのモデル
-	KamataEngine::Model* modelSkydome_ = nullptr;                                  // スカイドームのモデル
+	KamataEngine::Model* modelSkydome_ = nullptr;     
+	KamataEngine::Model* playerAttackModel_ = nullptr; 
 
-
+	
 	// エネミークラス
 	std::list<Enemy*> enemys_; // 敵オブジェクト
 	// エネミーモデル
