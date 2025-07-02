@@ -542,6 +542,7 @@ void Player::BehaviorAttckUpdate() {
 	switch (attackPhase_) {
 	case Player::AttackPhase::reservoir:
 	default:
+		isAttack_ = true; // 攻撃中フラグを立てる
 		velocity = {};
 		t = static_cast<float>(attckParmeter_) / 10.0f;
 		worldTransformPlayer_.scale_.z = math->EaseInOutSine(t, 1.0f, 0.3f);
@@ -580,6 +581,7 @@ void Player::BehaviorAttckUpdate() {
 		if (attckParmeter_ >= 10.0f) { // この条件は attckParmeter_ >= 30.0f と同じになる可能性があるので注意
 			behaviorRequest_ = Behavior::kRoot;
 			attackPhase_ = AttackPhase::reservoir; // 攻撃フェーズをリセット
+			isAttack_ = false;                     // 攻撃中フラグを下ろす
 		}
 		break;
 	}

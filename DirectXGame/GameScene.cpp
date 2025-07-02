@@ -27,12 +27,11 @@ void GameScene::Initialize() {
 	mapChipField_ = new MapChipField();                    // MapChipFieldのインスタンスを生成
 	mapChipField_->LoadMapChipCsv("Resources/blocks.csv"); // マップチップのCSVデータを読み込み
 
-
 	// プレイヤーの生成と初期化
-	player_ = new Player();                                              // Playerのインスタンスを生成
-	Vector3 playerPosition = mapChipField_->GetChipPositionIndex(1, 18); // マップチップのインデックスからプレイヤーの初期位置を取得
-	player_->Initialize(playerModel_, &camera_, playerPosition,playerAttackModel_);         // プレイヤーを初期化（モデル、カメラ、初期位置を設定）
-	player_->SetMapChipField(mapChipField_);                             // プレイヤーにマップチップフィールドを設定
+	player_ = new Player();                                                          // Playerのインスタンスを生成
+	Vector3 playerPosition = mapChipField_->GetChipPositionIndex(1, 18);             // マップチップのインデックスからプレイヤーの初期位置を取得
+	player_->Initialize(playerModel_, &camera_, playerPosition, playerAttackModel_); // プレイヤーを初期化（モデル、カメラ、初期位置を設定）
+	player_->SetMapChipField(mapChipField_);                                         // プレイヤーにマップチップフィールドを設定
 	for (int i = 0; i < kEnemyMax; i++) {
 		// 敵クラスの生成
 		Enemy* newEnemy = new Enemy(); // Enemyのインスタンスを生成
@@ -62,15 +61,13 @@ void GameScene::Initialize() {
 	// ブロックの生成
 	GenerrateBlock(); // マップチップデータに基づいてブロックを生成
 
-		// ★フェードとフェーズ管理の初期化
+	// ★フェードとフェーズ管理の初期化
 	fade_ = new Fade();
 	fade_->Initalize();
 	// FadeクラスのStartメソッドがフェードの方向と時間を引数にとると仮定
-	fade_->Start(Fade::Status::FadeIn, 1.0f); // フェードイン開始 
-	//ゲームプレイフェーズから開始
+	fade_->Start(Fade::Status::FadeIn, 1.0f); // フェードイン開始
+	// ゲームプレイフェーズから開始
 	finishedTimer = 0;
-	
-
 }
 
 // 更新処理
@@ -131,10 +128,7 @@ void GameScene::Update() {
 			enemy->Update();
 		}
 
-		
-
 		CheakAllcollision();
-	
 
 		CController_->Update(); // カメラコントローラーの更新処理
 
@@ -212,19 +206,22 @@ void GameScene::Update() {
 		} else {                                                             // 通常カメラが有効な場合
 			camera_.UpdateMatrix();                                          // 通常カメラの行列を更新
 		}
-		
 
 		skydome_->Update(); // スカイドームの更新処理
-		if (finishedTimer >=180) {
+		if (finishedTimer >= 180) {
 			finished_ = true;
 		}
 		break;
-
 	}
 
-	
-	
-
+	// 敵の削除処理（必要に応じて）
+	enemys_.remove_if([](Enemy* enemy) {
+		if (enemy->GetIsDead()) { // 敵が死亡している場合
+			delete enemy;          // 敵のインスタンスを解放
+			return true;           // 削除対象としてtrueを返す
+		}
+		return false; // 削除対象でない場合はfalseを返す
+	});               // 敵のリストから削除
 }
 
 // 描画処理
@@ -233,36 +230,33 @@ void GameScene::Draw() {
 	// Fadeの描画
 	Model::PreDraw(dxcommon->GetCommandList()); // モデル描画の前処理（コマンドリストの設定など）
 
-		
 	if (!player_->IsDead()) {
 		player_->Draw(); // プレイヤーの描画処理
 	}
+
+	for (Enemy* enemy : enemys_) { // C++11以降の範囲ベースforループ
 	
 
-		for (Enemy* enemy : enemys_) { // C++11以降の範囲ベースforループ
 			enemy->Draw();
-		}
+		
+	}
 
-		// ブロックの描画
-		for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
-			for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
-				if (!worldTransformBlocks) {
-					continue; // nullptrの場合はスキップ
-				}
-				blockModel_->Draw(*worldTransformBlocks, camera_); // ブロックモデルを描画
+	// ブロックの描画
+	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
+		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
+			if (!worldTransformBlocks) {
+				continue; // nullptrの場合はスキップ
 			}
+			blockModel_->Draw(*worldTransformBlocks, camera_); // ブロックモデルを描画
 		}
+	}
 
-		skydome_->Draw(); // スカイドームの描画処理
+	skydome_->Draw(); // スカイドームの描画処理
 
-		deatparticles_->Draw();
-
-	
-
-
+	deatparticles_->Draw();
 
 	fade_->Draw(dxcommon->GetCommandList());
-			Model::PostDraw(); // モデル描画の後処理
+	Model::PostDraw(); // モデル描画の後処理
 }
 
 // ブロックの生成処理
@@ -295,17 +289,25 @@ void GameScene::CheakAllcollision() {
 	aabb1 = player_->GetAABB();
 	for (Enemy* enemy : enemys_) {
 		aabb2 = enemy->GetAABB();
-
+		if (enemy->isCollisonDisabled()) {
+			continue; // 当たり判定が無効な敵はスキップ
+		}
 		// AABB同士の考査判定
 		if (math->IsCollision(aabb1, aabb2)) {
-			player_->OnCollision(enemy);
+			// プレイヤーと敵の当たり判定
+			if (!player_->GetIsAttack()) {
+				
+					player_->OnCollision(enemy);
+				}
+				
+			
+			
 			enemy->onCollision(player_);
 		}
 	}
 }
 
-void GameScene::ChangePhase() 
-{
+void GameScene::ChangePhase() {
 	switch (phase_) {
 	case Phase::kFadeIn:
 		if (fade_->isFinished()) {
@@ -318,33 +320,27 @@ void GameScene::ChangePhase()
 			phase_ = Phase::kDeath;
 			const Vector3& deatParticlesPosition = player_->GetWorldPosition();
 			deatparticles_->Initialize(deatparticlesModel_, &camera_, player_, deatParticlesPosition);
-			
-				fade_->Start(Fade::Status::FadeOut, 3.0f); // フェードアウト開始
-			
 
-		
-		
-
+			fade_->Start(Fade::Status::FadeOut, 3.0f); // フェードアウト開始
 		}
 
 		break;
 	case Phase::kDeath:
 		deatparticles_->Update();
-		
-		break;
 
+		break;
 	}
 }
 
 // デストラクタ
 GameScene::~GameScene() {
 	// 生成したインスタンスの解放
-	delete blockModel_;   // ブロックモデルの解放
-	delete debaucamera_;  // デバッグカメラの解放
-	delete modelSkydome_; // スカイドームモデルの解放
-	delete player_;       // プレイヤーの解放
-	delete mapChipField_; // マップチップフィールドの解放
-	delete deatparticles_;//パーティクルの解放
+	delete blockModel_;    // ブロックモデルの解放
+	delete debaucamera_;   // デバッグカメラの解放
+	delete modelSkydome_;  // スカイドームモデルの解放
+	delete player_;        // プレイヤーの解放
+	delete mapChipField_;  // マップチップフィールドの解放
+	delete deatparticles_; // パーティクルの解放
 
 	// 生成したブロックのWorldTransformインスタンスを全て解放
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {

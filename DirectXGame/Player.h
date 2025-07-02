@@ -49,6 +49,7 @@ public:
 	void BehaviorRootInitialize();
 	//攻撃行動初期化
 	void BehaviorAtcckInitialize();
+	bool GetIsAttack() const { return behavior_ == Behavior::kAttack; } // 攻撃中かどうかを取得
  
 private:
 
@@ -162,6 +163,7 @@ private:
 	MapChipField* mapchipField_ = nullptr; // Initialize()で設定すること
 	KamataEngine::Model *modelAttack_;      // 攻撃用のモデル（必要に応じて）
 	KamataEngine::WorldTransform worldTransformAttack_; // 攻撃用のワールド変換
+	bool isAttack_ = false;                             // 攻撃中かどうかのフラグ
 public:
 	
 };
