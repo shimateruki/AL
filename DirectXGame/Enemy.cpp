@@ -2,7 +2,7 @@
 #include "Enemy.h" // Enemyクラスのヘッダーファイルをインクルード
 #include <cassert> // assertマクロを使用するためにインクルード
 #include <numbers> // std::numbers::pi_v を使用するためにインクルード 
-
+#include"Player.h"
     // 初期化処理 (02_09 スライド5枚目)
     void
     Enemy::Initialize(Model* model, Camera* camera, const Vector3& position) {
@@ -28,18 +28,58 @@
 
 // 更新処理 
 void Enemy::Update() {
-	// 敵の現在位置に速度を加算して移動 
-	worldTransformEnemy_.translation_ += velocity_;
+	if (behaviorRequest_ != Behavior::kUnKnow) {
+		// 振るまいを変更する
+		behavior_ = behaviorRequest_;
+		// 各振るまいごとの初期化を実行
+		switch (behavior_) {
+		case Behavior::kRoot:
+		default:
+			// 通常行動の初期化は特に必要ない場合
+			break;
+		case Behavior::kisDead:
+			// 死亡状態の初期化処理 (必要に応じて追加)
+			walkTimer = 0.0f; // 死亡アニメーションのタイマーをリセット
+			break;
+		}
+		// 振るまいリクエストをリセット
+		behaviorRequest_ = Behavior::kUnKnow;
+	}
 
-	// 歩行タイマーを更新 (1秒間に60フレームを想定) 
-	walkTimer += 1.0f / 60.0f;
+	switch (behavior_) {
+	case Enemy::Behavior::kUnKnow:
+		// 敵のワールド行列を更新
 
-	// 歩行モーションのためのX軸周りの回転アニメーション 
-	// 
-	// sin波を使って腕や足の動きを表現するようなアニメーション
-	worldTransformEnemy_.rotation_.x = std::sin(std::numbers::pi_v<float> * 2.0f * walkTimer / kWalkMotionTime);
+		break;
+	case Enemy::Behavior::kRoot:
+		// 敵の現在位置に速度を加算して移動
+		worldTransformEnemy_.translation_ += velocity_;
 
-	// 敵のワールド行列を更新
+		// 歩行タイマーを更新 (1秒間に60フレームを想定)
+		walkTimer += 1.0f / 60.0f;
+
+		// 歩行モーションのためのX軸周りの回転アニメーション
+		//
+		// sin波を使って腕や足の動きを表現するようなアニメーション
+		worldTransformEnemy_.rotation_.x = std::sin(std::numbers::pi_v<float> * 2.0f * walkTimer / kWalkMotionTime);
+
+		// 敵のワールド行列を更新
+		math->worldTransFormUpdate(worldTransformEnemy_);
+		break;
+	case Enemy::Behavior::kisDead:
+		//アニメーションタイマーを加速する
+		walkTimer += 1.0f / 60.0f;
+		// 死亡アニメーションのためのX軸周りの回転アニメーション
+		worldTransformEnemy_.rotation_.y = math->EaseInOutSine(walkTimer / kWalkMotionTime, kWalkMotionAngleStart, kWalkMotionAngleEnd);
+		worldTransformEnemy_.rotation_.x = math->EaseInOutSine(walkTimer / kWalkMotionTime, 0.0f, -kWalkMotionAngleEnd);
+		// 死亡アニメーションの時間が経過したら、敵を非表示にする
+		if (walkTimer >= 1.0f) {
+			isDead_ = true; // 敵が死亡したときの処理
+		}
+		break;
+	default:
+		break;
+	}
 	math->worldTransFormUpdate(worldTransformEnemy_);
 }
 
@@ -67,5 +107,17 @@ AABB Enemy::GetAABB() {
 	return aabb;
 }
 
+// プレイヤーとの衝突処理 (プレイヤーとの衝突
 void Enemy::onCollision(const Player* player) 
-{ (void)player; }
+{
+	if (behavior_ == Behavior::kisDead)
+	{
+		return;
+	}
+	if (player->GetIsAttack()) {
+		isCollisDisabled_ = true;             // 衝突無効化フラグを立てる
+		behaviorRequest_ = Behavior::kisDead; // プレイヤーが攻撃中なら敵の行動を死亡状態に変更
+	}
+
+	(void)player;
+}
