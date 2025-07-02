@@ -12,6 +12,7 @@
 #include "skydome.h"          // Skydomeクラスの定義
 #include "DeathParticles.h"
 #include "Fade.h"
+#include"HitEffect.h"
 
 enum class Phase {
 
