@@ -60,8 +60,12 @@ void DeathParticles::Draw()
 	if (isFinished_) {
 		return;
 	}
+	DirectXCommon* dxcommon = DirectXCommon::GetInstance(); // DirectXCommonのインスタンスを取得
+	// Fadeの描画
+	Model::PreDraw(dxcommon->GetCommandList()); // モデル描画の前処理（コマンドリストの設定など
 	for (auto& worldTransform : worldTransform_) {
 		model_->Draw(worldTransform, *camera_ ,&objectColor_);
 	}
+	Model::PostDraw(); // モデル描画の後処理
 	
 }

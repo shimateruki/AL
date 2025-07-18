@@ -53,6 +53,14 @@ Vector3 operator*(const Vector3& objA, const float objB) {
 	return sc;
 }
 
+Vector3 operator/(const Vector3& objA, const float objB) {
+	Vector3 sc = Vector3(0, 0, 0);
+	sc.x = objA.x / objB;
+	sc.y = objA.y / objB;
+	sc.z = objA.z / objB;
+	return sc;
+}
+
 
 Vector3& operator*=(Vector3& v, float s) {
 	v.x *= s;
@@ -226,3 +234,4 @@ Vector3 Math::Transform(const Vector3& vector, const Matrix4x4& matrix) {
 
 	return result;
 }
+ 

@@ -3,6 +3,7 @@
 #include <cassert> // assertマクロを使用するためにインクルード
 #include <numbers> // std::numbers::pi_v を使用するためにインクルード 
 #include"Player.h"
+#include "GameScene.h"
     // 初期化処理 (02_09 スライド5枚目)
     void
     Enemy::Initialize(Model* model, Camera* camera, const Vector3& position) {
@@ -24,7 +25,9 @@
 	velocity_ = {-kWalkSpeed, 0, 0};
 	// 歩行タイマーを初期化 
 	walkTimer = 0.0f;
-}
+	gameScene_ = nullptr; // ゲームシーンへのポインタを初期化 (nullptrに設定)
+
+    }
 
 // 更新処理 
 void Enemy::Update() {
@@ -116,8 +119,12 @@ void Enemy::onCollision(const Player* player)
 	}
 	if (player->GetIsAttack()) {
 		isCollisDisabled_ = true;             // 衝突無効化フラグを立てる
-		behaviorRequest_ = Behavior::kisDead; // プレイヤーが攻撃中なら敵の行動を死亡状態に変更
+		behaviorRequest_ = Behavior::kisDead; // プレイヤーが攻撃中なら敵の行動を死亡状態に変
+        // プレイヤーのワールド変換の平行移動成分を取得して加算する 
+	
+			Vector3 effectPos = (GetWorldPosition() + player->GetWorldPosition())/2.0f;
+			gameScene_->CreateHitEffect(effectPos); // ヒットエフェクトを生成
 	}
 
-	(void)player;
+
 }

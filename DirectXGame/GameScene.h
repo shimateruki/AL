@@ -47,6 +47,8 @@ public:
 	void ChangePhase();
 
 	bool isFinished() const { return finished_; }
+	//エフェクトの生成
+	void CreateHitEffect(const KamataEngine::Vector3& position);
 
 	// デストラクタ
 	~GameScene();
@@ -83,6 +85,13 @@ private:
 	CameraController* CController_ = nullptr; // カメラコントローラーオブジェクト
 
 	Math* math = nullptr; // 数学ユーティリティオブジェクト（Mathクラスのインスタンス）
+
+	//ヒットした時のモデル
+	std::list< HitEffect*> hitEffects_; // ヒットエフェクトオブジェクト
+	KamataEngine::Model* hitEffectModel_ = nullptr; // ヒットエフェクトのモデル
+	//エフェクト最大数
+	const int HitEffectMax = 10; // ヒットエフェクトの最大数
+
 
 
 	//終了フラグ
