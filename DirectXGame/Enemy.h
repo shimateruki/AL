@@ -2,8 +2,11 @@
 #include "KamataEngine.h" // KamataEngineの基本機能（Model, WorldTransform, Cameraなど）をインクルード
 #include "math.h"         // 数学関連のユーティリティ（Mathクラスや関連関数）をインクルード
 
+
 using namespace KamataEngine; // KamataEngine名前空間を使用
 
+// 前方宣言
+class GameScene; // GameSceneクラスの前方宣言
 class Player;
 // 敵クラス 
 class Enemy {
@@ -31,6 +34,7 @@ public:
 	AABB GetAABB();
 	void onCollision(const Player* player);
 	bool isCollisonDisabled() const { return isCollisDisabled_; } // 衝突無効化フラグを取得
+	void SetGameScene(GameScene* gameScene) { gameScene_ = gameScene; } // ゲームシーンへのポインタを設定
 
 private:
 	// 敵のワールド変換 
@@ -71,4 +75,6 @@ private:
 	Behavior behaviorRequest_ = Behavior::kUnKnow;
 
 	bool isCollisDisabled_ = false; // 衝突無効化フラグ（敵が死亡しているかどうかを示す）
+	GameScene* gameScene_ = nullptr; // ゲームシーンへのポインタ（必要に応じて使用）
+
 };

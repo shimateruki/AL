@@ -19,5 +19,9 @@ void Skydome::Update() {
 }
 
 void Skydome::Draw() {
+	DirectXCommon* dxcommon = DirectXCommon::GetInstance(); // DirectXCommonのインスタンスを取得
+	// Fadeの描画
+	Model::PreDraw(dxcommon->GetCommandList()); // モデル描画の前処理（コマンドリストの設定など
 	model_->Draw(worldTransformSkydome_, *camera_); 
+	Model::PostDraw(); // モデルの描画後処理
 }

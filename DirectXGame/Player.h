@@ -37,12 +37,12 @@ public:
 
 	// 02_07 スライド4枚目
 	void SetMapChipField(MapChipField* mapChipField) { mapchipField_ = mapChipField; }
-	Vector3 GetWorldPosition();
+	Vector3 GetWorldPosition() const;
 	AABB GetAABB();
 	void OnCollision(const Enemy* enemy);
 
 	bool IsDead() const { return isDead_; }
-	// player.h （修正後の宣言）
+
 	WorldTransform& GetWorldTransform() { return worldTransformPlayer_; }
 
 	//通常初期化

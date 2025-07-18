@@ -14,6 +14,7 @@ void GameScene::Initialize() {
 	enemy_model_ = Model::CreateFromOBJ("enemy", true);                // 敵モデルの読み込み
 	deatparticlesModel_ = Model::CreateFromOBJ("deathParticle", true); // パーティクルモデル
 	playerAttackModel_ = Model::CreateFromOBJ("attack_effect", true);
+	hitEffectModel_ = Model::CreateFromOBJ("hit", true); // ヒットエフェクトモデル
 
 	// カメラの設定と初期化
 	camera_.farZ = 1280.0f; // カメラのZ軸方向の最も遠いクリップ面を設定
@@ -32,12 +33,20 @@ void GameScene::Initialize() {
 	Vector3 playerPosition = mapChipField_->GetChipPositionIndex(1, 18);             // マップチップのインデックスからプレイヤーの初期位置を取得
 	player_->Initialize(playerModel_, &camera_, playerPosition, playerAttackModel_); // プレイヤーを初期化（モデル、カメラ、初期位置を設定）
 	player_->SetMapChipField(mapChipField_);                                         // プレイヤーにマップチップフィールドを設定
+	
+	
+	HitEffect::SetModel(hitEffectModel_); // ヒットエフェクトのモデルを設定
+	HitEffect::SetCamera(&camera_);       // ヒットエフェクトにカメラを設定
+
+
+
 	for (int i = 0; i < kEnemyMax; i++) {
 		// 敵クラスの生成
 		Enemy* newEnemy = new Enemy(); // Enemyのインスタンスを生成
 		// 敵の位置設定と敵クラスの初期化
 		Vector3 enemyPosition = mapChipField_->GetChipPositionIndex(20, 12 + i); // マップチップのインデックスから敵の初期位置を取得
 		newEnemy->Initialize(enemy_model_, &camera_, enemyPosition);             // 敵を初期化（モデル、カメラ、初期位置を設定）
+		newEnemy->SetGameScene(this);                                            // 敵にゲームシーンへのポインタを設定
 		enemys_.push_back(newEnemy);
 	}
 	// パーティクルの生成
@@ -68,6 +77,12 @@ void GameScene::Initialize() {
 	fade_->Start(Fade::Status::FadeIn, 1.0f); // フェードイン開始
 	// ゲームプレイフェーズから開始
 	finishedTimer = 0;
+
+
+
+
+
+
 }
 
 // 更新処理
@@ -214,6 +229,22 @@ void GameScene::Update() {
 		break;
 	}
 
+   // ★ ヒットエフェクトの更新処理 (アクティブなものだけ)
+	for (HitEffect* hitEffect : hitEffects_) {
+	
+			hitEffect->Update();
+		
+	}
+
+		// 敵の削除処理（必要に応じて）
+	hitEffects_.remove_if([](HitEffect* hiteffect) {
+		if (hiteffect->IsDead()) { // 敵が死亡している場合
+			delete hiteffect;         // 敵のインスタンスを解放
+			return true;          // 削除対象としてtrueを返す
+		}
+		return false; // 削除対象でない場合はfalseを返す
+	});      
+
 	// 敵の削除処理（必要に応じて）
 	enemys_.remove_if([](Enemy* enemy) {
 		if (enemy->GetIsDead()) { // 敵が死亡している場合
@@ -252,10 +283,16 @@ void GameScene::Draw() {
 	}
 
 	skydome_->Draw(); // スカイドームの描画処理
+	// ★ ヒットエフェクトの描画処理 (アクティブなものだけ)
+	for (HitEffect* hitEffect : hitEffects_) {
+
+		hitEffect->Draw();
+	}
 
 	deatparticles_->Draw();
 
 	fade_->Draw(dxcommon->GetCommandList());
+
 	Model::PostDraw(); // モデル描画の後処理
 }
 
@@ -303,6 +340,7 @@ void GameScene::CheakAllcollision() {
 			
 			
 			enemy->onCollision(player_);
+
 		}
 	}
 }
@@ -332,6 +370,14 @@ void GameScene::ChangePhase() {
 	}
 }
 
+void GameScene::CreateHitEffect(const KamataEngine::Vector3& position) 
+{
+	HitEffect* newHitEffect = HitEffect::create(position); // 新しいヒットエフェクトを生成
+	hitEffects_.push_back(newHitEffect);                   // ヒットエフェクトをリストに追加)
+	                                                       // ヒットエフェクトの数が最大数を超えた場合、最も古いものを削除
+
+}
+
 // デストラクタ
 GameScene::~GameScene() {
 	// 生成したインスタンスの解放
@@ -341,6 +387,13 @@ GameScene::~GameScene() {
 	delete player_;        // プレイヤーの解放
 	delete mapChipField_;  // マップチップフィールドの解放
 	delete deatparticles_; // パーティクルの解放
+	delete CController_; // カメラコントローラーの解放
+	delete fade_; // フェードの解放
+	// ヒットエフェクトの解放
+	for (HitEffect* hitEffect : hitEffects_) {
+		delete hitEffect; // 各ヒットエフェクトの解放
+	}
+	
 
 	// 生成したブロックのWorldTransformインスタンスを全て解放
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {

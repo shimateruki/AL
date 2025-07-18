@@ -17,10 +17,12 @@ void Player::Initialize(Model* model, Camera* camera, const Vector3& position,  
 	worldTransformPlayer_.rotation_.y = std::numbers::pi_v<float> / 2.0f; // 初期向きを右に設定
 	
 	modelAttack_ = modelAttack; // 攻撃用モデルの設定
+
 	// 攻撃用モデルの設定
 	worldTransformAttack_.Initialize();
 	worldTransformAttack_.translation_ = worldTransformPlayer_.translation_;
 	worldTransformAttack_.rotation_ = worldTransformPlayer_.rotation_;
+
 	// Mathクラスの初期化（注意：シングルトンや依存性注入を推奨）
 	if (!math) {
 		math = new Math();
@@ -28,15 +30,14 @@ void Player::Initialize(Model* model, Camera* camera, const Vector3& position,  
 	onGround_ = false; // 初期状態は空中または地面にいるか不明とする
 }
 
-Vector3 Player::GetWorldPosition() 
-{
+Vector3 Player::GetWorldPosition() const {
 	//ワールド座標を入れる変数
 	Vector3 worldPos;
 	//ワールド行列の平行移動成分を取得
 	worldPos.x = worldTransformPlayer_.matWorld_.m[3][0]; // 行列の4行1列目
 	worldPos.y = worldTransformPlayer_.matWorld_.m[3][1]; // 行列の4行2列目
 	worldPos.z = worldTransformPlayer_.matWorld_.m[3][2]; // 行列の4行3列目
-	    return worldPos;
+	return worldPos;
 
 }
 
