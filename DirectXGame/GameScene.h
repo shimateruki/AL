@@ -21,7 +21,7 @@ void Draw();
 private:  
 uint32_t textureHandel_ = 0;                  // テクスチャハンドル  
 KamataEngine::WorldTransform worldTransform_; // ワールド変換（おそらく単一のオブジェクト用、現状未使用の可能性あり）  
-Player* player_; // プレイヤーオブジェクト 
+Player player_; // プレイヤーオブジェクト 
 KamataEngine::Model* model_ = nullptr; // モデル
 //ビュープロジェクション  
 ViewProjection viewProjection_; // ビュープロジェクション変換  

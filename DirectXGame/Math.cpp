@@ -240,6 +240,9 @@ Vector3 Math::Normalize(const Vector3& v) {
 	return result;
 }
 
+float Math::Dot(const Vector3& v1, const Vector3& v2) { return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z; }
+Vector3 Math::Cross(const Vector3& v1, const Vector3& v2) { return {v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x}; }
+
 Matrix4x4 Math::MakeLookAtMatrix(const Vector3& eye, const Vector3& target, const Vector3& up) {
 	Vector3 zaxis = Normalize(target - eye);     // カメラの前方向
 	Vector3 xaxis = Normalize(Cross(up, zaxis)); // 右方向

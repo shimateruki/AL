@@ -1,16 +1,29 @@
 #include "ViewProjection.h"
-#include"Math.h"
 #include <numbers>
-void ViewProjection::Initialize() 
+void ViewProjection::Initialize()
 {
-	// カメラ位置、ターゲット位置、上方向ベクトルの初期化
-	cameraPosition = {0.0f, 0.0f, -5.0f};
-	targetPosition = {0.0f, 0.0f, 0.0f};
-	upDirection = {0.0f, 1.0f, 0.0f};
-	// ビュー変換行列の計算
-	viewMatrix = math-> MakeLookAtMatrix(cameraPosition, targetPosition, upDirection);
-	// プロジェクション変換行列の計算
-	projectionMatrix = math-> MakePerspectiveFovMatrix (std::numbers::pi_v<float>/ 4.0f, 16.0f / 9.0f, 0.1f, 100.0f);
-	// ビュープロジェクション変換行列の計算
-	viewProjectionMatrix = math-> Multiply(viewMatrix, projectionMatrix);
+	// まず、内部のcamera_オブジェクトを初期化する
+	// これにより、定数バッファなどが作成される
+	camera_.Initialize();
+
+	// ビュー行列を計算し、camera_に設定
+	KamataEngine::Vector3 eye = {0.0f, 0.0f, -5.0f};
+	KamataEngine::Vector3 target = {0.0f, 0.0f, 0.0f};
+	KamataEngine::Vector3 up = {0.0f, 1.0f, 0.0f};
+	camera_.matView = Math::MakeLookAtMatrix(eye, target, up);
+	// プロジェクション行列を計算し、camera_に設定
+	float fov = std::numbers::pi_v<float> / 4.0f;
+	float aspectRatio = 16.0f / 9.0f;
+	float nearClip = 0.1f;
+	float farClip = 100.0f;
+	camera_.matProjection= Math::MakePerspectiveFovMatrix(fov, aspectRatio, nearClip, farClip);
+
+	// 行列の更新処理を呼び出す
+	// KamataEngine::Cameraにこのようなメソッドがあるか確認してください
+	camera_.UpdateMatrix();
+}
+
+void ViewProjection::Update() {
+	// カメラの移動や回転など、動的な更新が必要な場合に実装
+	// ここでcamera_の各行列を再計算し、UpdateMatrix()を呼び出す
 }

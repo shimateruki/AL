@@ -9,7 +9,7 @@ public:
 	// 更新
 	void Update();
 	// 描画
-	void Draw(ViewProjection& viewProjection);
+	void Draw( ViewProjection& viewProjection);
 
 private:
 	uint32_t textureHandle_ = 0;                  // テクスチャハンドル

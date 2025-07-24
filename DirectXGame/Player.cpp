@@ -1,4 +1,5 @@
 #include "Player.h"
+#include "ViewProjection.h"
 using namespace KamataEngine ;
 
 
@@ -15,8 +16,6 @@ void Player::Initialize(KamataEngine::Model* model, uint32_t textureHandle)
 void Player::Update() 
 { worldTransform_.TransferMatrix(); }
 
-void Player::Draw(ViewProjection& viewProjection) 
-{
-	model_->Draw(worldTransform_, *viewProjection,textureHandle_); 
-}
+void Player::Draw( ViewProjection& viewProjection) 
+{ model_->Draw(worldTransform_, viewProjection.GetCamera(), textureHandle_); }
 

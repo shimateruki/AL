@@ -1,16 +1,21 @@
 #pragma once
 #include "KamataEngine.h"
-
 #include "Math.h"
-class ViewProjection
-{
+
+
+class ViewProjection {
 public:
-	KamataEngine::Matrix4x4 viewMatrix;           // ビュー変換行列
-	KamataEngine::Matrix4x4 projectionMatrix;     // プロジェクション変換行列
-	KamataEngine::Matrix4x4 viewProjectionMatrix; // ビュープロジェクション変換行列
-	KamataEngine::Vector3 cameraPosition;         // カメラ位置
-	KamataEngine::Vector3 targetPosition;         // ターゲット位置
-	KamataEngine::Vector3 upDirection;            // 上方向ベクトル
+	// 初期化
 	void Initialize();
-	Math* math;
+
+	// カメラ情報の更新
+	void Update();
+
+	// 内部のCameraオブジェクトへの参照を返す
+	// constオーバーロードも追加して安全性を高める
+	KamataEngine::Camera& GetCamera() { return camera_; }
+	const KamataEngine::Camera& GetCamera() const { return camera_; }
+
+private:
+	KamataEngine::Camera camera_; // Cameraオブジェクトをメンバ変数として持つ
 };
