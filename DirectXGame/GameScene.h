@@ -3,7 +3,7 @@
 #include "Player.h" 
 #include "Math.h" 
 #include "ViewProjection.h"
-
+#include "input/Input.h"
 //ゲームシーン  
 class GameScene  
 {  
@@ -25,4 +25,7 @@ Player player_; // プレイヤーオブジェクト
 KamataEngine::Model* model_ = nullptr; // モデル
 //ビュープロジェクション  
 ViewProjection viewProjection_; // ビュープロジェクション変換  
+bool isDebugCameraActive_ = false;          // デバッグモードフラグ（未使用）
+KamataEngine::DebugCamera* debaucamera_ = nullptr; // デバッグカメラのインスタンス
+
 };

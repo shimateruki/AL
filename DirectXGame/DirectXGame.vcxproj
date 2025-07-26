@@ -191,6 +191,7 @@
     <ClInclude Include="GameScene.h" />
     <ClInclude Include="Math.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="Vector2.h" />
     <ClInclude Include="ViewProjection.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
