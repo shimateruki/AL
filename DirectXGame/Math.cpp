@@ -1,35 +1,25 @@
-#include "KamataEngine.h"
 #include "math.h"
+#include "KamataEngine.h"
 
 using namespace KamataEngine;
 
-
-
-float Math::EaseInOutSine(float t, float x1, float x2) 
-{
+float Math::EaseInOutSine(float t, float x1, float x2) {
 	t = std::clamp(t, 0.0f, 1.0f);
 	float easeT = t * t * (3.0f - 2.0f * t);
 	return (1.0f - easeT) * x1 + easeT * x2;
 }
 
-KamataEngine::Vector3 Math::Lerp(const KamataEngine::Vector3& a, const KamataEngine::Vector3& b, float t) { 
-	return {a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t}; }
+KamataEngine::Vector3 Math::Lerp(const KamataEngine::Vector3& a, const KamataEngine::Vector3& b, float t) { return {a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t}; }
 
-
-
-
-
-Vector3 operator+(const Vector3& objA, const Vector3& objB) 
-{
-	Vector3 sc = Vector3(0, 0,0);
+Vector3 operator+(const Vector3& objA, const Vector3& objB) {
+	Vector3 sc = Vector3(0, 0, 0);
 	sc.x = objA.x + objB.x;
 	sc.y = objA.y + objB.y;
 	sc.z = objA.z + objB.z;
 	return sc;
 }
 
-KamataEngine::Vector3 operator-(const KamataEngine::Vector3& objA, const KamataEngine::Vector3& objB) 
-{
+KamataEngine::Vector3 operator-(const KamataEngine::Vector3& objA, const KamataEngine::Vector3& objB) {
 	Vector3 sc = Vector3(0, 0, 0);
 	sc.x = objA.x - objB.x;
 	sc.y = objA.y - objB.y;
@@ -61,7 +51,6 @@ Vector3 operator/(const Vector3& objA, const float objB) {
 	return sc;
 }
 
-
 Vector3& operator*=(Vector3& v, float s) {
 	v.x *= s;
 	v.y *= s;
@@ -75,9 +64,6 @@ Vector3& operator/=(Vector3& v, float s) {
 	v.z /= s;
 	return v;
 }
-
-
-
 
 Vector3& operator+=(Vector3& lhv, const Vector3& rhv) {
 	lhv.x += rhv.x;
@@ -116,8 +102,6 @@ Matrix4x4 Math::makeIdentity4x4() {
 	result.m[3][3] = 1.0f;
 	return result;
 };
-
-
 
 Matrix4x4 Math::MakeScaleMatrix(const Vector3& scale) {
 
@@ -203,7 +187,6 @@ KamataEngine::Matrix4x4 Math::MakeOrthographicMatrix(float left, float top, floa
 	result.m[3][2] = nearClip / (nearClip - farClip);
 	result.m[3][3] = 1.0f;
 	return result;
-	
 }
 
 void Math::worldTransFormUpdate(KamataEngine::WorldTransform& worldTransform) {
@@ -216,7 +199,6 @@ bool Math::IsCollision(const AABB& aabb1, const AABB& aabb2) {
 	       (aabb1.min.y <= aabb2.max.y && aabb1.max.y >= aabb2.min.y) && // y軸
 	       (aabb1.min.z <= aabb2.max.z && aabb1.max.z >= aabb2.min.z);   // z軸
 }
-
 
 // 3 座標変換
 Vector3 Math::Transform(const Vector3& vector, const Matrix4x4& matrix) {
@@ -234,4 +216,73 @@ Vector3 Math::Transform(const Vector3& vector, const Matrix4x4& matrix) {
 
 	return result;
 }
- 
+float Length(const Vector3& v) { return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z); }
+// クロス積
+//Vector3 MatrixUtility::Cross(const Vector3& v1, const Vector3& v2) {
+//	Vector3 result = {};
+//	result.x = v1.y * v2.z - v1.z * v2.y;
+//	result.y = v1.z * v2.x - v1.x * v2.z;
+//	result.z = v1.x * v2.y - v1.y * v2.x;
+//	return result;
+//}
+
+// Vector3 を正規化する関数
+Vector3 Math::Normalize(const Vector3& v) {
+	Vector3 result = v;
+
+	float len = Length(v);
+
+	if (len != 0.0f) {
+		result.x /= len;
+		result.y /= len;
+		result.z /= len;
+	}
+	return result;
+}
+
+float Math::Dot(const Vector3& v1, const Vector3& v2) { return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z; }
+Vector3 Math::Cross(const Vector3& v1, const Vector3& v2) { return {v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x}; }
+
+Matrix4x4 Math::MakeLookAtMatrix(const Vector3& eye, const Vector3& target, const Vector3& up) {
+	Vector3 zaxis = Normalize(target - eye);     // カメラの前方向
+	Vector3 xaxis = Normalize(Cross(up, zaxis)); // 右方向
+	Vector3 yaxis = Cross(zaxis, xaxis);         // 上方向
+
+	Matrix4x4 result{};
+	result.m[0][0] = xaxis.x;
+	result.m[0][1] = yaxis.x;
+	result.m[0][2] = zaxis.x;
+	result.m[0][3] = 0.0f;
+
+	result.m[1][0] = xaxis.y;
+	result.m[1][1] = yaxis.y;
+	result.m[1][2] = zaxis.y;
+	result.m[1][3] = 0.0f;
+
+	result.m[2][0] = xaxis.z;
+	result.m[2][1] = yaxis.z;
+	result.m[2][2] = zaxis.z;
+	result.m[2][3] = 0.0f;
+
+	result.m[3][0] = -Dot(xaxis, eye);
+	result.m[3][1] = -Dot(yaxis, eye);
+	result.m[3][2] = -Dot(zaxis, eye);
+	result.m[3][3] = 1.0f;
+
+	return result;
+}
+Matrix4x4 Math::MakePerspectiveFovMatrix(float fovY, float aspectRatio, float nearZ, float farZ) {
+	float yScale = 1.0f / tanf(fovY / 2.0f);
+	float xScale = yScale / aspectRatio;
+	float zRange = farZ / (farZ - nearZ);
+
+	Matrix4x4 result{};
+	result.m[0][0] = xScale;
+	result.m[1][1] = yScale;
+	result.m[2][2] = zRange;
+	result.m[2][3] = 1.0f;
+	result.m[3][2] = -nearZ * zRange;
+
+	return result;
+}
+

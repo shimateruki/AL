@@ -3,7 +3,10 @@
 #include "math.h"
 using namespace KamataEngine;
 class Math;
+
 class Gorl {
+
+
 public:
 	// コンストラクタ
 	Gorl() = default;
@@ -31,4 +34,5 @@ private:
 
 	const float kWidth = 1.0f;  // 幅
 	const float kHeight = 0.8f; // 高さ
+
 };
