@@ -15,6 +15,13 @@ void GameScene::Initialize() {
 	deatparticlesModel_ = Model::CreateFromOBJ("deathParticle", true); // パーティクルモデル
 	playerAttackModel_ = Model::CreateFromOBJ("attack_effect", true);
 	hitEffectModel_ = Model::CreateFromOBJ("hit", true); // ヒットエフェクトモデル
+	goalModel_ = Model::CreateFromOBJ("gorl", true);     // ゴールモデルの読み込み
+	GameClearTextModel_ = Model::CreateFromOBJ("GameClear", true); // ゲームクリアテキストモデルの読み込み
+
+	// 音声のロード
+	//loadAudioHandle_ = Audio::GetInstance()->LoadWave("Resources/Audio/StageClear.wav"); // オーディオのロード
+	//Audio::GetInstance()->SetVolume(loadAudioHandle_, 0.5f);                             // 音量を設定（0.0f〜1.0fの範囲）
+
 
 	// カメラの設定と初期化
 	camera_.farZ = 1280.0f; // カメラのZ軸方向の最も遠いクリップ面を設定
@@ -78,7 +85,13 @@ void GameScene::Initialize() {
 	// ゲームプレイフェーズから開始
 	finishedTimer = 0;
 
-
+	gorl_ = new Gorl(); // gorlクラスのインスタンスを生成
+	gorl_->Initialize(goalModel_, &camera_, mapChipField_->GetChipPositionIndex(20, 18)); // gorlを初期化（モデル、カメラ、初期位置を設定）
+	
+	GameClearTextWorldTransform_.Initialize(); // ゲームクリアテキストのワールド変換を初期化
+	GameClearTextWorldTransform_.scale_ = {5.0f, 1.0f, 1.0f};                                // ゲームクリアテキストのスケールを設定
+	GameClearTextWorldTransform_.rotation_ = {0.0f, 0.0f, 0.0f};        // ゲームクリアテキストの回転を設定（180度回転）
+	GameClearTextWorldTransform_.translation_ = mapChipField_->GetChipPositionIndex(20, 18); // ゲームクリアテキストの初期位置を設定
 
 
 
@@ -89,6 +102,7 @@ void GameScene::Initialize() {
 void GameScene::Update() {
 	fade_->Update();
 	ChangePhase();
+	gorl_->Update(); // gorlの更新処理
 
 	switch (phase_) {
 	case Phase::kFadeIn:
@@ -184,7 +198,7 @@ void GameScene::Update() {
 		break;
 
 	case Phase::kDeath:
-		finishedTimer++;
+		
 		for (Enemy* enemy : enemys_) { // C++11以降の範囲ベースforループ
 			enemy->Update();
 		}
@@ -223,10 +237,9 @@ void GameScene::Update() {
 		}
 
 		skydome_->Update(); // スカイドームの更新処理
-		if (finishedTimer >= 180) {
-			finished_ = true;
-		}
 		break;
+	case Phase::GameClear:
+		math->worldTransFormUpdate(GameClearTextWorldTransform_); // ゲームクリアテキストのワールド変換を更新
 	}
 
    // ★ ヒットエフェクトの更新処理 (アクティブなものだけ)
@@ -266,11 +279,11 @@ void GameScene::Draw() {
 	}
 
 	for (Enemy* enemy : enemys_) { // C++11以降の範囲ベースforループ
-	
 
 			enemy->Draw();
-		
 	}
+
+	gorl_->Draw(); // gorlの描画処理
 
 	// ブロックの描画
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
@@ -290,6 +303,11 @@ void GameScene::Draw() {
 	}
 
 	deatparticles_->Draw();
+	if (isGameClear_) {
+		Model::PreDraw(dxcommon->GetCommandList());                       // モデル描画の前処理（コマンドリストの設定など）
+		GameClearTextModel_->Draw(GameClearTextWorldTransform_, camera_); // ゲームクリアテキストの描画処理
+		Model::PostDraw();                                                // モデル描画の後処理
+	}
 
 	fade_->Draw(dxcommon->GetCommandList());
 
@@ -343,6 +361,12 @@ void GameScene::CheakAllcollision() {
 
 		}
 	}
+	AABB aabb3 = gorl_->GetAABB();
+	// プレイヤーとゴールの当たり判定
+	if (math->IsCollision(aabb1, aabb3)) {
+		// ゴールに到達した場合の処理
+		isGameClear_ = true; // ゲームクリアフラグを立てる
+	}
 }
 
 void GameScene::ChangePhase() {
@@ -361,12 +385,33 @@ void GameScene::ChangePhase() {
 
 			fade_->Start(Fade::Status::FadeOut, 3.0f); // フェードアウト開始
 		}
+		if (isGameClear_) {
+			phase_ = Phase::GameClear; // ゲームクリアフェーズに切り替え
+		}
 
 		break;
 	case Phase::kDeath:
+		finishedTimer++;
 		deatparticles_->Update();
-
+		if (finishedTimer >= 180) {
+			finished_ = true;
+		}
 		break;
+	case Phase::GameClear:
+		
+		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+			isTimerFinished_ = true; // スペースキーが押されたらタイマー終了フラグを立てる
+			fade_->Start(Fade::Status::FadeOut, 3.0f); // フェードアウト開始
+		}
+		if (isTimerFinished_) {
+			finishedTimer++;
+	
+		}
+		if (finishedTimer >= 180) {
+			finished_ = true;
+		}
+		break;
+
 	}
 }
 

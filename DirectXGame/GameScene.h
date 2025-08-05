@@ -13,6 +13,7 @@
 #include "DeathParticles.h"
 #include "Fade.h"
 #include"HitEffect.h"
+#include"gorl.h"
 
 enum class Phase {
 
@@ -20,6 +21,7 @@ enum class Phase {
 	kPlay,//ゲームプレイ
 	kDeath,//デス演出
 	kFadeOut,
+	GameClear, // ゲームクリア
 };
 
 
@@ -68,7 +70,9 @@ private:
 	KamataEngine::Model* playerModel_ = nullptr;                                   // プレイヤーのモデル
 	KamataEngine::Model* modelSkydome_ = nullptr;     
 	KamataEngine::Model* playerAttackModel_ = nullptr; 
+	KamataEngine::Model* goalModel_ = nullptr; // ゴールのモデル
 
+	Gorl* gorl_ = nullptr;                     // gorlクラスのインスタンス
 	
 	// エネミークラス
 	std::list<Enemy*> enemys_; // 敵オブジェクト
@@ -92,7 +96,8 @@ private:
 	//エフェクト最大数
 	const int HitEffectMax = 10; // ヒットエフェクトの最大数
 
-
+	KamataEngine::Model* GameClearTextModel_;
+	KamataEngine::WorldTransform GameClearTextWorldTransform_; // 文字モデルのワールド変
 
 	//終了フラグ
 	bool finished_ = false;
@@ -100,4 +105,7 @@ private:
 	Fade* fade_ = nullptr;                                                  // フェードオブジェクトのポインタ
 	bool isSceneFinished_ = false;                                          // シーン終了判定フラグ
 	int finishedTimer = 0;                                                  // kDeathフェーズで使っていたタイマー
+	bool isGameClear_ = false;                                              // ゲームクリアフラグ
+	bool isTimerFinished_ = false;                                          // タイマーが終了したかどうかのフラグ
+	int loadAudioHandle_ = 0;                                               // オーディオハンドル(曲の再生)
 	};
