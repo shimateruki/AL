@@ -14,14 +14,13 @@ void GameScene::Initialize() {
 	enemy_model_ = Model::CreateFromOBJ("enemy", true);                // 敵モデルの読み込み
 	deatparticlesModel_ = Model::CreateFromOBJ("deathParticle", true); // パーティクルモデル
 	playerAttackModel_ = Model::CreateFromOBJ("attack_effect", true);
-	hitEffectModel_ = Model::CreateFromOBJ("hit", true); // ヒットエフェクトモデル
-	goalModel_ = Model::CreateFromOBJ("gorl", true);     // ゴールモデルの読み込み
+	hitEffectModel_ = Model::CreateFromOBJ("hit", true);           // ヒットエフェクトモデル
+	goalModel_ = Model::CreateFromOBJ("gorl", true);               // ゴールモデルの読み込み
 	GameClearTextModel_ = Model::CreateFromOBJ("GameClear", true); // ゲームクリアテキストモデルの読み込み
 
 	// 音声のロード
-	//loadAudioHandle_ = Audio::GetInstance()->LoadWave("Resources/Audio/StageClear.wav"); // オーディオのロード
-	//Audio::GetInstance()->SetVolume(loadAudioHandle_, 0.5f);                             // 音量を設定（0.0f〜1.0fの範囲）
-
+	// loadAudioHandle_ = Audio::GetInstance()->LoadWave("Resources/Audio/StageClear.wav"); // オーディオのロード
+	// Audio::GetInstance()->SetVolume(loadAudioHandle_, 0.5f);                             // 音量を設定（0.0f〜1.0fの範囲）
 
 	// カメラの設定と初期化
 	camera_.farZ = 1280.0f; // カメラのZ軸方向の最も遠いクリップ面を設定
@@ -40,12 +39,9 @@ void GameScene::Initialize() {
 	Vector3 playerPosition = mapChipField_->GetChipPositionIndex(1, 18);             // マップチップのインデックスからプレイヤーの初期位置を取得
 	player_->Initialize(playerModel_, &camera_, playerPosition, playerAttackModel_); // プレイヤーを初期化（モデル、カメラ、初期位置を設定）
 	player_->SetMapChipField(mapChipField_);                                         // プレイヤーにマップチップフィールドを設定
-	
-	
+
 	HitEffect::SetModel(hitEffectModel_); // ヒットエフェクトのモデルを設定
 	HitEffect::SetCamera(&camera_);       // ヒットエフェクトにカメラを設定
-
-
 
 	for (int i = 0; i < kEnemyMax; i++) {
 		// 敵クラスの生成
@@ -85,17 +81,13 @@ void GameScene::Initialize() {
 	// ゲームプレイフェーズから開始
 	finishedTimer = 0;
 
-	gorl_ = new Gorl(); // gorlクラスのインスタンスを生成
+	gorl_ = new Gorl();                                                                   // gorlクラスのインスタンスを生成
 	gorl_->Initialize(goalModel_, &camera_, mapChipField_->GetChipPositionIndex(20, 18)); // gorlを初期化（モデル、カメラ、初期位置を設定）
-	
-	GameClearTextWorldTransform_.Initialize(); // ゲームクリアテキストのワールド変換を初期化
+
+	GameClearTextWorldTransform_.Initialize();                                               // ゲームクリアテキストのワールド変換を初期化
 	GameClearTextWorldTransform_.scale_ = {5.0f, 1.0f, 1.0f};                                // ゲームクリアテキストのスケールを設定
-	GameClearTextWorldTransform_.rotation_ = {0.0f, 0.0f, 0.0f};        // ゲームクリアテキストの回転を設定（180度回転）
+	GameClearTextWorldTransform_.rotation_ = {0.0f, 0.0f, 0.0f};                             // ゲームクリアテキストの回転を設定（180度回転）
 	GameClearTextWorldTransform_.translation_ = mapChipField_->GetChipPositionIndex(20, 18); // ゲームクリアテキストの初期位置を設定
-
-
-
-
 }
 
 // 更新処理
@@ -198,7 +190,7 @@ void GameScene::Update() {
 		break;
 
 	case Phase::kDeath:
-		
+
 		for (Enemy* enemy : enemys_) { // C++11以降の範囲ベースforループ
 			enemy->Update();
 		}
@@ -242,27 +234,26 @@ void GameScene::Update() {
 		math->worldTransFormUpdate(GameClearTextWorldTransform_); // ゲームクリアテキストのワールド変換を更新
 	}
 
-   // ★ ヒットエフェクトの更新処理 (アクティブなものだけ)
+	// ★ ヒットエフェクトの更新処理 (アクティブなものだけ)
 	for (HitEffect* hitEffect : hitEffects_) {
-	
-			hitEffect->Update();
-		
+
+		hitEffect->Update();
 	}
 
-		// 敵の削除処理（必要に応じて）
+	// 敵の削除処理（必要に応じて）
 	hitEffects_.remove_if([](HitEffect* hiteffect) {
 		if (hiteffect->IsDead()) { // 敵が死亡している場合
-			delete hiteffect;         // 敵のインスタンスを解放
-			return true;          // 削除対象としてtrueを返す
+			delete hiteffect;      // 敵のインスタンスを解放
+			return true;           // 削除対象としてtrueを返す
 		}
 		return false; // 削除対象でない場合はfalseを返す
-	});      
+	});
 
 	// 敵の削除処理（必要に応じて）
 	enemys_.remove_if([](Enemy* enemy) {
 		if (enemy->GetIsDead()) { // 敵が死亡している場合
-			delete enemy;          // 敵のインスタンスを解放
-			return true;           // 削除対象としてtrueを返す
+			delete enemy;         // 敵のインスタンスを解放
+			return true;          // 削除対象としてtrueを返す
 		}
 		return false; // 削除対象でない場合はfalseを返す
 	});               // 敵のリストから削除
@@ -280,7 +271,7 @@ void GameScene::Draw() {
 
 	for (Enemy* enemy : enemys_) { // C++11以降の範囲ベースforループ
 
-			enemy->Draw();
+		enemy->Draw();
 	}
 
 	gorl_->Draw(); // gorlの描画処理
@@ -351,14 +342,11 @@ void GameScene::CheakAllcollision() {
 		if (math->IsCollision(aabb1, aabb2)) {
 			// プレイヤーと敵の当たり判定
 			if (!player_->GetIsAttack()) {
-				
-					player_->OnCollision(enemy);
-				}
-				
-			
-			
-			enemy->onCollision(player_);
 
+				player_->OnCollision(enemy);
+			}
+
+			enemy->onCollision(player_);
 		}
 	}
 	AABB aabb3 = gorl_->GetAABB();
@@ -398,29 +386,25 @@ void GameScene::ChangePhase() {
 		}
 		break;
 	case Phase::GameClear:
-		
+
 		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
-			isTimerFinished_ = true; // スペースキーが押されたらタイマー終了フラグを立てる
+			isTimerFinished_ = true;                   // スペースキーが押されたらタイマー終了フラグを立てる
 			fade_->Start(Fade::Status::FadeOut, 3.0f); // フェードアウト開始
 		}
 		if (isTimerFinished_) {
 			finishedTimer++;
-	
 		}
 		if (finishedTimer >= 180) {
 			finished_ = true;
 		}
 		break;
-
 	}
 }
 
-void GameScene::CreateHitEffect(const KamataEngine::Vector3& position) 
-{
+void GameScene::CreateHitEffect(const KamataEngine::Vector3& position) {
 	HitEffect* newHitEffect = HitEffect::create(position); // 新しいヒットエフェクトを生成
 	hitEffects_.push_back(newHitEffect);                   // ヒットエフェクトをリストに追加)
 	                                                       // ヒットエフェクトの数が最大数を超えた場合、最も古いものを削除
-
 }
 
 // デストラクタ
@@ -432,13 +416,12 @@ GameScene::~GameScene() {
 	delete player_;        // プレイヤーの解放
 	delete mapChipField_;  // マップチップフィールドの解放
 	delete deatparticles_; // パーティクルの解放
-	delete CController_; // カメラコントローラーの解放
-	delete fade_; // フェードの解放
+	delete CController_;   // カメラコントローラーの解放
+	delete fade_;          // フェードの解放
 	// ヒットエフェクトの解放
 	for (HitEffect* hitEffect : hitEffects_) {
 		delete hitEffect; // 各ヒットエフェクトの解放
 	}
-	
 
 	// 生成したブロックのWorldTransformインスタンスを全て解放
 	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {

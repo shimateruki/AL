@@ -1,32 +1,27 @@
+
 #include "gorl.h"
-
-
 using namespace KamataEngine;
 
-void Gorl::Initialize(Model* model, Camera* camera, const Vector3& position) 
-{
-	model_ = model;                                                 // モデルの設定
-	camera_ = camera;                                               // カメラの設定
-	worldTransform_.Initialize();                                   // ワールド変換の初期化
-	worldTransform_.scale_ = Vector3(1.0f, 1.0f, 1.0f);             // スケールの初期化（単位スケール）
-	worldTransform_.rotation_ = Vector3(0.0f, 0.0f, 0.0f);          // 回転の初期化（単位回転）
-	worldTransform_.translation_ = position;                        // 初期位置の設定
-	 math = new Math;
+void Gorl::Initialize(Model* model, Camera* camera, const Vector3& position) {
+	model_ = model;                                        // モデルの設定
+	camera_ = camera;                                      // カメラの設定
+	worldTransform_.Initialize();                          // ワールド変換の初期化
+	worldTransform_.scale_ = Vector3(1.0f, 1.0f, 1.0f);    // スケールの初期化（単位スケール）
+	worldTransform_.rotation_ = Vector3(0.0f, 0.0f, 0.0f); // 回転の初期化（単位回転）
+	worldTransform_.translation_ = position;               // 初期位置の設定
+	math = new Math;
 }
 
-
-
-void Gorl::Update() {   
+void Gorl::Update() {
 	math->worldTransFormUpdate(worldTransform_); // インスタンスを使用してメソッドを呼び出す
 }
 
-void Gorl::Draw() 
-{
+void Gorl::Draw() {
 
 	model_->Draw(worldTransform_, *camera_); // モデルの描画
 }
 
-Vector3 Gorl::GetWorldPosition() const { 	// ワールド座標を入れる変数
+Vector3 Gorl::GetWorldPosition() const { // ワールド座標を入れる変数
 	Vector3 worldPos;
 	// ワールド行列の平行移動成分を取得
 	worldPos.x = worldTransform_.matWorld_.m[3][0]; // 行列の4行1列目
