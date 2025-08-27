@@ -8,7 +8,9 @@ using namespace KamataEngine; // KamataEngine名前空間を使用
 // 前方宣言
 class GameScene; // GameSceneクラスの前方宣言
 class Player;
-// 敵クラス 
+class GameScene1_2; // GameScene1_2クラスの前方宣言
+class GameScene1_3;
+    // 敵クラス 
 class Enemy {
 
 public:
@@ -35,6 +37,8 @@ public:
 	void onCollision(const Player* player);
 	bool isCollisonDisabled() const { return isCollisDisabled_; } // 衝突無効化フラグを取得
 	void SetGameScene(GameScene* gameScene) { gameScene_ = gameScene; } // ゲームシーンへのポインタを設定
+	void SetGameScene1_2(GameScene1_2* GameScene1_2) { gameScene1_2_ = GameScene1_2; } // GameScene1_2へのポインタを設定
+	void SetGameScene1_3(GameScene1_3* GameScene1_3) { gameScene1_3_ = GameScene1_3; } // GameScene1_2へのポインタを設定
 
 private:
 	// 敵のワールド変換 
@@ -76,5 +80,7 @@ private:
 
 	bool isCollisDisabled_ = false; // 衝突無効化フラグ（敵が死亡しているかどうかを示す）
 	GameScene* gameScene_ = nullptr; // ゲームシーンへのポインタ（必要に応じて使用）
+	GameScene1_2* gameScene1_2_ = nullptr; // GameScene1_2へのポインタ（必要に応じて使用）
+	GameScene1_3* gameScene1_3_ = nullptr; // GameScene1_3へのポインタ（必要に応じて使用）
 
 };

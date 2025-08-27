@@ -106,19 +106,34 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BreakableFloor.cpp" />
     <ClCompile Include="CameraController.cpp" />
+    <ClCompile Include="CloudPlatform.cpp" />
     <ClCompile Include="DeathParticles.cpp" />
     <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="Fade.cpp" />
+    <ClCompile Include="GameOver.cpp" />
     <ClCompile Include="GameScene.cpp" />
+    <ClCompile Include="GameScene1_2.cpp" />
+    <ClCompile Include="GameScene1_3.cpp" />
+    <ClCompile Include="GameStateManager.cpp" />
     <ClCompile Include="gorl.cpp" />
     <ClCompile Include="HitEffect.cpp" />
+    <ClCompile Include="KabeToge.cpp" />
+    <ClCompile Include="keyModel.cpp" />
     <ClCompile Include="main.cpp" />
-
+    <ClCompile Include="MapChipField.cpp" />
     <ClCompile Include="Math.cpp" />
     <ClCompile Include="Player.cpp" />
-    <ClCompile Include="ViewProjection.cpp" />
-
+    <ClCompile Include="Signboard.cpp" />
+    <ClCompile Include="skydome.cpp" />
+    <ClCompile Include="SpriteText.cpp" />
+    <ClCompile Include="StageSelectGameScene.cpp" />
+    <ClCompile Include="StageSelectPlayer.cpp" />
+    <ClCompile Include="TitleScene.cpp" />
+    <ClCompile Include="Toge.cpp" />
+    <ClCompile Include="tree.cpp" />
+    <ClCompile Include="yama.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Resources\shaders\TerrainPS.hlsl">
@@ -196,19 +211,34 @@
     <None Include="Resources\shaders\Sprite.hlsli" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BreakableFloor.h" />
     <ClInclude Include="CameraController.h" />
+    <ClInclude Include="CloudPlatform.h" />
     <ClInclude Include="DeathParticles.h" />
     <ClInclude Include="Enemy.h" />
     <ClInclude Include="Fade.h" />
+    <ClInclude Include="GameOver.h" />
     <ClInclude Include="GameScene.h" />
+    <ClInclude Include="GameScene1_2.h" />
+    <ClInclude Include="GameScene1_3.h" />
+    <ClInclude Include="GameStateManager.h" />
     <ClInclude Include="gorl.h" />
     <ClInclude Include="HitEffect.h" />
+    <ClInclude Include="KabeToge.h" />
+    <ClInclude Include="keyModel.h" />
     <ClInclude Include="MapChipField.h" />
     <ClInclude Include="math.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="Signboard.h" />
+    <ClInclude Include="skydome.h" />
+    <ClInclude Include="SpriteText.h" />
+    <ClInclude Include="StageSelectGameScene.h" />
+    <ClInclude Include="StageSelectPlayer.h" />
+    <ClInclude Include="TitleScene.h" />
+    <ClInclude Include="Toge.h" />
+    <ClInclude Include="tree.h" />
     <ClInclude Include="Vector2.h" />
-    <ClInclude Include="ViewProjection.h" />
-
+    <ClInclude Include="yama.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
