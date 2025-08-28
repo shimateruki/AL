@@ -24,6 +24,12 @@ void GameScene1_2::Initialize() {
 	textureHandlePauseText_ = TextureManager::Load("phoseText.png"); // ポーズテキスト用テクスチャの読み込み
 	yamaModel = Model::CreateFromOBJ("yama", true);                  // 山モデルの読み込み
 	textureHandleGameClearText_ = TextureManager::Load("TextSpriteGameClear.png"); // ゲームクリアテキスト用テクスチャの読み込み
+	textureHandleCountdown3_ = TextureManager::Load("3.png");                      // 3の画像
+	textureHandleCountdown2_ = TextureManager::Load("2.png");                      // 2の画像
+	textureHandleCountdown1_ = TextureManager::Load("1.png");                      // 1の画像
+	textureHandleCountdownGo_ = TextureManager::Load("go.png");                    // GOの画像
+	enemy_model_ = Model::CreateFromOBJ("enemy", true);                            // 敵モデルの読み込み
+
 
 
 	textureHandlePhose_ = TextureManager::Load("Phose.png");
@@ -54,6 +60,7 @@ void GameScene1_2::Initialize() {
 	Vector3 playerPosition = mapChipField_->GetChipPositionIndex(3, 16);
 	player_->Initialize(playerModel_, &camera_, playerPosition, playerAttackModel_);
 	player_->SetMapChipField(mapChipField_);
+	player_->SetisMove(false);
 
 	//========================
 	// 💥 ヒットエフェクト設定
@@ -64,13 +71,18 @@ void GameScene1_2::Initialize() {
 	//========================
 	// 👾 敵の初期化
 	//========================
-	for (int i = 0; i < kEnemyMax; i++) {
-		Enemy* newEnemy = new Enemy();
-		Vector3 enemyPosition = mapChipField_->GetChipPositionIndex(20, 12 + i);
-		newEnemy->Initialize(enemy_model_, &camera_, enemyPosition);
-		newEnemy->SetGameScene1_2(this);
-		enemys_.push_back(newEnemy);
-	}
+	enemys_.push_back(new Enemy());
+	enemys_.back()->Initialize(enemy_model_, &camera_, mapChipField_->GetChipPositionIndex(15, 14));
+	enemys_.back()->SetMapChipField(mapChipField_);
+	enemys_.back()->SetGameScene1_2(this);
+	enemys_.push_back(new Enemy());
+	enemys_.back()->Initialize(enemy_model_, &camera_, mapChipField_->GetChipPositionIndex(66, 10));
+	enemys_.back()->SetMapChipField(mapChipField_);
+	enemys_.back()->SetGameScene1_2(this);
+	enemys_.push_back(new Enemy());
+	enemys_.back()->Initialize(enemy_model_, &camera_, mapChipField_->GetChipPositionIndex(70, 10));
+	enemys_.back()->SetMapChipField(mapChipField_);
+	enemys_.back()->SetGameScene1_2(this);
 
 	//========================
 	// 🌪️ パーティクルの生成
@@ -120,6 +132,7 @@ void GameScene1_2::Initialize() {
 	//========================
 	togeKabe_ = new KabeToge();
 	togeKabe_->Initialize(togeKabeModel_, &camera_, mapChipField_->GetChipPositionIndex(0, 18));
+	togeKabe_->SetIsmove(false);
 
 	CloudPlatform_.push_back(new CloudPlatform());
 	CloudPlatform_.back()->Initialize(CloudPlatformModel_, &camera_, mapChipField_->GetChipPositionIndex(15, 16));
@@ -135,6 +148,8 @@ void GameScene1_2::Initialize() {
 	tree_.back()->Initialize(treeModel_, &camera_, mapChipField_->GetChipPositionIndex(5, 19));
 	tree_.push_back(new Tree());
 	tree_.back()->Initialize(treeModel_, &camera_, mapChipField_->GetChipPositionIndex(90, 19));
+
+	spriteCountdown_ = Sprite::Create(textureHandleCountdown3_, {0, 0}); // 初期スプライト（3）
 
 	Audio::GetInstance()->Initialize("Resources/BGM/");
 
@@ -247,12 +262,11 @@ void GameScene1_2::Update() {
 	// ------------------------------
 	case Phase::kFadeIn:
 		player_->Update(); // プレイヤーの更新
-		togeKabe_->Update();
 		// 敵の更新
 		for (Enemy* enemy : enemys_) {
 			enemy->Update();
 		}
-
+		togeKabe_->Update();	
 		// 当たり判定
 		CheekAllcollision();
 
@@ -290,6 +304,31 @@ void GameScene1_2::Update() {
 
 		// スカイドーム更新
 		skydome_->Update();
+		break;
+
+			case Phase::kCountdown:
+		// このフェーズでカウントダウンの更新処理を行う
+		countdownTimer_ += 1.0f / 60.0f; // タイマーを減らす
+
+		// カウントダウンのスプライト切り替え
+		if (countdownTimer_ >= 0.0f && countdownTimer_ < 1.0f) {
+
+			spriteCountdown_ = Sprite::Create(textureHandleCountdown3_, {-250, -100}); // 初期スプライト（3）
+		} else if (countdownTimer_ >= 1.0f && countdownTimer_ < 2.0f) {
+			spriteCountdown_ = Sprite::Create(textureHandleCountdown2_, {-250, -100}); // 初期スプライト（3）
+		} else if (countdownTimer_ >= 2.0f && countdownTimer_ < 3.0f) {
+			spriteCountdown_ = Sprite::Create(textureHandleCountdown1_, {-250, -100}); // 初期スプライト（3）
+		} else {
+			spriteCountdown_ = Sprite::Create(textureHandleCountdownGo_, {-250, -100}); // 初期スプライト（3）
+			if (countdownTimer_ >= 3.5f) {                                              // GO!表示後
+				countdownState_ = CountdownState::kFinished;
+				phase_ = Phase::kPlay; // プレイフェーズへ移行
+				player_->SetisMove(true); // プレイヤーの移動を許可
+				togeKabe_->SetIsmove(true);
+				                       // カウントダウン完了
+			}
+		}
+		// カウントダウン中はゲームの進行を停止するため、ここではプレイヤー等の更新処理は書かない
 		break;
 
 	// ------------------------------
@@ -424,22 +463,18 @@ void GameScene1_2::Update() {
 		return false;
 	});
 
-	// 死亡した敵の削除
-	enemys_.remove_if([](Enemy* enemy) {
-		if (enemy->GetIsDead()) {
-			delete enemy;
-			return true;
-		}
-		return false;
-	});
+
 }
 void GameScene1_2::Draw() {
 	DirectXCommon* dxcommon = DirectXCommon::GetInstance();
 	Model::PreDraw(dxcommon->GetCommandList());
 
 	// 👾 敵の描画
-	//for (Enemy* enemy : enemys_)
-	//	enemy->Draw();
+	for (Enemy* enemy : enemys_) {
+		if (enemy->isDead())
+			continue; // 死んでる敵はスキップ
+		enemy->Draw();
+	}
 
 	// 🧱 ブロック描画（草・土でモデル切替）
 	for (uint32_t y = 0; y < worldTransformBlocks_.size(); ++y) {
@@ -512,6 +547,9 @@ void GameScene1_2::Draw() {
 	fade_->Draw(dxcommon->GetCommandList());
 	Model::PostDraw();
 	Sprite::PreDraw(dxcommon->GetCommandList());
+	if (countdownState_ == CountdownState::kCounting) {
+		spriteCountdown_->Draw();
+	}
 	if (isSprite&&!isGameClear_&&!isPaused_) {
 		Textmodel1_2->Draw();
 		pauseTextSprite_->Draw(); // ポーズスプライトの描画
@@ -568,19 +606,23 @@ void GameScene1_2::CheekAllcollision() {
 	// プレイヤーAABB
 	AABB aabb1 = player_->GetAABB();
 
-	//// ==== 敵との当たり判定 ====
-	//for (Enemy* enemy : enemys_) {
-	//	if (enemy->isCollisonDisabled()) {
-	//		continue; // 当たり判定が無効な敵はスキップ
-	//	}
-	//	AABB aabb2 = enemy->GetAABB();
-	//	if (math->IsCollision(aabb1, aabb2)) {
-	//		if (!player_->GetIsAttack()) {
-	//			player_->OnCollision(enemy);
-	//		}
-	//		enemy->onCollision(player_);
-	//	}
-	//}
+for (Enemy* enemy : enemys_) {
+		// 死亡しているか、当たり判定が無効化されている敵はスキップ
+		if (enemy->isDead() || enemy->isCollisonDisabled()) {
+			continue;
+		}
+
+		AABB aabb2 = enemy->GetAABB();
+		if (math->IsCollision(aabb1, aabb2)) {
+			// ここでは、踏んだかどうかの判定のみに集中する
+			if (aabb1.min.y >= aabb2.max.y - 4.0f && !player_->GetOnGround()) {
+				enemy->OnStomped(player_);
+				player_->SetVelocityY(0.3f);
+			} else {
+				player_->SetIsDead(true);
+			}
+		}
+	}
 	AABB aabb3 = togeKabe_->GetAABB();
 	if (math->IsCollision(aabb1, aabb3)) {
 		player_->SetIsDead(true);
@@ -629,8 +671,10 @@ void GameScene1_2::ChangePhase() {
 	switch (phase_) {
 	case Phase::kFadeIn:
 		if (fade_->isFinished()) {
-			phase_ = Phase::kPlay;
+			countdownState_ = CountdownState::kCounting;
+			phase_ = Phase::kCountdown; // フェードインが完了したらカウントダウンフェーズへ
 		}
+
 		break;
 	case Phase::kPlay:
 		if (player_->IsDead()) {

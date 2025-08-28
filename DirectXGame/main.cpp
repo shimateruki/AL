@@ -25,7 +25,7 @@ enum class Scene {
     // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// エンジンの初期化
-	Initialize(L"LE2C_13_シマ_テルキ_AL3");
+	Initialize(L"スライムラン");
 
 	ImGuiManager* inguiManager = ImGuiManager::GetInstance();
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();

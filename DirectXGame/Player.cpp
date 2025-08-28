@@ -495,7 +495,10 @@ void Player::UpdateOnWall(const CollisionMapInfo& info) {
 
 void Player::BehaviorRootUpdate() {
 	// 移動入力と速度計算
-	Move();
+	if (isMove_) {
+		Move();
+	}
+	
 
 	// 衝突情報を初期化
 	CollisionMapInfo collisionInfo = {};

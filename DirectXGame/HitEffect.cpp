@@ -28,8 +28,7 @@ void HitEffect::Initialize(Vector3 postion) {
 	circleWorldTransform_.translation_ = postion;
 
 	objectColor_.Initialize();
-
-objectColor_.SetColor(Vector4{0.5f, 1.0f, 1.0f, 1.0f});
+	objectColor_.SetColor(Vector4{1.0f, 0.5f, 1.0f, 1.0f});
 }
 
 void HitEffect::Update() {
@@ -55,7 +54,7 @@ void HitEffect::Update() {
 	}
 	case State::kFade: {
 		++counter_;
-		objectColor_.SetColor(Vector4{0.5f, 1.0f, 1.0f, 1.0f - static_cast<float>(counter_) / kFadeTime});
+		objectColor_.SetColor(Vector4{1.0f, 0.5f, 1.0f, 1.0f - static_cast<float>(counter_) / kFadeTime});
 		if (counter_ >= kFadeTime) {
 			state_ = State::kDead;
 		}

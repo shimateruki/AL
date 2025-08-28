@@ -68,8 +68,11 @@ public:
 		return velosity_.y;
 	}
 	void SetOnGround(bool ground) { onGround_ = ground; }
+	bool GetOnGround() const { return onGround_; }
 	// 雲の移動量を設定するためのsetterを追加
 	void SetCloudDelta(const Vector3& delta) { cloudDelta_ = delta; }
+	bool GetisMove() const { return isMove_; }
+	void SetisMove(bool move) { isMove_ = move; }
 
 
 	//----------------------------------------
@@ -240,4 +243,5 @@ private:
 	  CloudPlatform* onCloud_ = nullptr; // 乗っている雲を覚える
 	                                   // 雲の移動量を保持する変数
 	Vector3 cloudDelta_;
+	  bool isMove_ = false;
 };

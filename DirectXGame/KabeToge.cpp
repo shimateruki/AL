@@ -15,8 +15,12 @@ void KabeToge::Initialize(Model* model, Camera* camera, const Vector3& position)
 
 void KabeToge::Update() 
 {
-	// X方向に毎フレーム 0.1f 移動（右に動く）
-	worldTransform_.translation_.x += 0.05f;
+
+	if (ismove) {
+		// X方向に毎フレーム 0.1f 移動（右に動く）
+		worldTransform_.translation_.x += 0.05f;
+	}
+	
 
 	math->worldTransFormUpdate(worldTransform_); // インスタンスを使用してメソッドを呼び出す
 }

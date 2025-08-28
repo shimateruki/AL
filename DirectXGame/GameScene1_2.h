@@ -25,6 +25,7 @@ public:
 	// ===== ゲーム進行フェーズ =====
 	enum class Phase {
 		kFadeIn,  // フェードイン中
+		kCountdown, // 新しいフェーズを追加
 		kPlay,    // ゲームプレイ中
 		kDeath,   // 死亡演出中
 		kFadeOut, // フェードアウト中
@@ -36,6 +37,11 @@ public:
 		kContinue,    // ゲームを続ける
 		kStageSelect, // ステージセレクトに戻る
 		kTitle,       // タイトルへ戻る
+	};
+	enum class CountdownState {
+		kOff,      // カウントダウンが無効
+		kCounting, // カウントダウン中
+		kFinished  // カウントダウン完了
 	};
 	enum class NextScene { kGameOver, kStageSelect, kNone };
 	// 初期化・更新・描画
@@ -112,9 +118,7 @@ private:
 	std::vector<Yama*> yama_;              // 山リスト
 	std::vector<Tree*> tree_;              // 木リスト
 
-	// ===== 敵・エネミー =====
-	std::list<Enemy*> enemys_; // 敵リスト
-	const int kEnemyMax = 3;   // 敵の最大数
+	std::vector<Enemy*> enemys_;
 
 		std::vector<CloudPlatform*> CloudPlatform_; // 雲リスト
 
@@ -161,6 +165,17 @@ private:
 	KamataEngine::Model* breakableBlockModel_ = nullptr; // 壊れる床のモデル
 	std::vector<std::unique_ptr<BreakableFloor>> breakableFloors_;
 
+	CountdownState countdownState_ = CountdownState::kOff;
+	float countdownTimer_ = 0.0f;
+
+	// カウントダウン表示用のスプライトハンドル
+	uint32_t textureHandleCountdown3_ = 0;
+	uint32_t textureHandleCountdown2_ = 0;
+	uint32_t textureHandleCountdown1_ = 0;
+	uint32_t textureHandleCountdownGo_ = 0;
+
 	bool firstFrame;
+
+	KamataEngine::Sprite* spriteCountdown_ = nullptr;
 
 };

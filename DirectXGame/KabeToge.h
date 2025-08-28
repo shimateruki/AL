@@ -14,6 +14,8 @@ public:
 	Vector3 GetWorldPosition() const;
 
 	AABB GetAABB();
+	bool GetIsmove() const { return ismove; }
+	void SetIsmove(bool move) { ismove = move; }
 
 private:
 	// ワールド変換
@@ -29,5 +31,7 @@ private:
 	const float kHeight = 20.0f; // 高さ
 
 	KamataEngine::ObjectColor color_;
+
+	bool ismove = false;
 
 };
