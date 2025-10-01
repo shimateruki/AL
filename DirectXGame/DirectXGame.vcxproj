@@ -127,6 +127,7 @@
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Signboard.cpp" />
     <ClCompile Include="skydome.cpp" />
+    <ClCompile Include="Sprite.cpp" />
     <ClCompile Include="SpriteText.cpp" />
     <ClCompile Include="StageSelectGameScene.cpp" />
     <ClCompile Include="StageSelectPlayer.cpp" />
@@ -231,6 +232,7 @@
     <ClInclude Include="Player.h" />
     <ClInclude Include="Signboard.h" />
     <ClInclude Include="skydome.h" />
+    <ClInclude Include="Sprite.h" />
     <ClInclude Include="SpriteText.h" />
     <ClInclude Include="StageSelectGameScene.h" />
     <ClInclude Include="StageSelectPlayer.h" />

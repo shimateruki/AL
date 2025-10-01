@@ -169,6 +169,7 @@ void GameScene::Initialize() {
 	isSprite = true;
 	firstFrame = true;
 	currentSelectIndex_ = 0; // 初期選択インデックス
+	
 
 }
 

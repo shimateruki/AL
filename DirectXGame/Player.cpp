@@ -212,9 +212,7 @@ void Player::Draw() {
 	}
 #ifdef _DEBUG
 
-	ImGui::Begin("Player Debug Info"); // ImGuiのデバッグウィンドウ開始
-	ImGui::Text("Player Position: (%.2f, %.2f, %.2f)", worldTransformPlayer_.translation_.x, worldTransformPlayer_.translation_.y, worldTransformPlayer_.translation_.z);
-	ImGui::End();
+
 #endif // !De
 }
 

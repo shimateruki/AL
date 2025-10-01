@@ -236,6 +236,8 @@ void StageSelectGameScene::Update() {
 			spriteText->Update();
 		}
 
+
+
 		// ブロックの行列更新 & 転送
 		for (std::vector<WorldTransform*>& blockLine : worldTransformBlocks_) {
 			for (WorldTransform* block : blockLine) {
