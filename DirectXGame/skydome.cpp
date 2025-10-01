@@ -4,10 +4,14 @@ using namespace KamataEngine;
 
 void Skydome::Initialize(Model* model,Camera* camera) 
 { 
-		assert(model); 
+  #ifdef _DEBUG
+		assert(model);
+#endif
 	model_ = model;
 
 	worldTransformSkydome_.Initialize();
+	worldTransformSkydome_.translation_ = {0.0f, 70.0f, 0.0f};
+	worldTransformSkydome_.scale_ = {1.0f, 0.3f, 1.0f}; // スカイドームのスケール
 	camera_ = camera;
 
 }
@@ -19,9 +23,7 @@ void Skydome::Update() {
 }
 
 void Skydome::Draw() {
-	DirectXCommon* dxcommon = DirectXCommon::GetInstance(); // DirectXCommonのインスタンスを取得
-	// Fadeの描画
-	Model::PreDraw(dxcommon->GetCommandList()); // モデル描画の前処理（コマンドリストの設定など
+
 	model_->Draw(worldTransformSkydome_, *camera_); 
-	Model::PostDraw(); // モデルの描画後処理
+
 }

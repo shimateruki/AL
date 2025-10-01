@@ -6,7 +6,7 @@ void DeathParticles::Initialize(Model* model, Camera* camera, const Player* play
 	camera_ = camera;
 	model_ = model;
 	objectColor_.Initialize();
-	color_ = {1, 1, 1, 1};
+	objectColor_.SetColor(Vector4{0.5f, 1.0f, 1.0f, 1.0f});
 	player;
 	for (auto& worldTransform : worldTransform_) 
 	{
@@ -47,7 +47,7 @@ void DeathParticles::Update() {
 	}
 	float normalizedTime = counter_ / kDuration;              // 0.0f から 1.0f の間の値
 	color_.w = std::clamp(1.0f - normalizedTime, 0.0f, 1.0f); // 1.0fから減らしてい
-	objectColor_.SetColor(color_);
+	objectColor_.SetColor({0.5f, 1.0f, 1.0f, color_.w});
 
 	for (auto& worldTransform : worldTransform_) 
 	{

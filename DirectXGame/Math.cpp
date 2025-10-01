@@ -1,7 +1,9 @@
+
 #include "math.h"
-#include "KamataEngine.h"
 
 using namespace KamataEngine;
+
+
 
 float Math::EaseInOutSine(float t, float x1, float x2) {
 	t = std::clamp(t, 0.0f, 1.0f);
@@ -10,6 +12,9 @@ float Math::EaseInOutSine(float t, float x1, float x2) {
 }
 
 KamataEngine::Vector3 Math::Lerp(const KamataEngine::Vector3& a, const KamataEngine::Vector3& b, float t) { return {a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t}; }
+// float 用
+float Math::Lerp(float a, float b, float t) { return a + (b - a) * t; }
+
 
 Vector3 operator+(const Vector3& objA, const Vector3& objB) {
 	Vector3 sc = Vector3(0, 0, 0);
@@ -208,81 +213,29 @@ Vector3 Math::Transform(const Vector3& vector, const Matrix4x4& matrix) {
 	result.y = vector.x * matrix.m[0][1] + vector.y * matrix.m[1][1] + vector.z * matrix.m[2][1] + matrix.m[3][1];
 	result.z = vector.x * matrix.m[0][2] + vector.y * matrix.m[1][2] + vector.z * matrix.m[2][2] + matrix.m[3][2];
 	float w = vector.x * matrix.m[0][3] + vector.y * matrix.m[1][3] + vector.z * matrix.m[2][3] + matrix.m[3][3];
-
-	assert(w != 0.0f);
+#ifdef _DEBUG
+assert(w != 0.0f);
+#endif
+	
 	result.x /= w;
 	result.y /= w;
 	result.z /= w;
 
 	return result;
 }
-float Length(const Vector3& v) { return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z); }
-// クロス積
-//Vector3 MatrixUtility::Cross(const Vector3& v1, const Vector3& v2) {
-//	Vector3 result = {};
-//	result.x = v1.y * v2.z - v1.z * v2.y;
-//	result.y = v1.z * v2.x - v1.x * v2.z;
-//	result.z = v1.x * v2.y - v1.y * v2.x;
-//	return result;
-//}
 
-// Vector3 を正規化する関数
-Vector3 Math::Normalize(const Vector3& v) {
-	Vector3 result = v;
-
-	float len = Length(v);
-
-	if (len != 0.0f) {
-		result.x /= len;
-		result.y /= len;
-		result.z /= len;
+float Math::Length(const KamataEngine::Vector3& v) {
+	{
+		return std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 	}
-	return result;
 }
 
-float Math::Dot(const Vector3& v1, const Vector3& v2) { return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z; }
-Vector3 Math::Cross(const Vector3& v1, const Vector3& v2) { return {v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x}; }
-
-Matrix4x4 Math::MakeLookAtMatrix(const Vector3& eye, const Vector3& target, const Vector3& up) {
-	Vector3 zaxis = Normalize(target - eye);     // カメラの前方向
-	Vector3 xaxis = Normalize(Cross(up, zaxis)); // 右方向
-	Vector3 yaxis = Cross(zaxis, xaxis);         // 上方向
-
-	Matrix4x4 result{};
-	result.m[0][0] = xaxis.x;
-	result.m[0][1] = yaxis.x;
-	result.m[0][2] = zaxis.x;
-	result.m[0][3] = 0.0f;
-
-	result.m[1][0] = xaxis.y;
-	result.m[1][1] = yaxis.y;
-	result.m[1][2] = zaxis.y;
-	result.m[1][3] = 0.0f;
-
-	result.m[2][0] = xaxis.z;
-	result.m[2][1] = yaxis.z;
-	result.m[2][2] = zaxis.z;
-	result.m[2][3] = 0.0f;
-
-	result.m[3][0] = -Dot(xaxis, eye);
-	result.m[3][1] = -Dot(yaxis, eye);
-	result.m[3][2] = -Dot(zaxis, eye);
-	result.m[3][3] = 1.0f;
-
-	return result;
-}
-Matrix4x4 Math::MakePerspectiveFovMatrix(float fovY, float aspectRatio, float nearZ, float farZ) {
-	float yScale = 1.0f / tanf(fovY / 2.0f);
-	float xScale = yScale / aspectRatio;
-	float zRange = farZ / (farZ - nearZ);
-
-	Matrix4x4 result{};
-	result.m[0][0] = xScale;
-	result.m[1][1] = yScale;
-	result.m[2][2] = zRange;
-	result.m[2][3] = 1.0f;
-	result.m[3][2] = -nearZ * zRange;
-
-	return result;
+KamataEngine::Vector3 Math::Normalize(const KamataEngine::Vector3& v) {
+	float len = Length(v);
+	if (len == 0.0f) {
+		return {0.0f, 0.0f, 0.0f}; // 長さ0のときはゼロベクトルを返す
+	}
+	return {v.x / len, v.y / len, v.z / len};
 }
 
+float Math::Dot(const KamataEngine::Vector3& v1, const KamataEngine::Vector3& v2) { return {v1.x * v2.x + v1.y * v2.y + v1.z * v2.z}; }

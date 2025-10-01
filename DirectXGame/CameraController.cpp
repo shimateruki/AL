@@ -14,38 +14,36 @@ void CameraController::Update()
 	// 追従対象のワールドトランスフォームを参照
 	const WorldTransform& targetWorldTransform = target_->GetWorldTransform();
 
-	// 02_06 スライド29枚目で追加
+	// 追従対象の速度を取得
 	const Vector3& targetVelocity = target_->GetVelocity();
-	
 
-	// 追従対象とオフセットからカメラの座標を計算
-	destination_ = targetWorldTransform.translation_ + targettooffset + targetVelocity/** kVelocityBias*/;
-	
-	// 座標補間によりゆったり追従(数学関数追加)
-	camera_->translation_ =math_-> Lerp(camera_->translation_, destination_, kInterpolationRate);
+	// 追従対象とオフセットからカメラの理想的な目標地点を計算
+	Vector3 idealDestination = targetWorldTransform.translation_ + targettooffset + targetVelocity;
 
+	// 目的地の移動範囲を制限（補間を行う**前**にクランプする）
+	idealDestination.x = std::max(idealDestination.x, movebleArea_.left);
+	idealDestination.x = std::min(idealDestination.x, movebleArea_.right);
+	idealDestination.y = std::min(idealDestination.y, movebleArea_.bottom);
+	idealDestination.y = std::max(idealDestination.y, movebleArea_.top);
 
-	//追従対象が画面外に出ないように補正
-	camera_->translation_.x = std::max(camera_->translation_.x, destination_.x + targetMargin.left);
-	camera_->translation_.x = std::min(camera_->translation_.x, destination_.x + targetMargin.right);
-	camera_->translation_.y = std::max(camera_->translation_.y, destination_.y + targetMargin.bottom);
-	camera_->translation_.y = std::min(camera_->translation_.y, destination_.y + targetMargin.top);
+	// 補間により、カメラの座標を目標地点へゆっくり移動させる
+	camera_->translation_ = math_->Lerp(camera_->translation_, idealDestination, kInterpolationRate);
 
-	//移動範囲制限
-	camera_->translation_.x = std::max(camera_->translation_.x, movebleArea_ .left);
-	camera_->translation_.x = std::min(camera_->translation_.x, movebleArea_ .right);
-	camera_->translation_.y = std::min(camera_->translation_.y, movebleArea_ .bottom);
-	camera_->translation_.y = std::max(camera_->translation_.y, movebleArea_ .top);
-
-		camera_->UpdateMatrix();
+	// カメラの行列を更新
+	camera_->UpdateMatrix();
 }
 
 void CameraController::Reset() 
 {
 
-	// 追従対象のワールドトランスフォーム
-	const WorldTransform& targetWorldTransform = target_->GetWorldTransform();
+		const WorldTransform& targetWorldTransform = target_->GetWorldTransform();
+	Vector3 idealDestination = targetWorldTransform.translation_ + targettooffset;
 
-	destination_ = targetWorldTransform.translation_ + targettooffset;
+	// その地点をクランプしてからカメラに直接代入する
+	idealDestination.x = std::max(idealDestination.x, movebleArea_.left);
+	idealDestination.x = std::min(idealDestination.x, movebleArea_.right);
+	idealDestination.y = std::min(idealDestination.y, movebleArea_.bottom);
+	idealDestination.y = std::max(idealDestination.y, movebleArea_.top);
 
+	camera_->translation_ = idealDestination;
 }

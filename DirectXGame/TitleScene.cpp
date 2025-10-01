@@ -2,8 +2,11 @@
 #include "Fade.h"
 using namespace KamataEngine;
 void TitleScene::Initialize() {
+	modelSkydome_ = Model::CreateFromOBJ("skydome", true);
 	camera_.Initialize();
 	playerModel_ = Model::CreateFromOBJ("player", true);
+	textureHandleStart_ = TextureManager::Load("sutart.png"); // スタートボタン用テクスチャの読み込み
+	textureHandleEnter_ = TextureManager::Load("enter.png"); // エンターキー用テクスチャの読み込み
 	camera_.translation_.z = -10.0f; // カメラのZ位置を調整
 
 	// player_ メンバ変数を new でインスタンス化
@@ -14,8 +17,14 @@ void TitleScene::Initialize() {
 	// 文字モデルのロードと初期化
 	titleTextModel_ = Model::CreateFromOBJ("title", true); // "title.obj" を指定
 	titleTextWorldTransform_.Initialize();
+	color_.Initialize();
+	color_.SetColor({0.5f, 1.0f, 1.0f, 1.0f});
 
-	baseTextPos_ = {-1.0f, 0.0f, -7.0f}; // 文字の基準位置
+	skydome_ = new Skydome();
+	skydome_->Initialize(modelSkydome_, &camera_);
+
+
+	baseTextPos_ = {-1.5f, 0.5f, -6.0f}; // 文字の基準位置
 
 	floatingTimer_ = 0.0f;      // タイマーをリセット
 	floatingAmplitudeY_ = 0.1f; // Y軸方向の揺れの振幅を0.1単位に設定
@@ -36,11 +45,15 @@ void TitleScene::Initialize() {
 
 	phase_ = Phase::kFadeIn; // フェーズをフェードインに設定
 	finished_ = false;       // シーンはまだ終了していない
+
+	startSprite_ = Sprite::Create(textureHandleStart_, {0.0f, 0.0f}); // スタートボタン用スプライトの作成
+	enterSprite_ = Sprite::Create(textureHandleEnter_, {0.0f, 0.0f}); // エンターキー用スプライトの作成
 }
 
 void TitleScene::Update() {
 	// フェードは常に更新
 	fade_->Update();
+	skydome_->Update(); // スカイドームの更新
 
 	// カメラの更新と転送
 	camera_.UpdateMatrix();
@@ -66,7 +79,7 @@ void TitleScene::Update() {
 	case Phase::kMain:
 
 		// メインフェーズ中の入力待ち
-		if (Input::GetInstance()->PushKey(DIK_SPACE)) { // スペースキーが押されたら
+		if (Input::GetInstance()->PushKey(DIK_RETURN)) { // スペースキーが押されたら
 			phase_ = Phase::kfadeOut;                   // フェードアウトへ移行
 			fade_->Start(Fade::Status::FadeOut, 1.0f); // フェードアウト開始 
 		}
@@ -87,9 +100,14 @@ void TitleScene::Draw() {
 	// 3Dモデルの描画
 	Model::PreDraw(commandList);
 	player_->Draw();
-	titleTextModel_->Draw(titleTextWorldTransform_, camera_);
+	skydome_->Draw();
+	titleTextModel_->Draw(titleTextWorldTransform_, camera_,&color_);
 	Model::PostDraw();
-
+	Sprite::PreDraw(commandList);
+	// スプライトの描画
+	startSprite_->Draw(); // スタートボタン用スプライトの描画
+	enterSprite_->Draw(); // エンターキー用スプライトの描画
+	Sprite::PostDraw();
 	// Fadeの描画
 	fade_->Draw(commandList); // commandList を引数に渡す
 }

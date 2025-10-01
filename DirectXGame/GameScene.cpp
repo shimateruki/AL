@@ -1,377 +1,658 @@
 #include "GameScene.h" // GameSceneクラスのヘッダーファイルをインクルード
+#include <iostream>
+#include "GameStateManager.h"
 
 using namespace KamataEngine; // KamataEngine名前空間を使用
 
 // GameSceneの初期化処理
 void GameScene::Initialize() {
-	// テクスチャのロード
+	//========================
+	// 📦 リソースの読み込み
+	//========================
 	textureHandel_ = TextureManager::Load("sample.png");
+	dirtModel_ = Model::CreateFromOBJ("tutiBlock", true);
+	grassModel_ = Model::CreateFromOBJ("tutiBlockSibahu", true);
+	modelSkydome_ = Model::CreateFromOBJ("skydome", true);
+	playerModel_ = Model::CreateFromOBJ("player", true);
+	deatparticlesModel_ = Model::CreateFromOBJ("deathParticle", true);
+	hitEffectModel_ = Model::CreateFromOBJ("hit", true);
+	goalModel_ = Model::CreateFromOBJ("gorl", true);
+	GameClearTextModel_ = Model::CreateFromOBJ("GameClear", true);
+	togeKabeModel_ = Model::CreateFromOBJ("kabeToge", true);
+	togeModel_ = Model::CreateFromOBJ("toge", true);
+	textureHandle = TextureManager::Load("1-1.png");
+	yamaModel = Model::CreateFromOBJ("yama", true); // 山モデルの読み込み
+	// 数字表示用テクスチャの読み込み
+	textureHandlePhose_ = TextureManager::Load("Phose.png");
+	TextureHandleYazirusi_ = TextureManager::Load("yazirusi.png");
+	textureHandleEnter_ = TextureManager::Load("enter.png"); // エンターキー用テクスチャの読み込み
+	textureHandleGameClearText_ = TextureManager::Load("TextSpriteGameClear.png"); // ゲームクリアテキスト用テクスチャの読み込み
+	textureHandlePauseText_ = TextureManager::Load("phoseText.png");               // ポーズテキスト用テクスチャの読み込み
+	treeModel_ = Model::CreateFromOBJ("tree", true);                               // 木モデルの読み込
 
-	// モデルのロード
-	blockModel_ = Model::CreateFromOBJ("block", true);                 // ブロックモデルの読み込み
-	modelSkydome_ = Model::CreateFromOBJ("skydome", true);             // スカイドームモデルの読み込み
-	playerModel_ = Model::CreateFromOBJ("player", true);               // プレイヤーモデルの読み込み
-	enemy_model_ = Model::CreateFromOBJ("enemy", true);                // 敵モデルの読み込み
-	deatparticlesModel_ = Model::CreateFromOBJ("deathParticle", true); // パーティクルモデル
-	playerAttackModel_ = Model::CreateFromOBJ("attack_effect", true);
-	hitEffectModel_ = Model::CreateFromOBJ("hit", true);           // ヒットエフェクトモデル
-	goalModel_ = Model::CreateFromOBJ("gorl", true);               // ゴールモデルの読み込み
-	GameClearTextModel_ = Model::CreateFromOBJ("GameClear", true); // ゲームクリアテキストモデルの読み込み
+	enemy_model_ = Model::CreateFromOBJ("enemy", true);                            // 敵モデルの読み込み
 
-	// 音声のロード
-	// loadAudioHandle_ = Audio::GetInstance()->LoadWave("Resources/Audio/StageClear.wav"); // オーディオのロード
-	// Audio::GetInstance()->SetVolume(loadAudioHandle_, 0.5f);                             // 音量を設定（0.0f〜1.0fの範囲）
+	    textureHandleCountdown3_ = TextureManager::Load("3.png");                   // 3の画像
+	textureHandleCountdown2_ = TextureManager::Load("2.png");                   // 2の画像
+	textureHandleCountdown1_ = TextureManager::Load("1.png");                   // 1の画像
+	textureHandleCountdownGo_ = TextureManager::Load("go.png");                          // GOの画像
 
-	// カメラの設定と初期化
-	camera_.farZ = 1280.0f; // カメラのZ軸方向の最も遠いクリップ面を設定
-	camera_.Initialize();   // カメラの初期化
 
-	// デバッグカメラの生成と初期化
-	debaucamera_ = new DebugCamera(100, 50); // デバッグカメラのインスタンスを生成
-	debaucamera_->SetFarZ(1280.0f);          // デバッグカメラのZ軸方向の最も遠いクリップ面を設定
+	
+	//========================
+	// 🎥 カメラの設定
+	//========================
+	camera_.farZ = 1280.0f;
+	camera_.Initialize();
+	debaucamera_ = new DebugCamera(100, 50);
+	debaucamera_->SetFarZ(1280.0f);
 
-	// マップチップフィールドの生成とCSVファイルの読み込み
-	mapChipField_ = new MapChipField();                    // MapChipFieldのインスタンスを生成
-	mapChipField_->LoadMapChipCsv("Resources/blocks.csv"); // マップチップのCSVデータを読み込み
+	//========================
+	// 🗺️ マップ読み込み
+	//========================
+	mapChipField_ = new MapChipField();
+	mapChipField_->LoadMapChipCsv("Resources/1-1.csv");
 
-	// プレイヤーの生成と初期化
-	player_ = new Player();                                                          // Playerのインスタンスを生成
-	Vector3 playerPosition = mapChipField_->GetChipPositionIndex(1, 18);             // マップチップのインデックスからプレイヤーの初期位置を取得
-	player_->Initialize(playerModel_, &camera_, playerPosition, playerAttackModel_); // プレイヤーを初期化（モデル、カメラ、初期位置を設定）
-	player_->SetMapChipField(mapChipField_);                                         // プレイヤーにマップチップフィールドを設定
+	//========================
+	// 🧍 プレイヤーの初期化
+	//========================
+	player_ = new Player();
+	Vector3 playerPosition = mapChipField_->GetChipPositionIndex(3, 16);
+	player_->Initialize(playerModel_, &camera_, playerPosition, playerAttackModel_);
+	player_->SetMapChipField(mapChipField_);
+	player_->SetisMove(false);
 
-	HitEffect::SetModel(hitEffectModel_); // ヒットエフェクトのモデルを設定
-	HitEffect::SetCamera(&camera_);       // ヒットエフェクトにカメラを設定
+	//========================
+	// 💥 ヒットエフェクト設定
+	//========================
+	HitEffect::SetModel(hitEffectModel_);
+	HitEffect::SetCamera(&camera_);
 
-	for (int i = 0; i < kEnemyMax; i++) {
-		// 敵クラスの生成
-		Enemy* newEnemy = new Enemy(); // Enemyのインスタンスを生成
-		// 敵の位置設定と敵クラスの初期化
-		Vector3 enemyPosition = mapChipField_->GetChipPositionIndex(20, 12 + i); // マップチップのインデックスから敵の初期位置を取得
-		newEnemy->Initialize(enemy_model_, &camera_, enemyPosition);             // 敵を初期化（モデル、カメラ、初期位置を設定）
-		newEnemy->SetGameScene(this);                                            // 敵にゲームシーンへのポインタを設定
-		enemys_.push_back(newEnemy);
-	}
-	// パーティクルの生成
+	//========================
+	// 👾 敵の初期化
+	//========================
+	enemys_.push_back(new Enemy());
+	enemys_.back()->Initialize(enemy_model_, &camera_, mapChipField_->GetChipPositionIndex(15, 15));
+	enemys_.back()->SetMapChipField(mapChipField_);
+	enemys_.back()->SetGameScene(this);
+	enemys_.push_back(new Enemy());
+	enemys_.back()->Initialize(enemy_model_, &camera_, mapChipField_->GetChipPositionIndex(89, 14));
+	enemys_.back()->SetMapChipField(mapChipField_);
+	enemys_.back()->SetGameScene(this);
+	
+
+	//========================
+	// 🌪️ パーティクルの生成
+	//========================
 	deatparticles_ = new DeathParticles();
 	deatparticles_->Initialize(deatparticlesModel_, &camera_, player_, playerPosition);
 
-	// スカイドームの生成と初期化
-	skydome_ = new Skydome();                      // Skydomeのインスタンスを生成
-	skydome_->Initialize(modelSkydome_, &camera_); // スカイドームを初期化（モデル、カメラを設定）
+	//========================
+	// 🌌 スカイドーム初期化
+	//========================
+	skydome_ = new Skydome();
+	skydome_->Initialize(modelSkydome_, &camera_);
 
-	// カメラコントローラーの生成と初期化
-	CController_ = new CameraController(); // CameraControllerのインスタンスを生成
-	CController_->Initialize(&camera_);    // カメラコントローラーを初期化（カメラを設定）
-	CController_->SetTarget(player_);      // 追従対象をプレイヤーに設定
-	CController_->Reset();                 // カメラコントローラーをリセット
+	//========================
+	// 🎮 カメラコントローラー
+	//========================
+	CController_ = new CameraController();
+	CController_->Initialize(&camera_);
+	CController_->SetTarget(player_);
+	CController_->Reset();
+	CameraController::Rect cameraArea = {12.0f, 100 - 12.0f, 6.0f, 6.0f};
+	CController_->SetMovableSrea(cameraArea);
 
-	// カメラの可動範囲を設定
-	CameraController::Rect cameraArea = {12.0f, 100 - 12.0f, 6.0f, 6.0f}; // 可動範囲の矩形を定義
-	CController_->SetMovableSrea(cameraArea);                             // カメラの可動範囲を設定
+	//========================
+	// 🧱 ブロック生成
+	//========================
+	GenerrateBlock();
 
-	// ブロックの生成
-	GenerrateBlock(); // マップチップデータに基づいてブロックを生成
-
-	// ★フェードとフェーズ管理の初期化
+	//========================
+	// 🌗 フェード処理の初期化
+	//========================
 	fade_ = new Fade();
 	fade_->Initalize();
-	// FadeクラスのStartメソッドがフェードの方向と時間を引数にとると仮定
-	fade_->Start(Fade::Status::FadeIn, 1.0f); // フェードイン開始
-	// ゲームプレイフェーズから開始
+	fade_->Start(Fade::Status::FadeIn, 1.0f);
 	finishedTimer = 0;
 
-	gorl_ = new Gorl();                                                                   // gorlクラスのインスタンスを生成
-	gorl_->Initialize(goalModel_, &camera_, mapChipField_->GetChipPositionIndex(20, 18)); // gorlを初期化（モデル、カメラ、初期位置を設定）
 
-	GameClearTextWorldTransform_.Initialize();                                               // ゲームクリアテキストのワールド変換を初期化
-	GameClearTextWorldTransform_.scale_ = {5.0f, 1.0f, 1.0f};                                // ゲームクリアテキストのスケールを設定
-	GameClearTextWorldTransform_.rotation_ = {0.0f, 0.0f, 0.0f};                             // ゲームクリアテキストの回転を設定（180度回転）
-	GameClearTextWorldTransform_.translation_ = mapChipField_->GetChipPositionIndex(20, 18); // ゲームクリアテキストの初期位置を設定
+
+
+	//========================
+	// 🎉 ゲームクリアテキスト
+	//========================
+	GameClearTextWorldTransform_.Initialize();
+	GameClearTextWorldTransform_.scale_ = {5.0f, 1.0f, 1.0f};
+	GameClearTextWorldTransform_.rotation_ = {0.0f, 0.0f, 0.0f};
+	GameClearTextWorldTransform_.translation_ = mapChipField_->GetChipPositionIndex(20, 18);
+
+	//========================
+	//  　棘の壁の初期化
+	//========================
+	togeKabe_ = new KabeToge();
+	togeKabe_->Initialize(togeKabeModel_, &camera_, mapChipField_->GetChipPositionIndex(0, 18));
+	togeKabe_->SetIsmove(false);
+
+
+	yama_.push_back(new Yama());
+	yama_.back()->Initialize(yamaModel, &camera_, mapChipField_->GetChipPositionIndex(20, 19));
+
+	yama_.push_back(new Yama());
+	yama_.back()->Initialize(yamaModel, &camera_, mapChipField_->GetChipPositionIndex(70, 19));
+
+	
+	tree_.push_back(new Tree());
+	tree_.back()->Initialize(treeModel_, &camera_, mapChipField_->GetChipPositionIndex(5, 19));
+	tree_.push_back(new Tree());
+	tree_.back()->Initialize(treeModel_, &camera_, mapChipField_->GetChipPositionIndex(90, 19));
+
+
+
+	Audio::GetInstance()->Initialize("Resources/BGM/");
+
+	// BGMの読み込み（.wavファイル）
+	bgmHandle_ = KamataEngine::Audio::GetInstance()->LoadWave("Clear1.wav");
+
+	TextSprite1_1 = Sprite::Create(textureHandle, {100.50});
+	poseSprite = Sprite::Create(textureHandlePhose_, {0.0});
+	yazirusiSprite = Sprite::Create(TextureHandleYazirusi_, {180, 190});
+	enterSprite_ = Sprite::Create(textureHandleEnter_, {0.0f, 0.0f}); // エンターキー用スプライトの作成
+	pauseTextSprite_ = Sprite::Create(textureHandlePauseText_, {0.0f, 0.0f}); // ポーズメニュー用スプライトの作成
+	// ゲームクリアテキストスプライトの作成
+	GameClearTextSprite_ = Sprite::Create(textureHandleGameClearText_, {0.0f, 0.0f}); // ゲームクリアテキスト用スプライトの作成
+	spriteCountdown_ = Sprite::Create(textureHandleCountdown3_, {0, 0});              // 初期スプライト（3）
+
+
+	GameStateManager::GetInstance()->SetCurrentStageID(1); // ステージ1
+
+	isSprite = true;
+	firstFrame = true;
+	currentSelectIndex_ = 0; // 初期選択インデックス
+	
+
 }
 
+// ==============================
 // 更新処理
+// ==============================
 void GameScene::Update() {
+	// フェードの更新 & フェーズ管理
 	fade_->Update();
+	LimitPlayerPosition();
+	for (Yama* yama : yama_) {
+		yama->Update();
+	}
+	for (Tree* tree : tree_) {
+		tree->Update();
+	}
 	ChangePhase();
-	gorl_->Update(); // gorlの更新処理
-
-	switch (phase_) {
-	case Phase::kFadeIn:
-		player_->Update();             // プレイヤーの更新処理
-		for (Enemy* enemy : enemys_) { // C++11以降の範囲ベースforループ
-			enemy->Update();
-		}
-
-		CheakAllcollision();
-
-		CController_->Update(); // カメラコントローラーの更新処理
-
-		// ブロックのワールド行列を更新し、GPUに転送
-		for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
-			for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
-				if (!worldTransformBlocks) {
-					continue; // nullptrの場合はスキップ
-				}
-				// ワールド行列を計算（スケール、回転、平行移動）
-				worldTransformBlocks->matWorld_ = math->MakeAffineMatrix(worldTransformBlocks->scale_, worldTransformBlocks->rotation_, worldTransformBlocks->translation_);
-				worldTransformBlocks->TransferMatrix(); // 行列データをGPUに転送
-			}
-		}
-		debaucamera_->Update(); // デバッグカメラの更新処理
-
-#ifdef _DEBUG // デバッグビルド時のみ有効なコード
-		// スペースキーが押されたらデバッグカメラの有効/無効を切り替える
-		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
-			if (!isDebugCameraActive_) {
-				isDebugCameraActive_ = true;
-			} else {
-				isDebugCameraActive_ = false;
-			}
-		}
-#endif // !_DEBUG
-
-		// カメラの処理
-		if (isDebugCameraActive_) {                                          // デバッグカメラが有効な場合
-			camera_.matView = debaucamera_->GetCamera().matView;             // デバッグカメラのビュー行列を設定
-			camera_.matProjection = debaucamera_->GetCamera().matProjection; // デバッグカメラの射影行列を設定
-			camera_.TransferMatrix();                                        // ビュープロジェクション行列をGPUに転送
-		} else {                                                             // 通常カメラが有効な場合
-			camera_.UpdateMatrix();                                          // 通常カメラの行列を更新
-		}
-
-		skydome_->Update(); // スカイドームの更新処理
-		break;
-
-	case Phase::kPlay:
-		player_->Update();             // プレイヤーの更新処理
-		for (Enemy* enemy : enemys_) { // C++11以降の範囲ベースforループ
-			enemy->Update();
-		}
-
-		CheakAllcollision();
-
-		CController_->Update(); // カメラコントローラーの更新処理
-
-		// ブロックのワールド行列を更新し、GPUに転送
-		for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
-			for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
-				if (!worldTransformBlocks) {
-					continue; // nullptrの場合はスキップ
-				}
-				// ワールド行列を計算（スケール、回転、平行移動）
-				worldTransformBlocks->matWorld_ = math->MakeAffineMatrix(worldTransformBlocks->scale_, worldTransformBlocks->rotation_, worldTransformBlocks->translation_);
-				worldTransformBlocks->TransferMatrix(); // 行列データをGPUに転送
-			}
-		}
-		debaucamera_->Update(); // デバッグカメラの更新処理
-
-#ifdef _DEBUG // デバッグビルド時のみ有効なコード
-		// スペースキーが押されたらデバッグカメラの有効/無効を切り替える
-		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
-			if (!isDebugCameraActive_) {
-				isDebugCameraActive_ = true;
-			} else {
-				isDebugCameraActive_ = false;
-			}
-		}
-#endif // !_DEBUG
-
-		// カメラの処理
-		if (isDebugCameraActive_) {                                          // デバッグカメラが有効な場合
-			camera_.matView = debaucamera_->GetCamera().matView;             // デバッグカメラのビュー行列を設定
-			camera_.matProjection = debaucamera_->GetCamera().matProjection; // デバッグカメラの射影行列を設定
-			camera_.TransferMatrix();                                        // ビュープロジェクション行列をGPUに転送
-		} else {                                                             // 通常カメラが有効な場合
-			camera_.UpdateMatrix();                                          // 通常カメラの行列を更新
-		}
-
-		skydome_->Update(); // スカイドームの更新処理
-		break;
-
-	case Phase::kDeath:
-
-		for (Enemy* enemy : enemys_) { // C++11以降の範囲ベースforループ
-			enemy->Update();
-		}
-
-		// ブロックのワールド行列を更新し、GPUに転送
-		for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
-			for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
-				if (!worldTransformBlocks) {
-					continue; // nullptrの場合はスキップ
-				}
-				// ワールド行列を計算（スケール、回転、平行移動）
-				worldTransformBlocks->matWorld_ = math->MakeAffineMatrix(worldTransformBlocks->scale_, worldTransformBlocks->rotation_, worldTransformBlocks->translation_);
-				worldTransformBlocks->TransferMatrix(); // 行列データをGPUに転送
-			}
-		}
-		debaucamera_->Update(); // デバッグカメラの更新処理
-
-#ifdef _DEBUG // デバッグビルド時のみ有効なコード
-		// スペースキーが押されたらデバッグカメラの有効/無効を切り替える
-		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
-			if (!isDebugCameraActive_) {
-				isDebugCameraActive_ = true;
-			} else {
-				isDebugCameraActive_ = false;
-			}
-		}
-#endif // !_DEBUG
-
-		// カメラの処理
-		if (isDebugCameraActive_) {                                          // デバッグカメラが有効な場合
-			camera_.matView = debaucamera_->GetCamera().matView;             // デバッグカメラのビュー行列を設定
-			camera_.matProjection = debaucamera_->GetCamera().matProjection; // デバッグカメラの射影行列を設定
-			camera_.TransferMatrix();                                        // ビュープロジェクション行列をGPUに転送
-		} else {                                                             // 通常カメラが有効な場合
-			camera_.UpdateMatrix();                                          // 通常カメラの行列を更新
-		}
-
-		skydome_->Update(); // スカイドームの更新処理
-		break;
-	case Phase::GameClear:
-		math->worldTransFormUpdate(GameClearTextWorldTransform_); // ゲームクリアテキストのワールド変換を更新
+	// ポーズ状態の切り替え
+	if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_P)&&!player_->IsDead()&&!isGameClear_) {
+		isPaused_ = !isPaused_;
 	}
 
-	// ★ ヒットエフェクトの更新処理 (アクティブなものだけ)
-	for (HitEffect* hitEffect : hitEffects_) {
+	if (currentSelect_ == PauseSelect::kContinue) {
+		yazirusiSprite->SetPosition({180, 190});
+	} else if (currentSelect_ == PauseSelect::kStageSelect) {
+		yazirusiSprite->SetPosition({190, 320});
+	}
+	else if (currentSelect_ == PauseSelect::kTitle) {
+		yazirusiSprite->SetPosition({190, 460});
+	}
+	
+	// ポーズ中の処理
+	if (isPaused_) {
+		// Wキーで上に移動
+		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_W)) {
+			if (currentSelect_ == PauseSelect::kContinue) {
+				currentSelect_ = PauseSelect::kTitle;
+			} else if (currentSelect_ == PauseSelect::kStageSelect) {
+				currentSelect_ = PauseSelect::kContinue;
+			} else if (currentSelect_ == PauseSelect::kTitle) {
+				currentSelect_ = PauseSelect::kStageSelect;
+			}
+		}
+		// Sキーで下に移動
+		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_S)) {
+			if (currentSelect_ == PauseSelect::kContinue) {
+				currentSelect_ = PauseSelect::kStageSelect;
+			} else if (currentSelect_ == PauseSelect::kStageSelect) {
+				currentSelect_ = PauseSelect::kTitle;
+			} else if (currentSelect_ == PauseSelect::kTitle) {
+				currentSelect_ = PauseSelect::kContinue;
+			}
+		}
 
+		// 決定（Enterキー）
+		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_RETURN)) {
+			if (currentSelect_ == PauseSelect::kContinue) {
+				isPaused_ = false; // ポーズを解除
+			} else if (currentSelect_ == PauseSelect::kStageSelect) {
+				// ★ 修正: ステージセレクト画面の1-1看板のマップチップ座標を指定
+				Vector3 signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
+
+				// 次のプレイヤー初期位置をGameStateManagerに保存
+				GameStateManager::GetInstance()->SetPlayerStartPosition(signboardPosition);
+				finished_ = true; // シーン遷移
+			} else if (currentSelect_ == PauseSelect::kTitle) {
+				currentSelectIndex_ = 1;
+				finished_ = true; // シーン遷移
+			}
+		}
+
+		// ポーズ中のゲーム更新はスキップ
+		return;
+	}
+
+
+
+	// ==============================
+	// フェーズごとの処理
+	// ==============================
+	switch (phase_) {
+
+	// ------------------------------
+	// フェードイン中の処理
+	// ------------------------------
+	case Phase::kFadeIn:
+		player_->Update(); // プレイヤーの更新
+	
+		togeKabe_->Update();	
+		// 敵の更新
+		for (Enemy* enemy : enemys_) {
+			enemy->Update();
+		}
+
+		// 当たり判定
+		CheekAllcollision();
+
+		// カメラコントローラーの更新
+		CController_->Update();
+
+		// ブロックの行列更新 & 転送
+		for (std::vector<WorldTransform*>& blockLine : worldTransformBlocks_) {
+			for (WorldTransform* block : blockLine) {
+				if (!block)
+					continue;
+				block->matWorld_ = math->MakeAffineMatrix(block->scale_, block->rotation_, block->translation_);
+				block->TransferMatrix();
+			}
+		}
+
+		// デバッグカメラ更新
+		debaucamera_->Update();
+
+#ifdef _DEBUG
+		// デバッグカメラ切り替え
+		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_E)) {
+			isDebugCameraActive_ = !isDebugCameraActive_;
+		}
+#endif
+
+		// カメラの行列更新
+		if (isDebugCameraActive_) {
+			camera_.matView = debaucamera_->GetCamera().matView;
+			camera_.matProjection = debaucamera_->GetCamera().matProjection;
+			camera_.TransferMatrix();
+		} else {
+			camera_.UpdateMatrix();
+		}
+
+		// スカイドーム更新
+		skydome_->Update();
+		break;
+	case Phase::kCountdown:
+		// このフェーズでカウントダウンの更新処理を行う
+		countdownTimer_ += 1.0f / 60.0f; // タイマーを減らす
+
+		// カウントダウンのスプライト切り替え
+		if (countdownTimer_ >=0.0f&&countdownTimer_<1.0f) {
+
+			spriteCountdown_ = Sprite::Create(textureHandleCountdown3_, {-250, -100}); // 初期スプライト（3）
+		} else if (countdownTimer_ >= 1.0f && countdownTimer_ < 2.0f) {
+			spriteCountdown_ = Sprite::Create(textureHandleCountdown2_, {-250, -100}); // 初期スプライト（3）
+		} else if (countdownTimer_ >= 2.0f && countdownTimer_ < 3.0f) {
+			spriteCountdown_ = Sprite::Create(textureHandleCountdown1_, {-250, -100}); // 初期スプライト（3）
+		} else {
+			spriteCountdown_ = Sprite::Create(textureHandleCountdownGo_, {-250, -100}); // 初期スプライト（3）
+			if (countdownTimer_ >= 3.5f) { // GO!表示後
+				countdownState_ = CountdownState::kFinished;  
+				phase_ = Phase::kPlay;      // プレイフェーズへ移行
+				player_->SetisMove(true); // プレイヤーの移動を許可
+				togeKabe_->SetIsmove(true);
+		             // カウントダウン完了
+			}
+		}
+		// カウントダウン中はゲームの進行を停止するため、ここではプレイヤー等の更新処理は書かない
+		break;
+	// ------------------------------
+	// プレイ中の処理
+	// ------------------------------
+	case Phase::kPlay:
+
+		player_->Update();
+		togeKabe_->Update();
+		for (Enemy* enemy : enemys_) {
+			enemy->Update();
+		}
+
+		CheekAllcollision();
+		CController_->Update();
+
+		// ブロックの行列更新 & 転送
+		for (std::vector<WorldTransform*>& blockLine : worldTransformBlocks_) {
+			for (WorldTransform* block : blockLine) {
+				if (!block)
+					continue;
+				block->matWorld_ = math->MakeAffineMatrix(block->scale_, block->rotation_, block->translation_);
+				block->TransferMatrix();
+			}
+		}
+
+		debaucamera_->Update();
+
+#ifdef _DEBUG
+		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_E)) {
+			isDebugCameraActive_ = !isDebugCameraActive_;
+		}
+#endif
+
+		if (isDebugCameraActive_) {
+			camera_.matView = debaucamera_->GetCamera().matView;
+			camera_.matProjection = debaucamera_->GetCamera().matProjection;
+			camera_.TransferMatrix();
+		} else {
+			camera_.UpdateMatrix();
+		}
+
+		skydome_->Update();
+		break;
+
+	// ------------------------------
+	// 死亡中の処理（プレイヤー死亡）
+	// ------------------------------
+	case Phase::kDeath:
+
+		for (Enemy* enemy : enemys_) {
+			enemy->Update();
+		}
+
+		// ブロックの行列更新 & 転送
+		for (std::vector<WorldTransform*>& blockLine : worldTransformBlocks_) {
+			for (WorldTransform* block : blockLine) {
+				if (!block)
+					continue;
+				block->matWorld_ = math->MakeAffineMatrix(block->scale_, block->rotation_, block->translation_);
+				block->TransferMatrix();
+			}
+		}
+
+		debaucamera_->Update();
+
+#ifdef _DEBUG
+		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_E)) {
+			isDebugCameraActive_ = !isDebugCameraActive_;
+		}
+#endif
+
+		if (isDebugCameraActive_) {
+			camera_.matView = debaucamera_->GetCamera().matView;
+			camera_.matProjection = debaucamera_->GetCamera().matProjection;
+			camera_.TransferMatrix();
+		} else {
+			camera_.UpdateMatrix();
+		}
+
+		skydome_->Update();
+		break;
+
+	// ------------------------------
+	// ゲームクリア処理
+	// ------------------------------
+	case Phase::GameClear:
+		math->worldTransFormUpdate(GameClearTextWorldTransform_);
+		break;
+	}
+
+	// ==============================
+	// 共通処理
+	// ==============================
+
+	// ヒットエフェクト更新
+	for (HitEffect* hitEffect : hitEffects_) {
 		hitEffect->Update();
 	}
 
-	// 敵の削除処理（必要に応じて）
-	hitEffects_.remove_if([](HitEffect* hiteffect) {
-		if (hiteffect->IsDead()) { // 敵が死亡している場合
-			delete hiteffect;      // 敵のインスタンスを解放
-			return true;           // 削除対象としてtrueを返す
+	// 死亡したヒットエフェクトの削除
+	hitEffects_.remove_if([](HitEffect* effect) {
+		if (effect->IsDead()) {
+			delete effect;
+			return true;
 		}
-		return false; // 削除対象でない場合はfalseを返す
+		return false;
 	});
 
-	// 敵の削除処理（必要に応じて）
-	enemys_.remove_if([](Enemy* enemy) {
-		if (enemy->GetIsDead()) { // 敵が死亡している場合
-			delete enemy;         // 敵のインスタンスを解放
-			return true;          // 削除対象としてtrueを返す
-		}
-		return false; // 削除対象でない場合はfalseを返す
-	});               // 敵のリストから削除
+	// 死亡した敵の削除
+
 }
-
-// 描画処理
 void GameScene::Draw() {
-	DirectXCommon* dxcommon = DirectXCommon::GetInstance(); // DirectXCommonのインスタンスを取得
-	// Fadeの描画
-	Model::PreDraw(dxcommon->GetCommandList()); // モデル描画の前処理（コマンドリストの設定など）
+	DirectXCommon* dxcommon = DirectXCommon::GetInstance();
+	Model::PreDraw(dxcommon->GetCommandList());
 
-	if (!player_->IsDead()) {
-		player_->Draw(); // プレイヤーの描画処理
-	}
-
-	for (Enemy* enemy : enemys_) { // C++11以降の範囲ベースforループ
-
+	// 👾 敵の描画
+	for (Enemy* enemy : enemys_) {
+		if (enemy->isDead())
+			continue; // 死んでる敵はスキップ
 		enemy->Draw();
 	}
 
-	gorl_->Draw(); // gorlの描画処理
 
-	// ブロックの描画
-	for (std::vector<WorldTransform*>& worldTransformBlockLine : worldTransformBlocks_) {
-		for (WorldTransform* worldTransformBlocks : worldTransformBlockLine) {
-			if (!worldTransformBlocks) {
-				continue; // nullptrの場合はスキップ
+
+	  // 🧱 ブロック描画（草・土でモデル切替）
+	for (uint32_t y = 0; y < worldTransformBlocks_.size(); ++y) {
+		for (uint32_t x = 0; x < worldTransformBlocks_[y].size(); ++x) {
+			WorldTransform* block = worldTransformBlocks_[y][x];
+			if (block) {
+				// タイプを取得
+				MapChipType type = mapChipField_->GetMapChipTypeByindex(x, y);
+
+				// デバッグ用出力
+				if (type == MapChipType::kGrass_) {
+					std::cout << "Grass at (" << x << ", " << y << ") is being processed.\n";
+				}
+
+				// 種類ごとに描画モデルを分岐
+				switch (type) {
+				case MapChipType::kDirt_:
+					dirtModel_->Draw(*block, camera_);
+					break;
+				case MapChipType::kGrass_:
+					grassModel_->Draw(*block, camera_);
+					break;
+			case MapChipType::kGoal_:
+					goalModel_->Draw(*block, camera_);
+					break;
+			case MapChipType::kSpike_:
+				// トゲの壁は特別な処理を行う
+				togeModel_->Draw(*block, camera_);
+				break;
+				}
 			}
-			blockModel_->Draw(*worldTransformBlocks, camera_); // ブロックモデルを描画
 		}
 	}
 
-	skydome_->Draw(); // スカイドームの描画処理
-	// ★ ヒットエフェクトの描画処理 (アクティブなものだけ)
-	for (HitEffect* hitEffect : hitEffects_) {
+	togeKabe_->Draw(); // トゲ壁の描画
 
+
+
+	// 🌌 スカイドーム描画
+	skydome_->Draw();
+
+	
+		// 🧍 プレイヤー描画
+	if (!player_->IsDead())
+		player_->Draw();
+
+	// 💥 ヒットエフェクト描画
+	for (HitEffect* hitEffect : hitEffects_)
 		hitEffect->Draw();
+	for (Yama* yama : yama_) {
+		yama->Draw();
+	}
+	for (Tree* tree : tree_) {
+		tree->Draw();
 	}
 
+	
+	// 🌪️ パーティクル描画
 	deatparticles_->Draw();
+
+
+	// 🎉 ゲームクリア表示
 	if (isGameClear_) {
-		Model::PreDraw(dxcommon->GetCommandList());                       // モデル描画の前処理（コマンドリストの設定など）
-		GameClearTextModel_->Draw(GameClearTextWorldTransform_, camera_); // ゲームクリアテキストの描画処理
-		Model::PostDraw();                                                // モデル描画の後処理
+		Model::PreDraw(dxcommon->GetCommandList());
+		GameClearTextModel_->Draw(GameClearTextWorldTransform_, camera_);
+		Model::PostDraw();
 	}
 
+	// 🌗 フェード描画
 	fade_->Draw(dxcommon->GetCommandList());
+	Model::PostDraw();
 
-	Model::PostDraw(); // モデル描画の後処理
+	Sprite::PreDraw(dxcommon->GetCommandList());
+	if (countdownState_ == CountdownState::kCounting) {
+		spriteCountdown_->Draw();
+	}
+	if (isSprite&&!isGameClear_&&!isPaused_) {
+		TextSprite1_1->Draw();
+		pauseTextSprite_->Draw(); // ポーズスプライトの描画
+	}
+
+	if (isPaused_) {
+		poseSprite->Draw();
+		yazirusiSprite->Draw();
+		enterSprite_->Draw(); // エンターキー用スプライトの描画
+	}
+
+	// ゲームクリアテキストスプライトの描画
+	if (isGameClear_&&isSprite) {
+		GameClearTextSprite_->Draw();
+		enterSprite_->Draw(); // エンターキー用スプライトの描画
+
+	}
+	Sprite::PostDraw();
 }
 
-// ブロックの生成処理
 void GameScene::GenerrateBlock() {
-	const uint32_t kNumBlockVirtal = mapChipField_->GetNumBlockVirtcal();      // マップチップの垂直方向のブロック数を取得
-	const uint32_t kNumBlockHorizotal = mapChipField_->GetNumBlockHorizonal(); // マップチップの水平方向のブロック数を取得
+	const uint32_t kNumBlockVirtal = mapChipField_->GetNumBlockVirtcal();
+	const uint32_t kNumBlockHorizontal = mapChipField_->GetNumBlockHorizonal();
 
-	worldTransformBlocks_.resize(kNumBlockVirtal); // 垂直方向のサイズにリサイズ
+	worldTransformBlocks_.resize(kNumBlockVirtal);
 	for (uint32_t i = 0; i < kNumBlockVirtal; ++i) {
-		worldTransformBlocks_[i].resize(kNumBlockHorizotal); // 水平方向のサイズにリサイズ
+		worldTransformBlocks_[i].resize(kNumBlockHorizontal, nullptr); // nullptrで初期化
 	}
 
-	// マップチップのデータに基づいてブロックを配置
-	for (uint32_t i = 0; i < kNumBlockVirtal; ++i) {
-		for (uint32_t j = 0; j < kNumBlockHorizotal; ++j) {
-			// マップチップのタイプがブロックの場合
-			if (mapChipField_->GetMapChipTypeByindex(j, i) == MapChipType::kBlock_) {
-				WorldTransform* worldTransform = new WorldTransform();                                 // 新しいWorldTransformインスタンスを生成
-				worldTransform->Initialize();                                                          // 初期化
-				worldTransformBlocks_[i][j] = worldTransform;                                          // 配列に格納
-				worldTransformBlocks_[i][j]->translation_ = mapChipField_->GetChipPositionIndex(j, i); // ブロックのワールド座標を設定
+	for (uint32_t y = 0; y < kNumBlockVirtal; ++y) {
+		for (uint32_t x = 0; x < kNumBlockHorizontal; ++x) {
+			MapChipType type = mapChipField_->GetMapChipTypeByindex(x, y);
+
+			// 何らかの描画が必要なブロックのみWorldTransformを生成
+			if (type != MapChipType::kBlank_) {
+				WorldTransform* worldTransform = new WorldTransform();
+				worldTransform->Initialize();
+				worldTransform->translation_ = mapChipField_->GetChipPositionIndex(x, y);
+				worldTransformBlocks_[y][x] = worldTransform;
 			}
 		}
 	}
 }
 
-void GameScene::CheakAllcollision() {
-	// 判定対象１と２の座標
-	AABB aabb1, aabb2;
-	aabb1 = player_->GetAABB();
-	for (Enemy* enemy : enemys_) {
-		aabb2 = enemy->GetAABB();
-		if (enemy->isCollisonDisabled()) {
-			continue; // 当たり判定が無効な敵はスキップ
-		}
-		// AABB同士の考査判定
-		if (math->IsCollision(aabb1, aabb2)) {
-			// プレイヤーと敵の当たり判定
-			if (!player_->GetIsAttack()) {
+void GameScene::CheekAllcollision() {
+	// プレイヤーAABB
+	AABB aabb1 = player_->GetAABB();
 
-				player_->OnCollision(enemy);
+for (Enemy* enemy : enemys_) {
+		// 死亡しているか、当たり判定が無効化されている敵はスキップ
+		if (enemy->isDead() || enemy->isCollisonDisabled()) {
+			continue;
+		}
+
+		AABB aabb2 = enemy->GetAABB();
+		if (math->IsCollision(aabb1, aabb2)) {
+			// ここでは、踏んだかどうかの判定のみに集中する
+			if (aabb1.min.y >= aabb2.max.y - 4.0f && !player_->GetOnGround()) {
+				enemy->OnStomped(player_);
+				player_->SetVelocityY(0.3f);
+			} else {
+				player_->SetIsDead(true);
+			}
+		}
+	}
+	AABB aabb3 = togeKabe_->GetAABB();
+	if (math->IsCollision(aabb1, aabb3)) {
+		player_->SetIsDead(true);
+	}
+
+	// ==== マップチップとの当たり判定 ====
+	const uint32_t kNumBlockVertical = mapChipField_->GetNumBlockVirtcal();
+	const uint32_t kNumBlockHorizontal = mapChipField_->GetNumBlockHorizonal();
+
+	for (uint32_t y = 0; y < kNumBlockVertical; ++y) {
+		for (uint32_t x = 0; x < kNumBlockHorizontal; ++x) {
+			MapChipType type = mapChipField_->GetMapChipTypeByindex(x, y);
+
+			// ゴール or 棘 以外は無視
+			if (type != MapChipType::kGoal_ && type != MapChipType::kSpike_) {
+				continue;
 			}
 
-			enemy->onCollision(player_);
+			// マップチップの矩形AABBを作成
+			MapChipField::Rect rect = mapChipField_->GetRectByIndex(x, y);
+			AABB chipAABB;
+			chipAABB.min = {rect.left, rect.bottom, 0.0f};
+			chipAABB.max = {rect.right, rect.top, 0.0f};
+
+			// 当たり判定
+			if (math->IsCollision(aabb1, chipAABB)) {
+				if (type == MapChipType::kGoal_) {
+					// ゴール処理
+					bgmVoiceHandle_ = KamataEngine::Audio::GetInstance()->PlayWave(bgmHandle_, false, 0.5f);
+					isGameClear_ = true;
+				} else if (type == MapChipType::kSpike_) {
+					// 棘のダメージ処理
+					player_->SetIsDead(true); // プレイヤーを死亡状態に設定
+				}
+			}
 		}
 	}
-	AABB aabb3 = gorl_->GetAABB();
-	// プレイヤーとゴールの当たり判定
-	if (math->IsCollision(aabb1, aabb3)) {
-		// ゴールに到達した場合の処理
-		isGameClear_ = true; // ゲームクリアフラグを立てる
-	}
+
+
 }
 
 void GameScene::ChangePhase() {
 	switch (phase_) {
 	case Phase::kFadeIn:
 		if (fade_->isFinished()) {
-			phase_ = Phase::kPlay;
+			countdownState_ = CountdownState::kCounting;
+			phase_ = Phase::kCountdown; // フェードインが完了したらカウントダウンフェーズへ
 		}
 		break;
+	case Phase::kCountdown:
+		// Update()内のカウントダウンロジックでフェーズがkPlayに変わるため、ここでは何もしない
+		break;
+		
+	
 	case Phase::kPlay:
 		if (player_->IsDead()) {
 			// 死亡演出フェーズに切り替え
 			phase_ = Phase::kDeath;
+			isSprite = false; // スプライト非表示
 			const Vector3& deatParticlesPosition = player_->GetWorldPosition();
 			deatparticles_->Initialize(deatparticlesModel_, &camera_, player_, deatParticlesPosition);
 
 			fade_->Start(Fade::Status::FadeOut, 3.0f); // フェードアウト開始
+			nextScene_ = NextScene::kGameOver; 
 		}
 		if (isGameClear_) {
 			phase_ = Phase::GameClear; // ゲームクリアフェーズに切り替え
@@ -381,14 +662,33 @@ void GameScene::ChangePhase() {
 	case Phase::kDeath:
 		finishedTimer++;
 		deatparticles_->Update();
+				// ★ 修正: ステージセレクト画面の1-1看板のマップチップ座標を指定
+		Vector3 signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
+
+		// 次のプレイヤー初期位置をGameStateManagerに保存
+		GameStateManager::GetInstance()->SetPlayerStartPosition(signboardPosition);
 		if (finishedTimer >= 180) {
 			finished_ = true;
 		}
 		break;
 	case Phase::GameClear:
 
-		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+
+	
+
+		
+            // ステージクリア情報を保存
+		GameStateManager::GetInstance()->SetStageClear(1, true);
+
+		// ★ 修正: ステージセレクト画面の1-1看板のマップチップ座標を指定
+	    signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
+
+		// 次のプレイヤー初期位置をGameStateManagerに保存
+		GameStateManager::GetInstance()->SetPlayerStartPosition(signboardPosition);
+
+		if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
 			isTimerFinished_ = true;                   // スペースキーが押されたらタイマー終了フラグを立てる
+			isSprite = false;                          // スプライト表示
 			fade_->Start(Fade::Status::FadeOut, 3.0f); // フェードアウト開始
 		}
 		if (isTimerFinished_) {
@@ -407,10 +707,39 @@ void GameScene::CreateHitEffect(const KamataEngine::Vector3& position) {
 	                                                       // ヒットエフェクトの数が最大数を超えた場合、最も古いものを削除
 }
 
+void GameScene::LimitPlayerPosition() 
+{
+	if (firstFrame) {
+		firstFrame = false;
+		return;
+	}
+
+	Vector3 pos = player_->GetWorldPosition();
+
+	// プレイヤーのサイズを取得（半分の幅）
+	float halfWidth = player_->GetWidth() / 2.0f;
+
+	// 制限用の基準値（壁の位置）
+	const float leftLimit = 1.4f;
+	const float rightLimit = 98.0f;
+
+	// X方向の制限（めり込み防止）
+	if (pos.x < leftLimit + halfWidth) {
+		pos.x = leftLimit + halfWidth;
+	}
+	if (pos.x > rightLimit - halfWidth) {
+		pos.x = rightLimit - halfWidth;
+	}
+
+	player_->SetWorldPosition(pos);
+}
+
+
+
 // デストラクタ
 GameScene::~GameScene() {
 	// 生成したインスタンスの解放
-	delete blockModel_;    // ブロックモデルの解放
+	delete dirtModel_;    // ブロックモデルの解放
 	delete debaucamera_;   // デバッグカメラの解放
 	delete modelSkydome_;  // スカイドームモデルの解放
 	delete player_;        // プレイヤーの解放

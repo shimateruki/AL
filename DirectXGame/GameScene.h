@@ -1,108 +1,172 @@
 #pragma once // 同じヘッダーファイルが複数回インクルードされるのを防ぐ
 
-// 必要なヘッダーファイルをインクルード
-#include "Block.h"            // Blockクラスの定義
-#include "CameraController.h" // CameraControllerクラスの定義
+// ===== 必要なヘッダーファイル =====
+#include "Block.h"
+#include "CameraController.h"
 #include "DeathParticles.h"
-#include "Enemy.h" // Enemyクラスの定義 (02_09 10枚目)
+#include "Enemy.h"
 #include "Fade.h"
 #include "HitEffect.h"
-#include "KamataEngine.h" // KamataEngineの基本機能（Model, WorldTransform, Cameraなど）
-#include "MapChipField.h" // MapChipFieldクラスの定義
-#include "Player.h"       // Playerクラスの定義
+#include "KamataEngine.h"
+#include "MapChipField.h"
+#include "Player.h"
 #include "gorl.h"
-#include "math.h"    // 数学関連のユーティリティ（おそらくMathクラスや関連関数）
-#include "skydome.h" // Skydomeクラスの定義
+#include "math.h"
+#include "skydome.h"
+#include"KabeToge.h"
+#include"Toge.h"
+#include"CloudPlatform.h"
+#include "yama.h"
+#include"tree.h"
 
-enum class Phase {
-
-	kFadeIn,
-	kPlay,  // ゲームプレイ
-	kDeath, // デス演出
-	kFadeOut,
-	GameClear, // ゲームクリア
-};
-
-// ゲームシーンクラス
+// ===== ゲームシーンクラス定義 =====
 class GameScene {
-
 public:
-	// 初期化処理
+	// ===== ゲーム進行フェーズ =====
+	enum class Phase {
+		kFadeIn,  // フェードイン中
+		kCountdown, // 新しいフェーズを追加
+		kPlay,    // ゲームプレイ中
+		kDeath,   // 死亡演出中
+		kFadeOut, // フェードアウト中
+		GameClear // ゲームクリア時
+	};
+
+	// ★ 追加: ポーズ画面の各選択肢
+	enum class PauseSelect {
+		kContinue,    // ゲームを続ける
+		kStageSelect, // ステージセレクトに戻る
+		kTitle,       // タイトルへ戻る
+	};
+
+	   enum class CountdownState {
+		kOff,      // カウントダウンが無効
+		kCounting, // カウントダウン中
+		kFinished  // カウントダウン完了
+	};
+
+
+	enum class NextScene { kGameOver, kStageSelect, kNone };
+	// 初期化・更新・描画
 	void Initialize();
-
-	// 更新処理
 	void Update();
-
-	// 描画処理
 	void Draw();
 
-	// ブロック生成処理
+	// 各種ロジック
 	void GenerrateBlock();
+	void GenerateBlocks();
+	// ブロック生成処理
+	void CheekAllcollision();                                    // 当たり判定処理
+	void ChangePhase();                                          // フェーズ切り替え
+	void CreateHitEffect(const KamataEngine::Vector3& position); // ヒットエフェクト生成
 
-	// すべてのあたり判定を行う
-	void CheakAllcollision();
+	bool isFinished() const { return finished_; } // 終了フラグ取得
+	void LimitPlayerPosition();                   // 画面外に出ない制限
+	int currentSelectIndex() const { return currentSelectIndex_; } // 現在の選択肢インデックスを取得
+	NextScene GetNextScene() const { return nextScene_; }
 
-	// フェーズの切り替え
-	void ChangePhase();
-
-	bool isFinished() const { return finished_; }
-	// エフェクトの生成
-	void CreateHitEffect(const KamataEngine::Vector3& position);
-
-	// デストラクタ
-	~GameScene();
+	~GameScene(); // デストラクタ
 
 private:
-	uint32_t textureHandel_ = 0;                  // テクスチャハンドル
-	KamataEngine::Model* blockModel_ = nullptr;   // ブロックのモデル
-	KamataEngine::WorldTransform worldTransform_; // ワールド変換（おそらく単一のオブジェクト用、現状未使用の可能性あり）
-	KamataEngine::Camera camera_;                 // ゲーム内メインカメラ
-	Player* player_ = nullptr;                    // プレイヤーオブジェクト
-	bool isDebugCameraActive_ = false;            // デバッグカメラがアクティブかどうかを示すフラグ
-	// デバッグカメラ
-	KamataEngine::DebugCamera* debaucamera_ = nullptr; // デバッグカメラオブジェクト
+	// ★ 追加: ポーズ関連のメンバ変数
+	bool isPaused_ = false;
+	PauseSelect currentSelect_ = PauseSelect::kContinue;
+	int currentSelectIndex_ = 0; // 現在の選択肢インデックス
+	// ===== モデル関連 =====
+	uint32_t textureHandel_ = 0;                        // テクスチャハンドル
+	KamataEngine::Model* dirtModel_ = nullptr;         // ブロックのモデル
+	KamataEngine::Model* grassModel_ = nullptr;         // 草ブロックのモデル
+	KamataEngine::Model* playerModel_ = nullptr;        // プレイヤーのモデル
+	KamataEngine::Model* playerAttackModel_ = nullptr;  // プレイヤー攻撃モデル
+	KamataEngine::Model* goalModel_ = nullptr;          // ゴールモデル
+	KamataEngine::Model* modelSkydome_ = nullptr;       // スカイドームモデル
+	KamataEngine::Model* enemy_model_ = nullptr;        // 敵モデル
+	KamataEngine::Model* deatparticlesModel_ = nullptr; // デスパーティクルモデル
+	KamataEngine::Model* hitEffectModel_ = nullptr;     // ヒットエフェクトモデル
+	KamataEngine::Model* GameClearTextModel_ = nullptr; // ゲームクリアテキストモデル
+	KamataEngine::Model* togeKabeModel_ = nullptr;      // トゲ壁モデル
+	KamataEngine::Model* togeModel_ = nullptr;          // トゲモデル
+	KamataEngine::Model* CloudPlatformModel_ = nullptr; // 雲プラットフォームモデル
+	KamataEngine::Model* yamaModel = nullptr;           // 山モデル
+	KamataEngine::Model* treeModel_ = nullptr;          // 木モデル
 
-	std::vector<std::vector<KamataEngine::WorldTransform*>> worldTransformBlocks_; // マップ内のブロックのワールド変換を格納する2Dベクター
-	Skydome* skydome_ = nullptr;                                                   // スカイドームオブジェクト
-	KamataEngine::Model* playerModel_ = nullptr;                                   // プレイヤーのモデル
-	KamataEngine::Model* modelSkydome_ = nullptr;
-	KamataEngine::Model* playerAttackModel_ = nullptr;
-	KamataEngine::Model* goalModel_ = nullptr; // ゴールのモデル
+	KamataEngine::Sprite* TextSprite1_1;
+	KamataEngine::Sprite* poseSprite = nullptr; // 数字表示用スプライト
+	KamataEngine::Sprite* yazirusiSprite = nullptr;
+	KamataEngine::Sprite* enterSprite_ = nullptr; // エンターキー用スプライト
+	KamataEngine::Sprite* GameClearTextSprite_ = nullptr; // ゲームクリアテキスト用スプライト
+	KamataEngine::Sprite* pauseTextSprite_ = nullptr;     
 
-	Gorl* gorl_ = nullptr; // gorlクラスのインスタンス
 
-	// エネミークラス
-	std::list<Enemy*> enemys_; // 敵オブジェクト
-	// エネミーモデル
-	KamataEngine::Model* enemy_model_ = nullptr; // 敵のモデル
-	const int kEnemyMax = 3;
 
-	DeathParticles* deatparticles_ = nullptr;
-	KamataEngine::Model* deatparticlesModel_ = nullptr;
 
-	// マップチップフィールド
-	MapChipField* mapChipField_ = nullptr; // マップチップフィールドオブジェクト
+	// ===== ワールド変換関連 =====
+	KamataEngine::WorldTransform worldTransform_;                                  // 共通ワールド変換
+	std::vector<std::vector<KamataEngine::WorldTransform*>> worldTransformBlocks_; // ブロック配置用
+	KamataEngine::WorldTransform GameClearTextWorldTransform_;                     // ゲームクリアテキスト位置
 
-	CameraController* CController_ = nullptr; // カメラコントローラーオブジェクト
+	// ===== カメラ =====
+	KamataEngine::Camera camera_;                      // メインカメラ
+	bool isDebugCameraActive_ = false;                 // デバッグカメラ有効フラグ
+	KamataEngine::DebugCamera* debaucamera_ = nullptr; // デバッグカメラ
+	CameraController* CController_ = nullptr;          // カメラコントローラー
 
-	Math* math = nullptr; // 数学ユーティリティオブジェクト（Mathクラスのインスタンス）
+	// ===== キャラクター・オブジェクト =====
+	Player* player_ = nullptr;             // プレイヤー
+	Gorl* gorl_ = nullptr;                 // ゴール（Gorl）
+	MapChipField* mapChipField_ = nullptr; // マップチップ
+	Skydome* skydome_ = nullptr;           // スカイドーム
+	Math* math = nullptr;                  // 数学ユーティリティ
+	KabeToge* togeKabe_ = nullptr;         // 棘の壁
+	Toge* toge_ = nullptr;                 // 棘
+	CloudPlatform* cloudPlatform_ = nullptr; // 雲プラットフォーム
+	std::vector<Enemy*> enemys_;
+	std::vector<Yama*> yama_;                // 山リスト
+	std::vector<Tree*> tree_;                // 木リスト
+	
 
-	// ヒットした時のモデル
-	std::list<HitEffect*> hitEffects_;              // ヒットエフェクトオブジェクト
-	KamataEngine::Model* hitEffectModel_ = nullptr; // ヒットエフェクトのモデル
-	// エフェクト最大数
-	const int HitEffectMax = 10; // ヒットエフェクトの最大数
 
-	KamataEngine::Model* GameClearTextModel_;
-	KamataEngine::WorldTransform GameClearTextWorldTransform_; // 文字モデルのワールド変
 
-	// 終了フラグ
-	bool finished_ = false;
-	Phase phase_ = Phase::kFadeIn; // 現在のゲームシーンのフェーズ
-	Fade* fade_ = nullptr;         // フェードオブジェクトのポインタ
-	bool isSceneFinished_ = false; // シーン終了判定フラグ
-	int finishedTimer = 0;         // kDeathフェーズで使っていたタイマー
+	std::vector<CloudPlatform*> CloudPlatform; // 雲リスト
+
+	// ===== パーティクル・エフェクト =====
+	DeathParticles* deatparticles_ = nullptr; // 死亡エフェクト
+	std::list<HitEffect*> hitEffects_;        // ヒットエフェクト
+	const int HitEffectMax = 10;              // ヒットエフェクト最大数
+
+	// ===== フェーズ管理・シーン状態 =====
+	Phase phase_ = Phase::kFadeIn; // 現在のフェーズ
+	Fade* fade_ = nullptr;         // フェード演出
+	bool finished_ = false;        // シーン終了フラグ
+	bool isSceneFinished_ = false; // フェーズ遷移完了フラグ
+	int finishedTimer = 0;         // 終了タイマー
 	bool isGameClear_ = false;     // ゲームクリアフラグ
-	bool isTimerFinished_ = false; // タイマーが終了したかどうかのフラグ
-	int loadAudioHandle_ = 0;      // オーディオハンドル(曲の再生)
+	bool isTimerFinished_ = false; // タイマー完了フラグ
+
+	// ===== オーディオ =====
+	uint32_t bgmHandle_ = 0;      // BGMデータのハンドル
+	uint32_t bgmVoiceHandle_ = 0; // BGM再生のハンドル
+
+	uint32_t textureHandle;
+	uint32_t textureHandlePhose_ = 0; 
+	uint32_t TextureHandleYazirusi_ = 0;
+	uint32_t textureHandleEnter_ = 0; // テクスチャハンドル
+	uint32_t textureHandleGameClearText_ = 0; // ゲームクリアテキスト用テクスチャハンドル
+	uint32_t textureHandlePauseText_ = 0;     // ポーズテキスト用テクスチャハンドル
+
+	   NextScene nextScene_ = NextScene::kNone;
+	bool isSprite;
+	bool firstFrame;
+
+		CountdownState countdownState_ = CountdownState::kOff;
+	float countdownTimer_ = 0.0f;
+
+
+	// カウントダウン表示用のスプライトハンドル
+	uint32_t textureHandleCountdown3_ = 0;
+	uint32_t textureHandleCountdown2_ = 0;
+	uint32_t textureHandleCountdown1_ = 0;
+	uint32_t textureHandleCountdownGo_ = 0;
+
+	KamataEngine::Sprite* spriteCountdown_ = nullptr;
 };
