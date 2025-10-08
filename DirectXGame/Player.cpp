@@ -426,6 +426,8 @@ void Player::UpdateOnWall(const CollisionMapInfo& info) {
 	}
 }
 
+
+
 void Player::BehaviorRootUpdate() {
 	// 1. 入力や重力で、このフレームでどれだけ動きたいか（速度）を計算
 	if (isMove_) {
@@ -437,66 +439,52 @@ void Player::BehaviorRootUpdate() {
 
 	// 2. X軸（横）の移動と衝突判定を「個別」に行う
 	collisionInfo.isMovement.x = velosity_.x;
-	collisionInfo.isMovement.y = 0.0f; // Y軸の移動は一旦ゼロとして扱う
+	collisionInfo.isMovement.y = 0.0f;
 	MapChipLeft(collisionInfo);
 	MapChipRight(collisionInfo);
-	// X軸の移動を先に確定させる
 	worldTransformPlayer_.translation_.x += collisionInfo.isMovement.x;
 
 	// 3. Y軸（縦）の移動と衝突判定を「個別」に行う
-	//    X軸が移動した後の、新しい現在地から判定を始める
-	collisionInfo.isMovement.x = 0.0f; // X軸はもう動いたのでゼロに
+	collisionInfo.isMovement.x = 0.0f;
 	collisionInfo.isMovement.y = velosity_.y;
 	MapChipUp(collisionInfo);
 	MapChipDown(collisionInfo);
-	// Y軸の移動を確定させる
 	worldTransformPlayer_.translation_.y += collisionInfo.isMovement.y;
 
-	// 4. 全ての移動と衝突が終わった後で、状態と次のフレームの速度を更新する
+	// 4. 状態と速度の更新
 	if (collisionInfo.isHitTop) {
 		velosity_.y = 0;
 	}
-
-	// 壁接触時の処理（跳ね返り）は、この分離された判定と組み合わせることで初めて正しく機能します
+	UpdateOnGround(collisionInfo);
 	UpdateOnWall(collisionInfo);
 
-	// 接地状態の更新
-	UpdateOnGround(collisionInfo);
-
+	// 5. アニメーション関連の更新
+	// 2段ジャンプ中の回転処理
 	if (isSpinning_) {
-		// 1. タイマーを進める (60FPSを想定)
 		spinTimer_ += 1.0f / 60.0f;
-
-		// 2. アニメーションの進捗度を計算 (0.0f から 1.0f に変化)
 		float spinProgress = spinTimer_ / kSpinDuration;
-
-		// 3. 進捗度から回転角度を計算 (1.0fで360度 = 2πラジアン)
 		float spinAngle = spinProgress * 2.0f * std::numbers::pi_v<float>;
 
-		// 4. プレイヤーの向きに合わせて回転方向を決定 (左向きなら逆回転)
 		if (lrDirection_ == LRDirection::kLeft) {
 			spinAngle *= -1.0f;
 		}
-
-		// 5. プレイヤーのZ軸の角度に適用する (前転するような回転)
 		worldTransformPlayer_.rotation_.z = spinAngle;
 
-		// 6. 回転が終了したらフラグと角度をリセット
 		if (spinTimer_ >= kSpinDuration) {
 			isSpinning_ = false;
 			worldTransformPlayer_.rotation_.z = 0.0f;
 		}
+	} // ★★★ isSpinning_ の if文はここで閉じる ★★★
 
-		// 5. 旋回制御 (ここは変更なし)
-		if (turnTimer_ > 0.0f) {
-			turnTimer_ = std::max(turnTimer_ - (1.0f / 60.0f), 0.0f);
+	// 旋回制御 (isSpinning_ の外にあるのが正しい状態)
+	if (turnTimer_ > 0.0f) {
+		turnTimer_ = std::max(turnTimer_ - (1.0f / 60.0f), 0.0f);
 
-			float destinationRotationYTable[] = {std::numbers::pi_v<float> / 2.0f, std::numbers::pi_v<float> * 3.0f / 2.0f};
-			float destinationRotationY = destinationRotationYTable[static_cast<uint32_t>(lrDirection_)];
+		float destinationRotationYTable[] = {std::numbers::pi_v<float> / 2.0f, std::numbers::pi_v<float> * 3.0f / 2.0f};
+		float destinationRotationY = destinationRotationYTable[static_cast<uint32_t>(lrDirection_)];
 
-			float t = 1.0f - (turnTimer_ / kTimeTurn);
-			worldTransformPlayer_.rotation_.y = math->EaseInOutSine(t, turnFirstRottationY_, destinationRotationY);
-		}
+		float t = 1.0f - (turnTimer_ / kTimeTurn);
+		worldTransformPlayer_.rotation_.y = math->EaseInOutSine(t, turnFirstRottationY_, destinationRotationY);
 	}
 }
 

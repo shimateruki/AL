@@ -61,7 +61,7 @@ void MapChipField::LoadMapChipCsv(const std::string& filePath) {
 			}
 
 			// enum変換（CSVの数字とMapChipTypeの順番を一致させている前提）
-			if (num >= 0 && num <= static_cast<int>(MapChipType::kJumpPad_)) {
+			if (num >= 0 && num <= static_cast<int>(MapChipType::kIceFloor_)) {
 					mapChipData_.data[yIndex][xIndex] = static_cast<MapChipType>(num);
 				} else {
 					mapChipData_.data[yIndex][xIndex] = MapChipType::kBlank_;
@@ -120,3 +120,4 @@ MapChipField::Rect MapChipField::GetRectByIndex(uint32_t xIndex, uint32_t yIndex
 
 	return rect;
 }
+

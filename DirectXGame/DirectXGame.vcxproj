@@ -116,6 +116,7 @@
     <ClCompile Include="GameScene.cpp" />
     <ClCompile Include="GameScene1_2.cpp" />
     <ClCompile Include="GameScene1_3.cpp" />
+    <ClCompile Include="GameScene2_1.cpp" />
     <ClCompile Include="GameStateManager.cpp" />
     <ClCompile Include="gorl.cpp" />
     <ClCompile Include="HitEffect.cpp" />
@@ -222,6 +223,7 @@
     <ClInclude Include="GameScene.h" />
     <ClInclude Include="GameScene1_2.h" />
     <ClInclude Include="GameScene1_3.h" />
+    <ClInclude Include="GameScene2_1.h" />
     <ClInclude Include="GameStateManager.h" />
     <ClInclude Include="gorl.h" />
     <ClInclude Include="HitEffect.h" />

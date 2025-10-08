@@ -3,6 +3,7 @@
 #include "GameScene.h"
 #include "GameScene1_2.h"
 #include "GameScene1_3.h"
+#include"GameScene2_1.h"
 #include "Player.h"
 #include <cassert>
 #include <numbers>
@@ -191,6 +192,8 @@ void Enemy::OnStomped(const Player* player) {
 		gameScene1_2_->CreateHitEffect(effectPos);
 	} else if (gameScene1_3_) {
 		gameScene1_3_->CreateHitEffect(effectPos);
+	} else if (gameScene2_1_) {
+		gameScene2_1_->CreateHitEffect(effectPos);
 	}
 }
 //-----------------------------------------------------------------------------

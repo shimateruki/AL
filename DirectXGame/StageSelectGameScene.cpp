@@ -133,6 +133,9 @@ void StageSelectGameScene::Initialize() {
 	if (GameStateManager::GetInstance()->IsStageClear(3)) {
 		spriteTexts_.back()->SetColor({0.0f, 0.0f, 1.0f, 1.0f}); // 青色に変更
 	}
+	// 2-1
+	signboards_.push_back(new Signboard());
+	signboards_.back()->Initialize(signboardModel_, &camera_, mapChipField_->GetChipPositionIndex(40, 17), 4);
 
 	yama_.push_back(new Yama());
 	yama_.back()->Initialize(yamaModel, &camera_, mapChipField_->GetChipPositionIndex(20, 19));
