@@ -48,7 +48,7 @@ void StageSelectGameScene::Initialize() {
 	//========================
 	player_ = new Player();
 	Vector3 playerPosition = GameStateManager::GetInstance()->GetPlayerStartPosition();
-	player_->Initialize(playerModel_, &camera_, playerPosition, playerAttackModel_);
+	player_->Initialize(playerModel_, &camera_, playerPosition);
 	player_->SetMapChipField(mapChipField_);
 	player_->SetisMove(true);
 

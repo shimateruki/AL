@@ -9,7 +9,7 @@
 
 using namespace KamataEngine;
 
-void Player::Initialize(Model* model, Camera* camera, const Vector3& position, KamataEngine::Model* modelAttack) {
+void Player::Initialize(Model* model, Camera* camera, const Vector3& position) {
 	assert(model);
 	camera_ = camera;
 	model_ = model;
@@ -18,7 +18,6 @@ void Player::Initialize(Model* model, Camera* camera, const Vector3& position, K
 	worldTransformPlayer_.translation_ = position;
 	worldTransformPlayer_.rotation_.y = std::numbers::pi_v<float> / 2.0f; // 初期向きを右に設定
 
-	modelAttack_ = modelAttack; // 攻撃用モデルの設定
 
 	// 攻撃用モデルの設定
 	worldTransformAttack_.Initialize();
@@ -51,17 +50,8 @@ Vector3 Player::GetWorldPosition() const {
 
 void Player::BehaviorRootInitialize() {}
 
-void Player::BehaviorAtcckInitialize() { // 02_14 19枚目 カウンター初期化
-	attckParmeter_ = 0;
 
-	velosity_ = {};
-
-	// 溜めフェーズから始める
-
-	attackPhase_ = AttackPhase::reservoir;
-}
-
-// 移動処理（先生のInputMoveロジックを統合）
+// 移動処理
 void Player::Move() {
 	// --- 左右移動（地上・空中で処理共通） ---
 	if (Input::GetInstance()->PushKey(DIK_D) || Input::GetInstance()->PushKey(DIK_A)) {
@@ -115,68 +105,15 @@ void Player::Move() {
 	}
 }
 
-void Player::attckMove() {
-	if (onGround_) { // 接地状態の場合
-		// 左右移動操作
-		if (Input::GetInstance()->PushKey(DIK_RIGHT) || Input::GetInstance()->PushKey(DIK_LEFT)) {
-			Vector3 acceleration = {};
-			if (Input::GetInstance()->PushKey(DIK_RIGHT)) {
-				if (velosity_.x < 0.0f) {
-					velosity_.x *= (1.0f - kAtteunuation); // 旋回最初は減衰
-				}
-				acceleration.x += kAcceleration / 60.0f; // フレームレートで割る
-				if (lrDirection_ != LRDirection::kRight) {
-					lrDirection_ = LRDirection::kRight;
-					turnFirstRottationY_ = worldTransformPlayer_.rotation_.y;
-					turnTimer_ = kTimeTurn;
-				}
-			} else if (Input::GetInstance()->PushKey(DIK_LEFT)) {
-				if (velosity_.x > 0.0f) {
-					velosity_.x *= (1.0f - kAtteunuation); // 旋回最初は減衰
-				}
-				acceleration.x -= kAcceleration / 60.0f; // フレームレートで割る
-				if (lrDirection_ != LRDirection::kLeft) {
-					lrDirection_ = LRDirection::kLeft;
-					turnFirstRottationY_ = worldTransformPlayer_.rotation_.y;
-					turnTimer_ = kTimeTurn;
-				}
-			}
-			velosity_ += acceleration;
-			velosity_.x = std::clamp(velosity_.x, -kLimitRunSpeed, kLimitRunSpeed);
-		} else {
-			// 非入力時は移動減衰
-			velosity_.x *= (1.0f - kAtteunuation);
-		}
 
-		// ほぼ0の場合に0にする
-		if (std::abs(velosity_.x) <= 0.0001f) {
-			velosity_.x = 0.0f;
-		}
-
-		// ジャンプ
-		if (Input::GetInstance()->PushKey(DIK_UP)) {
-			velosity_.y += kJumpAccleration / 60.0f; // ジャンプ初期速度 (フレームレートで割る)
-		}
-	} else { // 空中状態の場合
-		// 重力適用
-		velosity_.y += -kGgravityAcceleration / 60.0f;         // 1フレームあたりの重力加速度
-		velosity_.y = std::max(velosity_.y, -kLimitFallSpeed); // 最大落下速度制限
-	}
-}
 
 void Player::Update() {
 	// 1. フラグ初期化
 	onCloud_ = nullptr;
 
-	// 2. 入力・移動処理
-	switch (behavior_) {
-	case Behavior::kRoot:
+
 		BehaviorRootUpdate();
-		break;
-	case Behavior::kAttack:
-		BehaviorAttckUpdate();
-		break;
-	}
+
 
 	// 3. 衝突処理（地面＆雲）
 	//    → GameScene 側で呼んでると思う
@@ -191,7 +128,6 @@ void Player::Update() {
 
 	// 5. 行列更新
 	math->worldTransFormUpdate(worldTransformPlayer_);
-	math->worldTransFormUpdate(worldTransformAttack_);
 }
 
 void Player::Draw() {
@@ -199,24 +135,10 @@ void Player::Draw() {
 	assert(camera_);
 
 	model_->Draw(worldTransformPlayer_, *camera_);
-	switch (attackPhase_) {
-	case Player::AttackPhase::reservoir:
 
-		break;
-	case Player::AttackPhase::rush:
-		modelAttack_->Draw(worldTransformAttack_, *camera_);
-		break;
-	case Player::AttackPhase::reverberation:
-		modelAttack_->Draw(worldTransformAttack_, *camera_);
-		break;
-	}
-#ifdef _DEBUG
-
-
-#endif // !De
 }
 
-// 各方向のマップチップとの当たり判定 (先生のロジックをベースに)
+// 各方向のマップチップとの当たり判定
 void Player::MapChipUp(CollisionMapInfo& info) {
 	// 上昇なし？
 	if (info.isMovement.y <= 0) {
@@ -437,7 +359,7 @@ void Player::MapChipRight(CollisionMapInfo& info) {
 	}
 }
 
-// 接地状態の切り替え処理 (先生のUpdateOnGroundに相当)
+// 接地状態の切り替え処理 
 void Player::UpdateOnGround(const CollisionMapInfo& info) {
 	if (onGround_) {
 		// ジャンプ開始時、Y速度が正なら非接地状態に
@@ -487,150 +409,60 @@ void Player::UpdateOnGround(const CollisionMapInfo& info) {
 // 壁接触時の処理
 void Player::UpdateOnWall(const CollisionMapInfo& info) {
 	if (info.hitWall) {
-		velosity_.x *= (1.0f - kAttenuationWall); // 壁接触時の横方向減衰
+		// 変更後：速度を反転させて、少しだけ跳ね返らせる
+		velosity_.x *= -0.3f; 
 	}
 }
 
 void Player::BehaviorRootUpdate() {
-	// 移動入力と速度計算
+	// 1. 入力や重力で、このフレームでどれだけ動きたいか（速度）を計算
 	if (isMove_) {
 		Move();
 	}
-	
 
 	// 衝突情報を初期化
 	CollisionMapInfo collisionInfo = {};
-	collisionInfo.isMovement = velosity_; // 現在の速度を予測移動量としてセット
 
-	// 各方向のマップチップとの当たり判定（衝突によってcollisionInfo.isMovementが調整される）
-
-	MapChipUp(collisionInfo);    // 上方向
-	MapChipDown(collisionInfo);  // 下方向（地面）
-	MapChipLeft(collisionInfo);  // 左方向
-	MapChipRight(collisionInfo); // 右方向
-
-	// 調整された移動量をプレイヤーの位置に適用
-	worldTransformPlayer_.translation_ += collisionInfo.isMovement;
-
-	// 天井接触によるY速度のリセット
-	if (collisionInfo.isHitTop) {
-		velosity_.y = 0;
-	}
-
-	// 壁接触時の横方向減衰
-	UpdateOnWall(collisionInfo);
-
-	// 接地状態の更新
-	UpdateOnGround(collisionInfo);
-
-	// 旋回制御
-	if (turnTimer_ > 0.0f) {
-		turnTimer_ = std::max(turnTimer_ - (1.0f / 60.0f), 0.0f); // 1フレームあたりの時間を減らす
-
-		float destinationRotationYTable[] = {
-		    std::numbers::pi_v<float> / 2.0f,       // kRight
-		    std::numbers::pi_v<float> * 3.0f / 2.0f // kLeft
-		};
-		float destinationRotationY = destinationRotationYTable[static_cast<uint32_t>(lrDirection_)];
-
-		float t = 1.0f - (turnTimer_ / kTimeTurn); // 0.0fから1.0fへ変化する補間係数
-		worldTransformPlayer_.rotation_.y = math->EaseInOutSine(t, turnFirstRottationY_, destinationRotationY);
-	}
-	// 攻撃キーを押したら
-	// if ((Input::GetInstance()->PushKey(DIK_I))) {
-	//	// 攻撃とヘイビアをリクエスト
-	//	behaviorRequest_ = Behavior::kAttack;
-	//}
-}
-
-void Player::BehaviorAttckUpdate() {
-	// 攻撃中の移動処理（キー入力による速度計算）
-
-	const Vector3 attackVelocity = {0.1f, 0.0f, 0.0f};
-
-	// 02_14 291枚目 攻撃動作用の速度
-	Vector3 velocity{};
-	// 攻撃フェーズごとの速度加算
-	attckParmeter_++;
-	float t;
-	switch (attackPhase_) {
-	case Player::AttackPhase::reservoir:
-	default:
-		isAttack_ = true; // 攻撃中フラグを立てる
-		velocity = {};
-		t = static_cast<float>(attckParmeter_) / 10.0f;
-		worldTransformPlayer_.scale_.z = math->EaseInOutSine(t, 1.0f, 0.3f);
-		worldTransformPlayer_.scale_.y = math->EaseInOutSine(t, 1.0f, 1.0f);
-		// 溜めフェーズからラッシュフェーズへ
-		if (attckParmeter_ >= 10.0f) {
-			attackPhase_ = AttackPhase::rush;
-			attckParmeter_ = 0; // カウンターをリセット
-		}
-		break;
-	case Player::AttackPhase::rush:
-		t = static_cast<float>(attckParmeter_) / 10.0f;
-		worldTransformPlayer_.scale_.z = math->EaseInOutSine(t, 0.3f, 1.3f);
-		worldTransformPlayer_.scale_.y = math->EaseInOutSine(t, 1.0f, 0.7f);
-
-		// 突進速度をvelosity_に加算
-		// attckVelosity の定義が必要です
-		if (lrDirection_ == LRDirection::kRight) {
-			velosity_.x += attackVelocity.x;
-		} else { // kLeft
-			velosity_.x -= attackVelocity.x;
-		}
-
-		// ラッシュフェーズから反響フェーズへ
-		if (attckParmeter_ >= 10.0f) {
-			attackPhase_ = AttackPhase::reverberation;
-			attckParmeter_ = 0; // カウンターをリセット
-		}
-		break;
-	case Player::AttackPhase::reverberation:
-		velocity = {};
-		t = static_cast<float>(attckParmeter_) / 10.0f;
-		worldTransformPlayer_.scale_.z = math->EaseInOutSine(t, 1.3f, 1.0f);
-		worldTransformPlayer_.scale_.y = math->EaseInOutSine(t, 0.7f, 1.0f);
-		// 反響フェーズから通常状態へ
-		if (attckParmeter_ >= 10.0f) { // この条件は attckParmeter_ >= 30.0f と同じになる可能性があるので注意
-			behaviorRequest_ = Behavior::kRoot;
-			attackPhase_ = AttackPhase::reservoir; // 攻撃フェーズをリセット
-			isAttack_ = false;                     // 攻撃中フラグを下ろす
-		}
-		break;
-	}
-
-	// --- マップチップとの衝突判定と位置更新のロジック ---
-
-	// 衝突情報を初期化し、現在の速度を移動量として設定
-	CollisionMapInfo collisionInfo = {};
-	collisionInfo.isMovement = velosity_;
-
-	// 各方向のマップチップとの当たり判定（衝突によってcollisionInfo.isMovementが調整される）
-	MapChipUp(collisionInfo);
-	MapChipDown(collisionInfo);
+	// 2. X軸（横）の移動と衝突判定を「個別」に行う
+	collisionInfo.isMovement.x = velosity_.x;
+	collisionInfo.isMovement.y = 0.0f; // Y軸の移動は一旦ゼロとして扱う
 	MapChipLeft(collisionInfo);
 	MapChipRight(collisionInfo);
+	// X軸の移動を先に確定させる
+	worldTransformPlayer_.translation_.x += collisionInfo.isMovement.x;
 
-	// 調整された移動量をプレイヤーの位置に適用
-	worldTransformPlayer_.translation_ += collisionInfo.isMovement;
+	// 3. Y軸（縦）の移動と衝突判定を「個別」に行う
+	//    X軸が移動した後の、新しい現在地から判定を始める
+	collisionInfo.isMovement.x = 0.0f; // X軸はもう動いたのでゼロに
+	collisionInfo.isMovement.y = velosity_.y;
+	MapChipUp(collisionInfo);
+	MapChipDown(collisionInfo);
+	// Y軸の移動を確定させる
+	worldTransformPlayer_.translation_.y += collisionInfo.isMovement.y;
 
-	// 天井接触によるY速度のリセット
+	// 4. 全ての移動と衝突が終わった後で、状態と次のフレームの速度を更新する
 	if (collisionInfo.isHitTop) {
 		velosity_.y = 0;
 	}
 
-	// 壁接触時の横方向減衰
+	// 壁接触時の処理（跳ね返り）は、この分離された判定と組み合わせることで初めて正しく機能します
 	UpdateOnWall(collisionInfo);
 
 	// 接地状態の更新
 	UpdateOnGround(collisionInfo);
 
-	// 全体の攻撃終了判定
-	if (attckParmeter_ >= 30.0f && attackPhase_ == AttackPhase::reverberation) {
-		behaviorRequest_ = Behavior::kRoot;
+	// 5. 旋回制御 (ここは変更なし)
+	if (turnTimer_ > 0.0f) {
+		turnTimer_ = std::max(turnTimer_ - (1.0f / 60.0f), 0.0f);
+
+		float destinationRotationYTable[] = {std::numbers::pi_v<float> / 2.0f, std::numbers::pi_v<float> * 3.0f / 2.0f};
+		float destinationRotationY = destinationRotationYTable[static_cast<uint32_t>(lrDirection_)];
+
+		float t = 1.0f - (turnTimer_ / kTimeTurn);
+		worldTransformPlayer_.rotation_.y = math->EaseInOutSine(t, turnFirstRottationY_, destinationRotationY);
 	}
 }
+
 void Player::StartMoveToNode(int index) {
 	startPos_ = GetWorldPosition();
 	targetPos_ = nodes_[index];

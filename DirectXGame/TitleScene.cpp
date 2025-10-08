@@ -11,7 +11,7 @@ void TitleScene::Initialize() {
 
 	// player_ メンバ変数を new でインスタンス化
 	player_ = new Player();
-	player_->Initialize(playerModel_, &camera_, Vector3{0, -2.0f, -3.0f},0);
+	player_->Initialize(playerModel_, &camera_, Vector3{0, -2.0f, -3.0f});
 	player_->GetWorldTransform().rotation_.y = std::numbers::pi_v<float>; // 180度回転 (πラジアン)
 
 	// 文字モデルのロードと初期化
