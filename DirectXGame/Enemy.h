@@ -11,6 +11,7 @@ class GameScene; // GameSceneクラスの前方宣言
 class Player;
 class GameScene1_2; // GameScene1_2クラスの前方宣言
 class GameScene1_3;
+class GameScene2_1;
     // 敵クラス 
 class Enemy {
 
@@ -43,6 +44,7 @@ public:
 	void SetGameScene(GameScene* gameScene) { gameScene_ = gameScene; } // ゲームシーンへのポインタを設定
 	void SetGameScene1_2(GameScene1_2* GameScene1_2) { gameScene1_2_ = GameScene1_2; } // GameScene1_2へのポインタを設定
 	void SetGameScene1_3(GameScene1_3* GameScene1_3) { gameScene1_3_ = GameScene1_3; } // GameScene1_2へのポインタを設定
+	void SetGameScene2_1(GameScene2_1* GameScene2_1) { gameScene2_1_ = GameScene2_1; } // GameScene1_2へのポインタを設定
 	bool isDead() const { return isDead_; }  
 	  void SetMapChipField(MapChipField* field) { mapChipField_ = field; }
                                           // 敵が死亡しているかどうかを取得するメソッド
@@ -126,6 +128,7 @@ private:
 	GameScene* gameScene_ = nullptr; // ゲームシーンへのポインタ（必要に応じて使用）
 	GameScene1_2* gameScene1_2_ = nullptr; // GameScene1_2へのポインタ（必要に応じて使用）
 	GameScene1_3* gameScene1_3_ = nullptr; // GameScene1_3へのポインタ（必要に応じて使用）
+	GameScene2_1* gameScene2_1_ = nullptr; // GameScene2_1へのポインタ（必要に応じて使用）
 
     float flipCooldownTimer = 0.0f;
 	const float kFlipCooldown = 2.0f; // 0.5秒間は反転しない

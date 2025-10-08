@@ -6,6 +6,7 @@
 #include"StageSelectGameScene.h"
 #include "GameScene1_2.h"
 #include "GameScene1_3.h"
+#include"GameScene2_1.h"
 #include "GameStateManager.h"
 #include"GameOver.h"
 
@@ -18,6 +19,7 @@ enum class Scene {
 	kGame,
 	kGame1_2, // 追加: 1-2ステージのゲームシーン
 	kGame1_3, // 追加: 1-3ステージのゲームシーン
+	kGame2_1,
 	kGaameOver
 	
 };
@@ -37,6 +39,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	StageSelectGameScene* stageSelectScene = nullptr;
 	GameScene1_2* gameScene1_2 = nullptr; // 1-2ステージのゲームシーン
 	GameScene1_3* gameScene1_3 = nullptr; // 1-3ステージのゲームシーン
+	GameScene2_1* gameScene2_1 = nullptr;
 	GameOver* gameOver = nullptr;
 
 	// 現在のシーンの状態
@@ -85,6 +88,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 					 nextSceneEnum = Scene::kGame1_2; // 次のシーンはゲームシーン
 				 } else if (stageSelectScene->GetNextStageID() == 3) {
 					 nextSceneEnum = Scene::kGame1_3; // 次のシーンはゲームシーン
+				 } else if (stageSelectScene->GetNextStageID() == 4) {
+					 nextSceneEnum = Scene::kGame2_1; // 次のシーンはゲームシーン
+
 				 }
 			 }
 			break;
@@ -127,6 +133,18 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 				}
 			}
 			break;
+		case Scene::kGame2_1:
+			if (gameScene2_1 != nullptr && gameScene2_1->isFinished() && gameScene2_1->currentSelectIndex() == 1) {
+				nextSceneEnum = Scene::kTitle;
+			} else if (gameScene2_1 != nullptr && gameScene2_1->isFinished()) {
+				// GameSceneのGetNextScene()メソッドを使って、次のシーンを決定
+				if (gameScene2_1->GetNextScene() == GameScene2_1::NextScene::kGameOver) {
+					nextSceneEnum = Scene::kGaameOver;
+				} else {
+					// デフォルトの遷移先（ステージセレクト）
+					nextSceneEnum = Scene::kStageSelect;
+				}
+			}
 			// 次のシーンはタイトルシーン
 		case Scene::kGaameOver:
 			if (gameOver != nullptr && gameOver->isFinished()) {
@@ -141,6 +159,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 						nextSceneEnum = Scene::kGame1_2;
 					} else if (stageID == 3) {
 						nextSceneEnum = Scene::kGame1_3;
+					} else if (stageID == 4) {
+						nextSceneEnum = Scene::kGame2_1;
 					}
 				} else if (gameOver->GetNextScene() == GameOver::NextScene::kStageSelect) {
 					nextSceneEnum = Scene::kStageSelect;
@@ -172,6 +192,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 				delete gameScene1_3;
 				gameScene1_3 = nullptr;
 				break;
+			case Scene::kGame2_1:
+				delete gameScene2_1;
+				gameScene2_1 = nullptr;
+				break;
 			case Scene::kGame:
 				delete gameScene;
 				gameScene = nullptr;
@@ -200,6 +224,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			case Scene::kGame1_3:
 				gameScene1_3 = new GameScene1_3();
 				gameScene1_3->Initialize();
+				break;
+			case Scene::kGame2_1:
+				gameScene2_1 = new GameScene2_1();
+				gameScene2_1->Initialize();
 				break;
 			case Scene::kGame:
 				gameScene = new GameScene();
@@ -232,6 +260,11 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		case Scene::kGame1_3:
 			if (gameScene1_3 != nullptr) {
 				gameScene1_3->Update();
+			}
+			break;
+		case Scene::kGame2_1:
+			if (gameScene2_1 != nullptr) {
+				gameScene2_1->Update();
 			}
 			break;
 		case Scene::kGame:
@@ -273,6 +306,11 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 				gameScene1_3->Draw();
 			}
 			break;
+		case Scene::kGame2_1:
+			if (gameScene2_1 != nullptr) {
+				gameScene2_1->Draw();
+			}
+			break;
 		case Scene::kGame:
 			if (gameScene != nullptr) {
 				gameScene->Draw();
@@ -307,6 +345,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	case Scene::kGame1_3:
 		delete gameScene1_3;
 		gameScene1_3 = nullptr;
+		break;
+	case Scene::kGame2_1:
+		delete gameScene2_1;
+		gameScene2_1 = nullptr;
 		break;
 
 	case Scene::kGame:
