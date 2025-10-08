@@ -8,7 +8,7 @@ void GameOver::Initialize()
 	camera_.Initialize();
 	camera_.translation_.z = -10.0f; // カメラのZ位置を調整
 	player_ = new Player();
-	player_->Initialize(playerModel, &camera_, Vector3{0, -5.5f, 7.0f}, 0);
+	player_->Initialize(playerModel, &camera_, Vector3{0, -5.5f, 7.0f});
 	background_.Initialize();
 	background_.translation_ = {0, 0.0f, 30};
 	bacgroundColor.Initialize();

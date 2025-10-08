@@ -37,7 +37,7 @@ public:
 	//----------------------------------------
 	// 初期化・更新・描画
 	//----------------------------------------
-	void Initialize(Model* model, Camera* camera, const Vector3& position, KamataEngine::Model* modelAttack);
+	void Initialize(Model* model, Camera* camera, const Vector3& position);
 	void Update();
 	void Draw();
 
@@ -58,7 +58,6 @@ public:
 	AABB GetAABB();
 	bool IsDead() const { return isDead_; }
 	void SetIsDead(bool isDead) { isDead_ = isDead; }
-	bool GetIsAttack() const { return behavior_ == Behavior::kAttack; }
 	void SetMapChipField(MapChipField* mapChipField) { mapchipField_ = mapChipField; }
 	float GetWidth() const { return kWidth;}
 	float GetHeight() const { return kHeight; }
@@ -93,14 +92,12 @@ public:
 	// 行動切り替え
 	//----------------------------------------
 	void BehaviorRootInitialize();  // 通常行動初期化
-	void BehaviorAtcckInitialize(); // 攻撃行動初期化
 
 private:
 	//----------------------------------------
 	// 移動処理
 	//----------------------------------------
 	void Move();      // 通常移動
-	void attckMove(); // 攻撃中の移動
 
 	//----------------------------------------
 	// マップチップ衝突チェック
@@ -116,7 +113,6 @@ private:
 	void UpdateOnGround(const CollisionMapInfo& info);
 	void UpdateOnWall(const CollisionMapInfo& info);
 	void BehaviorRootUpdate();
-	void BehaviorAttckUpdate();
 	void StartMoveToNode(int index);
 	void MoveToTarget();
 	//----------------------------------------
@@ -142,7 +138,6 @@ private:
 	enum class Behavior {
 		kUnKnow,
 		kRoot,
-		kAttack,
 	};
 	Behavior behavior_ = Behavior::kRoot;
 	Behavior behaviorRequest_ = Behavior::kUnKnow;
@@ -244,4 +239,6 @@ private:
 	                                   // 雲の移動量を保持する変数
 	Vector3 cloudDelta_;
 	  bool isMove_ = false;
+
+	  	int jumpCount_ = 0; // ジャンプした回数を記録
 };
