@@ -86,14 +86,25 @@ void Player::Move() {
 		velosity_.x *= (1.0f - kAtteunuation); // 入力なし → 減速
 	}
 
-	// --- Y軸の処理 ---
-	if (onGround_) {
-		// ジャンプ入力
-		if (Input::GetInstance()->PushKey(DIK_SPACE)) {
-			velosity_.y = kJumpAccleration / 60.0f; // 初速を与える
-			onGround_ = false;
+// ジャンプ入力のチェック
+	// ※PushKeyだと押しっぱなしで連続ジャンプしてしまうため、
+	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) { 
+
+		// ジャンプ回数が2回未満ならジャンプできる
+		if (jumpCount_ < 2) {
+			velosity_.y = kJumpAccleration / 60.0f; // ジャンプの初速を与える
+			onGround_ = false;                      // ジャンプした瞬間に空中状態へ
+
+			if (jumpCount_ == 1) {
+				isSpinning_ = true;
+				spinTimer_ = 0.0f; // タイマーをリセット
+			}
+			jumpCount_++;                           // ジャンプ回数を1増やす
 		}
-	} else {
+	}
+
+	// 重力（接地していない場合に常に適用）
+	if (!onGround_) {
 		// 重力
 		velosity_.y += -kGgravityAcceleration / 60.0f;
 		velosity_.y = std::max(velosity_.y, -kLimitFallSpeed);
@@ -400,6 +411,7 @@ void Player::UpdateOnGround(const CollisionMapInfo& info) {
 		// 非接地状態の場合、地面に接触したかで接地状態に切り替える
 		if (info.isHitBottom) {
 			onGround_ = true;
+			jumpCount_ = 0;                              // 接地したのでジャンプ回数をリセット
 			velosity_.x *= (1.0f - kAttenuationLanding); // 着地時の横方向減衰
 			velosity_.y = 0.0f;                          // Y速度をゼロに
 		}
@@ -451,15 +463,40 @@ void Player::BehaviorRootUpdate() {
 	// 接地状態の更新
 	UpdateOnGround(collisionInfo);
 
-	// 5. 旋回制御 (ここは変更なし)
-	if (turnTimer_ > 0.0f) {
-		turnTimer_ = std::max(turnTimer_ - (1.0f / 60.0f), 0.0f);
+	if (isSpinning_) {
+		// 1. タイマーを進める (60FPSを想定)
+		spinTimer_ += 1.0f / 60.0f;
 
-		float destinationRotationYTable[] = {std::numbers::pi_v<float> / 2.0f, std::numbers::pi_v<float> * 3.0f / 2.0f};
-		float destinationRotationY = destinationRotationYTable[static_cast<uint32_t>(lrDirection_)];
+		// 2. アニメーションの進捗度を計算 (0.0f から 1.0f に変化)
+		float spinProgress = spinTimer_ / kSpinDuration;
 
-		float t = 1.0f - (turnTimer_ / kTimeTurn);
-		worldTransformPlayer_.rotation_.y = math->EaseInOutSine(t, turnFirstRottationY_, destinationRotationY);
+		// 3. 進捗度から回転角度を計算 (1.0fで360度 = 2πラジアン)
+		float spinAngle = spinProgress * 2.0f * std::numbers::pi_v<float>;
+
+		// 4. プレイヤーの向きに合わせて回転方向を決定 (左向きなら逆回転)
+		if (lrDirection_ == LRDirection::kLeft) {
+			spinAngle *= -1.0f;
+		}
+
+		// 5. プレイヤーのZ軸の角度に適用する (前転するような回転)
+		worldTransformPlayer_.rotation_.z = spinAngle;
+
+		// 6. 回転が終了したらフラグと角度をリセット
+		if (spinTimer_ >= kSpinDuration) {
+			isSpinning_ = false;
+			worldTransformPlayer_.rotation_.z = 0.0f;
+		}
+
+		// 5. 旋回制御 (ここは変更なし)
+		if (turnTimer_ > 0.0f) {
+			turnTimer_ = std::max(turnTimer_ - (1.0f / 60.0f), 0.0f);
+
+			float destinationRotationYTable[] = {std::numbers::pi_v<float> / 2.0f, std::numbers::pi_v<float> * 3.0f / 2.0f};
+			float destinationRotationY = destinationRotationYTable[static_cast<uint32_t>(lrDirection_)];
+
+			float t = 1.0f - (turnTimer_ / kTimeTurn);
+			worldTransformPlayer_.rotation_.y = math->EaseInOutSine(t, turnFirstRottationY_, destinationRotationY);
+		}
 	}
 }
 

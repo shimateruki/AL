@@ -241,4 +241,8 @@ private:
 	  bool isMove_ = false;
 
 	  	int jumpCount_ = 0; // ジャンプした回数を記録
+
+		bool isSpinning_ = false;         // 回転中かどうかのフラグ
+	    float spinTimer_ = 0.0f;          // 回転アニメーションのタイマー
+	    const float kSpinDuration = 0.5f; // 回転にかかる時間（秒）
 };
