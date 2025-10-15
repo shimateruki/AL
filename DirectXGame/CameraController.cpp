@@ -1,11 +1,11 @@
 #define NOMINMAX
 #include "CameraController.h"
-#include "Player.h"
 
 
 
 using namespace KamataEngine;
 
+#include "Player.h"
 void CameraController::Initialize(KamataEngine::Camera* camera) 
 { camera_ = camera; }
 

@@ -567,10 +567,10 @@ void GameScene2_1::CheekAllcollision() {
 			}
 		}
 	}
-	AABB aabb3 = togeKabe_->GetAABB();
-	if (math->IsCollision(aabb1, aabb3)) {
-		player_->SetIsDead(true);
-	}
+	//AABB aabb3 = togeKabe_->GetAABB();
+	//if (math->IsCollision(aabb1, aabb3)) {
+	//	player_->SetIsDead(true);
+	//}
 
 	// ==== マップチップとの当たり判定 ====
 	const uint32_t kNumBlockVertical = mapChipField_->GetNumBlockVirtcal();
