@@ -18,10 +18,11 @@ struct CollisionMapInfo {
 	bool isHitTop = false;    // 天井ヒット
 	bool isHitBottom = false; // 地面ヒット
 	bool hitWall = false;     // 壁ヒット
+	bool onIce = false;
 };
 
 class Enemy;
-class KabeToge; // トゲ壁クラスの前方宣言
+class KabeToge;      // トゲ壁クラスの前方宣言
 class CloudPlatform; // 前方宣言
 
 //------------------------------
@@ -45,7 +46,7 @@ public:
 	// Getter / Setter
 	//----------------------------------------
 	void SetMode(Mode mode) { mode_ = mode; }
-	void SetStageNodes(const std::vector<Vector3>& nodes); 
+	void SetStageNodes(const std::vector<Vector3>& nodes);
 	const WorldTransform& GetWorldTransform() const { return worldTransformPlayer_; }
 	const Vector3& GetVelocity() const { return velosity_; }
 	bool GetisBreak() const { return isbreak; }
@@ -59,7 +60,7 @@ public:
 	bool IsDead() const { return isDead_; }
 	void SetIsDead(bool isDead) { isDead_ = isDead; }
 	void SetMapChipField(MapChipField* mapChipField) { mapchipField_ = mapChipField; }
-	float GetWidth() const { return kWidth;}
+	float GetWidth() const { return kWidth; }
 	float GetHeight() const { return kHeight; }
 	float GetTranslationX() const { return worldTransformPlayer_.translation_.x; }
 	float SetVelocityY(float y) {
@@ -73,7 +74,6 @@ public:
 	bool GetisMove() const { return isMove_; }
 	void SetisMove(bool move) { isMove_ = move; }
 
-
 	//----------------------------------------
 	// 衝突
 	//----------------------------------------
@@ -86,18 +86,18 @@ public:
 
 	void ApplyCloudDelta();
 
-
+	MapChipType GetFloorChipType();
 
 	//----------------------------------------
 	// 行動切り替え
 	//----------------------------------------
-	void BehaviorRootInitialize();  // 通常行動初期化
+	void BehaviorRootInitialize(); // 通常行動初期化
 
 private:
 	//----------------------------------------
 	// 移動処理
 	//----------------------------------------
-	void Move();      // 通常移動
+	void Move(); // 通常移動
 
 	//----------------------------------------
 	// マップチップ衝突チェック
@@ -171,6 +171,7 @@ private:
 	// 定数（移動物理）
 	//----------------------------------------
 	const float kAcceleration = 0.5f;
+	const float kIceAttenuation = 0.05f;
 	const float kAtteunuation = 0.3f;
 	const float kAttenuationLanding = 0.8f;
 	const float kAttenuationWall = 0.8f;
@@ -219,7 +220,7 @@ private:
 	//----------------------------------------
 	MapChipField* mapchipField_ = nullptr;
 
-	    Mode mode_ = Mode::Normal;
+	Mode mode_ = Mode::Normal;
 
 	// ステージ選択用
 	std::vector<Vector3> nodes_;
@@ -235,14 +236,15 @@ private:
 	float rotT_ = 0.0f;
 	bool isbreak;
 
-	  CloudPlatform* onCloud_ = nullptr; // 乗っている雲を覚える
+	CloudPlatform* onCloud_ = nullptr; // 乗っている雲を覚える
 	                                   // 雲の移動量を保持する変数
 	Vector3 cloudDelta_;
-	  bool isMove_ = false;
+	bool isMove_ = false;
 
-	  	int jumpCount_ = 0; // ジャンプした回数を記録
+	int jumpCount_ = 0; // ジャンプした回数を記録
 
-		bool isSpinning_ = false;         // 回転中かどうかのフラグ
-	    float spinTimer_ = 0.0f;          // 回転アニメーションのタイマー
-	    const float kSpinDuration = 0.5f; // 回転にかかる時間（秒）
+	bool isSpinning_ = false;         // 回転中かどうかのフラグ
+	float spinTimer_ = 0.0f;          // 回転アニメーションのタイマー
+	const float kSpinDuration = 0.5f; // 回転にかかる時間（秒）
+	bool isOnIce_ = false;
 };

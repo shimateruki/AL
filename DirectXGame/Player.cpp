@@ -30,6 +30,7 @@ void Player::Initialize(Model* model, Camera* camera, const Vector3& position) {
 	}
 	onGround_ = false; // 初期状態は空中または地面にいるか不明とする
 	isDead_ = false;   // 初期状態は生存
+	isOnIce_ = false;
 }
 
 void Player::SetStageNodes(const std::vector<Vector3>& nodes) {
@@ -53,14 +54,24 @@ void Player::BehaviorRootInitialize() {}
 
 // 移動処理
 void Player::Move() {
+
+		// --- 現在の摩擦係数を決定 ---
+	float currentAttenuation = kAtteunuation; // デフォルトは通常の摩擦
+	// 接地していて、かつ氷の上に乗っている場合
+	if (onGround_ &&  isOnIce_) {
+		// 摩擦を氷用のもの（すごく小さい値）に変更
+		currentAttenuation = kIceAttenuation;
+	}
+
 	// --- 左右移動（地上・空中で処理共通） ---
 	if (Input::GetInstance()->PushKey(DIK_D) || Input::GetInstance()->PushKey(DIK_A)) {
 		Vector3 acceleration = {};
-		float airControl = onGround_ ? 1.0f : 0.4f; // 空中は操作が40%だけ効く（調整OK）
+		float airControl = onGround_ ? 1.0f : 0.4f;
 
 		if (Input::GetInstance()->PushKey(DIK_D)) {
 			if (velosity_.x < 0.0f) {
-				velosity_.x *= (1.0f - kAtteunuation); // 逆方向なら減衰
+				// ★ここが書き換えた摩擦係数で処理される
+				velosity_.x *= (1.0f - currentAttenuation);
 			}
 			acceleration.x += (kAcceleration / 60.0f) * airControl;
 			if (lrDirection_ != LRDirection::kRight) {
@@ -70,7 +81,8 @@ void Player::Move() {
 			}
 		} else if (Input::GetInstance()->PushKey(DIK_A)) {
 			if (velosity_.x > 0.0f) {
-				velosity_.x *= (1.0f - kAtteunuation);
+				// ★ここも書き換えた摩擦係数で処理される
+				velosity_.x *= (1.0f - currentAttenuation);
 			}
 			acceleration.x -= (kAcceleration / 60.0f) * airControl;
 			if (lrDirection_ != LRDirection::kLeft) {
@@ -83,7 +95,8 @@ void Player::Move() {
 		velosity_ += acceleration;
 		velosity_.x = std::clamp(velosity_.x, -kLimitRunSpeed, kLimitRunSpeed);
 	} else {
-		velosity_.x *= (1.0f - kAtteunuation); // 入力なし → 減速
+		// ★入力がない時も、書き換えた摩擦係数で減速する
+		velosity_.x *= (1.0f - currentAttenuation);
 	}
 
 // ジャンプ入力のチェック
@@ -167,7 +180,7 @@ void Player::MapChipUp(CollisionMapInfo& info) {
 	// 左上点の判定
 	indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kLeftTop]);
 	mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
-	if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_) {
+	if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_||mapchipType == MapChipType::kIceFloor_) {
 		hit = true;
 	}
 
@@ -175,7 +188,8 @@ void Player::MapChipUp(CollisionMapInfo& info) {
 	if (!hit) { // 左上がヒットしていない場合のみチェック
 		indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kRightTop]);
 		mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
-		if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_) {
+		if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_ ||
+		    mapchipType == MapChipType::kIceFloor_) {
 
 			hit = true;
 		}
@@ -202,6 +216,8 @@ void Player::MapChipUp(CollisionMapInfo& info) {
 	}
 }
 
+// Player.cpp の MapChipDown() をこちらに差し替えてください
+
 void Player::MapChipDown(CollisionMapInfo& info) {
 	// 下降なし？
 	if (info.isMovement.y >= 0) {
@@ -215,52 +231,56 @@ void Player::MapChipDown(CollisionMapInfo& info) {
 
 	MapChipType mapchipType;
 	bool hit = false;
-	MapChipField::IndexSet indexSet; // 衝突したマップチップのインデックスを保持するため
+	MapChipField::IndexSet indexSet;
 
 	// 左下点の判定
 	indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kLeftBottom]);
 	mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
-	if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_) {
+	if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_ ||
+	    mapchipType == MapChipType::kIceFloor_) {
 		hit = true;
 	}
 
 	// 右下点の判定
-	if (!hit) { // 左下がヒットしていない場合のみチェック
+	if (!hit) {
 		indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kRightBottom]);
 		mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
-		if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_) {
+		if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_ ||
+		    mapchipType == MapChipType::kIceFloor_) {
 			hit = true;
 		}
 	}
 
 	if (hit) {
+
+		// もし接触したブロックが氷なら、「報告書」にフラグを立てる
+		if (mapchipType == MapChipType::kIceFloor_) {
+			info.onIce = true;
+		}
+
+		// ---- この後の着地処理は、氷ブロックでも通常通り実行される ----
 		indexSet = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ + info.isMovement + Vector3(0, -kHeight / 2.0f, 0));
-		// 現在座標が壁の外か判定（すでにブロック内にめり込んでいる場合）
 		MapChipField::IndexSet indexSetNow;
 		indexSetNow = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ + Vector3(0, -kHeight / 2.0f, 0));
 
-		// 衝突したマップチップのYインデックスと現在のYインデックスが異なる場合
 		if (indexSetNow.yIndex != indexSet.yIndex) {
-
 			MapChipField::Rect rect = mapchipField_->GetRectByIndex(indexSet.xIndex, indexSet.yIndex);
-			// めり込みを排除する方向に移動量を設定する (地面の上面に合わせる)
 			info.isMovement.y = std::min(0.0f, rect.top - (worldTransformPlayer_.translation_.y - kHeight / 2.0f) + kBlank);
 			info.isHitBottom = true;
 		} else {
-			// すでに同じブロック内にいる場合は、めり込み量を0に
 			info.isMovement.y = 0.0f;
 			info.isHitBottom = true;
 		}
+
 		if (mapchipType == MapChipType::kBreakable_) {
 			isbreak = true;
 		}
 		if (mapchipType == MapChipType::kJumpPad_) {
-			// キノコジャンプ発動！
 			velosity_.y += (kJumpAccleration / 60.0f) * 2.0f;
 			onGround_ = false;
-			info.isMovement.y = 0.0f; // 地面に吸着しない
-			info.isHitBottom = false; // 接地フラグもオフ
-			return;                   // ← 地面処理スキップ
+			info.isMovement.y = 0.0f;
+			info.isHitBottom = false;
+			return; // ジャンプパッドだけは特別にここで処理を終える
 		}
 	}
 }
@@ -283,7 +303,8 @@ void Player::MapChipLeft(CollisionMapInfo& info) {
 	// 左上点の判定
 	indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kLeftTop]);
 	mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
-	if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_) {
+	if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_ ||
+	    mapchipType == MapChipType::kIceFloor_) {
 		hit = true;
 	}
 
@@ -291,7 +312,8 @@ void Player::MapChipLeft(CollisionMapInfo& info) {
 	if (!hit) { // 左上がヒットしていない場合のみチェック
 		indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kLeftBottom]);
 		mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
-		if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_) {
+		if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_ ||
+		    mapchipType == MapChipType::kIceFloor_) {
 			hit = true;
 		}
 	}
@@ -335,7 +357,8 @@ void Player::MapChipRight(CollisionMapInfo& info) {
 	// 右上点の判定
 	indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kRightTop]);
 	mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
-	if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_) {
+	if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_ ||
+	    mapchipType == MapChipType::kIceFloor_) {
 		hit = true;
 	}
 
@@ -343,7 +366,8 @@ void Player::MapChipRight(CollisionMapInfo& info) {
 	if (!hit) { // 右上がヒットしていない場合のみチェック
 		indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kRightBottom]);
 		mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
-		if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_) {
+		if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_ ||
+		    mapchipType == MapChipType::kIceFloor_) {
 			hit = true;
 		}
 	}
@@ -371,53 +395,50 @@ void Player::MapChipRight(CollisionMapInfo& info) {
 }
 
 // 接地状態の切り替え処理 
+
+
 void Player::UpdateOnGround(const CollisionMapInfo& info) {
 	if (onGround_) {
-		// ジャンプ開始時、Y速度が正なら非接地状態に
-		if (velosity_.y > 0.0f) {
+		// --- 空中に移行する瞬間の処理 ---
+		if (velosity_.y > 0.0f) { // ジャンプした
 			onGround_ = false;
-		} else {
-			// 落下判定: 現在の位置から少し下のマップチップを探索
-			std::array<Vector3, knumCorner> positionsCheck;
-			for (uint32_t i = 0; i < positionsCheck.size(); ++i) {
-				positionsCheck[i] = CarnerPosition(worldTransformPlayer_.translation_ + Vector3(0, -kGroundSearchHeight, 0), static_cast<Corner>(i));
-			}
-
-			bool hitSearch = false;
-			MapChipType mapchipType;
-			MapChipField::IndexSet indexSet;
-
-			// 左下と右下の探索点でブロックをチェック
-			indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsCheck[kLeftBottom]);
-			mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
-			if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_) {
-				hitSearch = true;
-			}
-
-			if (!hitSearch) { // 左下がヒットしていない場合のみチェック
-				indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsCheck[kRightBottom]);
-				mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
-				if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_) {
-					hitSearch = true;
-				}
-			}
-
-			// 足元にブロックがない場合、落下開始（非接地状態へ）
-			if (!hitSearch) {
-				onGround_ = false;
-			}
+			isOnIce_ = false;
+			return; // 空中に行ったので、以降の地面の処理は不要
 		}
+
+		// --- 地面にいる間の継続的な処理 ---
+
+		// 1. 毎フレーム、足元の床の種類をチェックする
+		MapChipType currentFloor = GetFloorChipType();
+
+		// 2. 床の種類に応じて isOnIce_ フラグを更新する
+		if (currentFloor == MapChipType::kIceFloor_) {
+			isOnIce_ = true;
+		} else {
+			isOnIce_ = false;
+		}
+
+		// 3. 落下判定（足元にブロックが無くなったら）
+		if (currentFloor == MapChipType::kBlank_ || currentFloor == MapChipType::kSpike_) {
+			// もし足元が空白かトゲなら、落下する
+			onGround_ = false;
+			isOnIce_ = false;
+		}
+
+	
+
 	} else {
-		// 非接地状態の場合、地面に接触したかで接地状態に切り替える
+		// --- 着地した瞬間の処理 ---
 		if (info.isHitBottom) {
 			onGround_ = true;
-			jumpCount_ = 0;                              // 接地したのでジャンプ回数をリセット
-			velosity_.x *= (1.0f - kAttenuationLanding); // 着地時の横方向減衰
-			velosity_.y = 0.0f;                          // Y速度をゼロに
+			isOnIce_ = info.onIce; // 着地した場所が氷だったかを受け取る
+
+			jumpCount_ = 0;
+			velosity_.x *= (1.0f - kAttenuationLanding);
+			velosity_.y = 0.0f;
 		}
 	}
 }
-
 // 壁接触時の処理
 void Player::UpdateOnWall(const CollisionMapInfo& info) {
 	if (info.hitWall) {
@@ -600,4 +621,18 @@ void Player::ApplyCloudDelta() {
 	if (onCloud_) {
 		worldTransformPlayer_.translation_ += onCloud_->GetDelta();
 	}
+}
+
+// Player.cpp のどこか空いている場所（例：ファイルの末尾）に追加
+
+// プレイヤーの足元にあるマップチップの種類を返す
+MapChipType Player::GetFloorChipType() {
+	// プレイヤーの足元（中心から少し下）の座標
+	Vector3 footPosition = worldTransformPlayer_.translation_;
+	footPosition.y -= (kHeight / 2.0f) + 0.1f; // 足の裏あたりの座標
+
+	// 座標からマップチップのインデックスを取得
+	MapChipField::IndexSet index = mapchipField_->GetMapChipIndexSetByPosition(footPosition);
+	// インデックスからマップチップの種類を返す
+	return mapchipField_->GetMapChipTypeByindex(index.xIndex, index.yIndex);
 }
