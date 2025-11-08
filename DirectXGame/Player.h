@@ -88,10 +88,21 @@ public:
 
 	MapChipType GetFloorChipType();
 
+	void TakeDamage(int damage);
+	void CheckAndResolveTogeKabeCollision(const KabeToge* togeKabe); // ★壁用の新しい衝突関数
+	void UpdateSquashAnimation();
+	bool GetIsInvincible() const { return isInvincible_; }           // 無敵状態を外部から知るため
+
 	//----------------------------------------
 	// 行動切り替え
 	//----------------------------------------
 	void BehaviorRootInitialize(); // 通常行動初期化
+
+	//アニメーション関数
+	void UpdateTitleAnimation();
+	void StartCameraJump();  // カメラジャンプを開始する
+	void UpdateCameraJump(); // カメラジャンプ中のアニメーション更新
+
 
 private:
 	//----------------------------------------
@@ -247,4 +258,38 @@ private:
 	float spinTimer_ = 0.0f;          // 回転アニメーションのタイマー
 	const float kSpinDuration = 0.5f; // 回転にかかる時間（秒）
 	bool isOnIce_ = false;
+	//----------------------------------------
+	// HP・ダメージ関連
+	//----------------------------------------
+	int hp_ = 3;                            // ★HP
+	bool isInvincible_ = false;             // 無敵中か
+	float invincibleTimer_ = 0.0f;          // 無敵時間タイマー
+	const float kInvincibleDuration = 1.0f; // 無敵時間（1秒）
+	 //----------------------------------------
+	// アニメーション関連
+	//----------------------------------------
+	float animationTimer_ = 0.0f; // アニメーション周期用のタイマー
+	float originalScaleY_ = 1.0f; // 元のYスケールを保存
+	//----------------------------------------
+	// 着地アニメーション（ぽよん）
+	//----------------------------------------
+	bool isSquashing_ = false;          // 着地して「ぽよん」中か
+	float squashTimer_ = 0.0f;          // ぽよん用タイマー
+	const float kSquashDuration = 0.3f; // ぽよんアニメの総時間（0.3秒）
+	//----------------------------------------
+	// タイトル画面用アニメーション
+	//----------------------------------------
+	float titleGroundY_ = 0.0f;   // タイトルでの地面のY座標
+	bool isTitleJumping_ = false; // タイトルでジャンプ中か
+	float titleJumpTimer_ = 0.0f;
+	const float kTitleJumpDuration = 0.7f; // タイトルジャンプの時間（秒）
+	const float kTitleJumpHeight = 3.0f;   // タイトルジャンプの高さ
+	//----------------------------------------
+	// タイトル画面用 カメラジャンプ
+	//----------------------------------------
+	bool isCameraJumping_ = false; // カメラジャンプ中か
+	float cameraJumpTimer_ = 0.0f;
+	const float kCameraJumpDuration = 1.8f; // カメラジャンプの時間
+	const float kCameraJumpZoom = 15.0f;    // 最終的なZ座標
+	const float kCameraJumpScale = 10.0f;   // 最終的なスケール
 };

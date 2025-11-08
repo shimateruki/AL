@@ -31,7 +31,7 @@ private:
 	Math* math;
 	Player* player_;
 	Skydome* skydome_ = nullptr; // スカイドームオブジェクト
-	// ★追加: 文字表示用のModelとWorldTransform
+	// 文字表示用のModelとWorldTransform
 	KamataEngine::Model* titleTextModel_;                  
 	KamataEngine::WorldTransform titleTextWorldTransform_; // 文字モデルのワールド変
 	KamataEngine::ObjectColor color_;
@@ -47,4 +47,5 @@ private:
 	// ★追加: テクスチャハンドル
 	uint32_t textureHandleStart_ = 0;      // テクスチャハンドル
 	uint32_t textureHandleEnter_ = 0; // テクスチャハンドル
+
 };

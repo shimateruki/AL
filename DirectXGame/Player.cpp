@@ -24,6 +24,8 @@ void Player::Initialize(Model* model, Camera* camera, const Vector3& position) {
 	worldTransformAttack_.translation_ = worldTransformPlayer_.translation_;
 	worldTransformAttack_.rotation_ = worldTransformPlayer_.rotation_;
 
+	titleGroundY_ = worldTransformPlayer_.translation_.y;
+
 	// Mathクラスの初期化（注意：シングルトンや依存性注入を推奨）
 	if (!math) {
 		math = new Math();
@@ -31,6 +33,9 @@ void Player::Initialize(Model* model, Camera* camera, const Vector3& position) {
 	onGround_ = false; // 初期状態は空中または地面にいるか不明とする
 	isDead_ = false;   // 初期状態は生存
 	isOnIce_ = false;
+	hp_ = 3; // 初期HP
+	isInvincible_ = false;
+	invincibleTimer_ = 0.0f;
 }
 
 void Player::SetStageNodes(const std::vector<Vector3>& nodes) {
@@ -50,6 +55,84 @@ Vector3 Player::GetWorldPosition() const {
 }
 
 void Player::BehaviorRootInitialize() {}
+
+void Player::UpdateTitleAnimation() {
+	//カメラジャンプ中は通らないように制限
+	if (isCameraJumping_) {
+		return; 
+	}
+	// --- 1. マスタータイマーを進める ---
+	animationTimer_ += (1.0f / 60.0f); 
+
+	// --- 2. 「見回す」動作をランダムに起動 ---
+	if (fmod(animationTimer_, 4.0f) < (1.0f / 60.0f) && turnTimer_ <= 0.0f && !isTitleJumping_) {
+		lrDirection_ = (lrDirection_ == LRDirection::kRight) ? LRDirection::kLeft : LRDirection::kRight;
+		turnFirstRottationY_ = worldTransformPlayer_.rotation_.y;
+		turnTimer_ = kTimeTurn;
+	}
+
+	// --- 3. 「ジャンプ」動作をランダムに起動 ---
+	if (fmod(animationTimer_, 6.0f) < (1.0f / 60.0f) && turnTimer_ <= 0.0f && !isTitleJumping_) {
+		isTitleJumping_ = true;
+		titleJumpTimer_ = 0.0f;
+		isSpinning_ = true; // ジャンプと同時に回転も開始
+		spinTimer_ = 0.0f;
+	}
+
+	// --- 4. 実行中のアニメーションを更新 ---
+
+	// 「旋回」の更新
+	if (turnTimer_ > 0.0f) {
+		turnTimer_ = std::max(turnTimer_ - (1.0f / 60.0f), 0.0f);
+		float destinationRotationYTable[] = {std::numbers::pi_v<float> / 2.0f, std::numbers::pi_v<float> * 3.0f / 2.0f};
+		float destinationRotationY = destinationRotationYTable[static_cast<uint32_t>(lrDirection_)];
+		float t = 1.0f - (turnTimer_ / kTimeTurn);
+		worldTransformPlayer_.rotation_.y = math->EaseInOutSine(t, turnFirstRottationY_, destinationRotationY);
+	}
+
+	// 「スピン（Z回転）」の更新
+	if (isSpinning_) {
+		spinTimer_ += 1.0f / 60.0f;
+		float spinProgress = spinTimer_ / kSpinDuration;
+		float spinAngle = spinProgress * 2.0f * std::numbers::pi_v<float>;
+		if (lrDirection_ == LRDirection::kLeft) {
+			spinAngle *= -1.0f;
+		}
+		worldTransformPlayer_.rotation_.z = spinAngle;
+
+		if (spinTimer_ >= kSpinDuration) {
+			isSpinning_ = false;
+			worldTransformPlayer_.rotation_.z = 0.0f;
+		}
+	}
+
+	// 「ジャンプ（Y座標）」の更新
+	if (isTitleJumping_) {
+		titleJumpTimer_ += (1.0f / 60.0f);
+		float t = titleJumpTimer_ / kTitleJumpDuration;
+
+		if (t >= 1.0f) {
+			// ジャンプ終了
+			isTitleJumping_ = false;
+			worldTransformPlayer_.translation_.y = titleGroundY_; // 地面に戻す
+			isSquashing_ = true;                                  // 着地したので「ぽよん」を開始
+			squashTimer_ = 0.0f;
+		} else {
+			float yOffset = std::sin(t * std::numbers::pi_v<float>) * kTitleJumpHeight;
+			worldTransformPlayer_.translation_.y = titleGroundY_ + yOffset;
+		}
+	} else {
+		// ジャンプ中でも着地ぽよん中でもない時だけ、アイドリングの「ぽよん」
+		if (!isSquashing_) {
+			float idleBounce = std::sin(animationTimer_ * 5.0f); // 通常のぽよん
+			worldTransformPlayer_.scale_.y = originalScaleY_ + (0.1f * idleBounce);
+			worldTransformPlayer_.scale_.x = originalScaleY_ - (0.05f * idleBounce); // 縦と逆に
+			worldTransformPlayer_.translation_.y = titleGroundY_;                    // 地面に固定
+		}
+	}
+
+
+}
 
 
 // 移動処理
@@ -150,14 +233,35 @@ void Player::Update() {
 		onGround_ = true; // 雲に乗っている場合は接地状態とみなす
 	}
 
-	// 5. 行列更新
-	math->worldTransFormUpdate(worldTransformPlayer_);
+
+
+	ImGui::Begin("player");
+	ImGui::Text("%d", hp_);
 }
 
 void Player::Draw() {
 	assert(model_);
 	assert(camera_);
+	//着地時の伸び縮みアニメーション
+	UpdateSquashAnimation();
 
+	//アニメーションの補正計算
+	Vector3 finalTranslation = worldTransformPlayer_.translation_;
+	if (onGround_ || isSquashing_) {
+		float yOffset = (originalScaleY_ - worldTransformPlayer_.scale_.y) * (kHeight / 2.0f);
+		finalTranslation.y -= yOffset;
+	}
+
+	// 5. 行列更新
+	math->worldTransFormUpdate(worldTransformPlayer_);
+	if (isInvincible_) {
+		float blink = fmod(invincibleTimer_ * 20.0f, 2.0f);
+		if (blink < 1.0f) {
+			return;
+		}
+		
+	}
+	
 	model_->Draw(worldTransformPlayer_, *camera_);
 
 }
@@ -216,7 +320,7 @@ void Player::MapChipUp(CollisionMapInfo& info) {
 	}
 }
 
-// Player.cpp の MapChipDown() をこちらに差し替えてください
+
 
 void Player::MapChipDown(CollisionMapInfo& info) {
 	// 下降なし？
@@ -432,7 +536,8 @@ void Player::UpdateOnGround(const CollisionMapInfo& info) {
 		if (info.isHitBottom) {
 			onGround_ = true;
 			isOnIce_ = info.onIce; // 着地した場所が氷だったかを受け取る
-
+			isSquashing_ = true;   // ぽよんアニメ開始
+			squashTimer_ = 0.0f;   // タイマーリセット
 			jumpCount_ = 0;
 			velosity_.x *= (1.0f - kAttenuationLanding);
 			velosity_.y = 0.0f;
@@ -495,9 +600,9 @@ void Player::BehaviorRootUpdate() {
 			isSpinning_ = false;
 			worldTransformPlayer_.rotation_.z = 0.0f;
 		}
-	} // ★★★ isSpinning_ の if文はここで閉じる ★★★
+	} 
 
-	// 旋回制御 (isSpinning_ の外にあるのが正しい状態)
+	// 旋回制御
 	if (turnTimer_ > 0.0f) {
 		turnTimer_ = std::max(turnTimer_ - (1.0f / 60.0f), 0.0f);
 
@@ -506,6 +611,13 @@ void Player::BehaviorRootUpdate() {
 
 		float t = 1.0f - (turnTimer_ / kTimeTurn);
 		worldTransformPlayer_.rotation_.y = math->EaseInOutSine(t, turnFirstRottationY_, destinationRotationY);
+	}
+	// 無敵時間の更新
+	if (isInvincible_) {
+		invincibleTimer_ -= (1.0f / 60.0f); // 60FPS想定
+		if (invincibleTimer_ <= 0.0f) {
+			isInvincible_ = false;
+		}
 	}
 }
 
@@ -551,12 +663,12 @@ AABB Player::GetAABB() {
 
 void Player::OnCollision(const Enemy* enemy) {
 	(void)enemy;
-	isDead_ = true;
+	TakeDamage(1);
 }
 
 void Player::OnCollision(const KabeToge* togeKabe_) {
 	(void)togeKabe_;
-	isDead_ = true; // 壁に当たったら死亡
+	TakeDamage(1);
 }
 
 // Player.cpp
@@ -623,7 +735,6 @@ void Player::ApplyCloudDelta() {
 	}
 }
 
-// Player.cpp のどこか空いている場所（例：ファイルの末尾）に追加
 
 // プレイヤーの足元にあるマップチップの種類を返す
 MapChipType Player::GetFloorChipType() {
@@ -635,4 +746,176 @@ MapChipType Player::GetFloorChipType() {
 	MapChipField::IndexSet index = mapchipField_->GetMapChipIndexSetByPosition(footPosition);
 	// インデックスからマップチップの種類を返す
 	return mapchipField_->GetMapChipTypeByindex(index.xIndex, index.yIndex);
+}
+
+
+void Player::TakeDamage(int damage) {
+	// 無敵時間中はダメージを受けない
+	if (isInvincible_) {
+		return;
+	}
+
+	hp_ -= damage;
+	if (hp_ <= 0) {
+		hp_ = 0;
+		SetIsDead(true); // HPが0になったら死亡
+	}
+
+	// ダメージを受けたら無敵時間開始
+	isInvincible_ = true;
+	invincibleTimer_ = kInvincibleDuration;
+
+
+	velosity_.y = kJumpAccleration / 120.0f;
+	onGround_ = false; // 空中状態にする
+
+	// 2. もし2段ジャンプスピン中なら、それを解除する
+	if (isSpinning_) {
+		isSpinning_ = false;
+		worldTransformPlayer_.rotation_.z = 0.0f;
+	}
+
+
+}
+
+void Player::CheckAndResolveTogeKabeCollision(const KabeToge* togeKabe) {
+	if (!togeKabe || isDead_) {
+		return;
+	}
+
+	AABB playerAABB = GetAABB();
+	AABB kabeAABB = togeKabe->GetAABB();
+
+	if (!math->IsCollision(playerAABB, kabeAABB)) {
+		return; // 衝突していないなら終了
+	}
+
+
+	// 1. ダメージ処理
+	TakeDamage(1);
+
+	// 2. 押し戻し処理
+	// プレイヤーの左側が、壁の右側にどれだけめり込んでいるか
+	float penetration = kabeAABB.max.x - playerAABB.min.x;
+
+	if (penetration > 0) {
+
+		// 2a. 押し出された「後」のプレイヤーの予測座標を計算
+		Vector3 newPos = worldTransformPlayer_.translation_;
+		newPos.x += penetration;
+
+		// 2b. その予測座標で、プレイヤーの「右上の角」と「右下の角」が安全かチェック
+		Vector3 checkPosTopRight = CarnerPosition(newPos, kRightTop);
+		Vector3 checkPosBottomRight = CarnerPosition(newPos, kRightBottom);
+
+		MapChipField::IndexSet indexTop = mapchipField_->GetMapChipIndexSetByPosition(checkPosTopRight);
+		MapChipField::IndexSet indexBottom = mapchipField_->GetMapChipIndexSetByPosition(checkPosBottomRight);
+
+		MapChipType typeTop = mapchipField_->GetMapChipTypeByindex(indexTop.xIndex, indexTop.yIndex);
+		MapChipType typeBottom = mapchipField_->GetMapChipTypeByindex(indexBottom.xIndex, indexBottom.yIndex);
+
+		// 2c. 押し出し先が「固いブロック」かどうかを判定
+		bool isTopSolid =
+		    (typeTop == MapChipType::kDirt_ || typeTop == MapChipType::kGrass_ || typeTop == MapChipType::kBreakable_ || typeTop == MapChipType::kJumpPad_ || typeTop == MapChipType::kIceFloor_);
+		bool isBottomSolid =
+		    (typeBottom == MapChipType::kDirt_ || typeBottom == MapChipType::kGrass_ || typeBottom == MapChipType::kBreakable_ || typeBottom == MapChipType::kJumpPad_ ||
+		     typeBottom == MapChipType::kIceFloor_);
+
+		if (isTopSolid || isBottomSolid) {
+			// 押し出し先が壁！＝「圧死」
+			SetIsDead(true);
+		} else {
+			// 押し出し先は安全（空白）なので、プレイヤーを移動させる
+			worldTransformPlayer_.translation_.x += penetration;
+
+			// 押し戻されたので、左向きの速度はゼロにする
+			if (velosity_.x < 0) {
+				velosity_.x = 0;
+			}
+		}
+	
+	}
+}
+
+void Player::UpdateSquashAnimation() {
+	if (!isSquashing_) {
+		// ぽよん中でないなら、徐々に元のスケール(1.0)に戻す
+		worldTransformPlayer_.scale_.x += (1.0f - worldTransformPlayer_.scale_.x) * 0.2f;
+		worldTransformPlayer_.scale_.y += (1.0f - worldTransformPlayer_.scale_.y) * 0.2f;
+		return;
+	}
+
+	// タイマーを進める (60FPS想定)
+	squashTimer_ += 1.0f / 60.0f;
+
+	if (squashTimer_ >= kSquashDuration) {
+		// アニメーション終了
+		isSquashing_ = false;
+		worldTransformPlayer_.scale_.x = 1.0f;
+		worldTransformPlayer_.scale_.y = 1.0f;
+	} else {
+		// アニメーション中
+		// タイマーの進捗 (0.0 -> 1.0)
+		float t = squashTimer_ / kSquashDuration;
+
+		// sinの山（0.0 -> 1.0 -> 0.0）の形を使って「ぽよん」を表現
+		float bounce = std::sin(t * std::numbers::pi_v<float>);
+
+		// 縦に縮む (1.0 -> 0.7 -> 1.0 のように変化)
+		float squashAmount = 0.3f; // 30%縮む
+		worldTransformPlayer_.scale_.y = 1.0f - (bounce * squashAmount);
+		// 横に伸びる (1.0 -> 1.3 -> 1.0 のように変化)
+		worldTransformPlayer_.scale_.x = 1.0f + (bounce * squashAmount);
+	}
+}
+
+// カメラジャンプの開始命令
+void Player::StartCameraJump() {
+	isCameraJumping_ = true;
+	cameraJumpTimer_ = 0.0f;
+	isSpinning_ = true; // 回転も同時に行う
+	spinTimer_ = 0.0f;
+	isSquashing_ = false; // ぽよんを止める
+	onGround_ = false;    // 地面から離れる
+}
+
+// カメラジャンプ中のアニメーション更新
+void Player::UpdateCameraJump() {
+	if (!isCameraJumping_) {
+		return;
+	}
+
+	// 1. タイマーを進める
+	cameraJumpTimer_ += (1.0f / 60.0f);
+	float t = cameraJumpTimer_ / kCameraJumpDuration;
+	t = std::min(t, 1.0f); // 1.0f で止める
+
+	// 2. イージングを使って滑らかに変化させる（EaseOutQuad: だんだんゆっくりになる）
+	float easeT = 1.0f - (1.0f - t) * (1.0f - t); // EaseOutQuad
+
+	// 3. スケールを大きくする (1.0 -> 10.0)
+	float scale = originalScaleY_ + (kCameraJumpScale - originalScaleY_) * easeT;
+	worldTransformPlayer_.scale_ = {scale, scale, scale};
+
+	// 4. Z座標を手前に動かす (0.0 -> 15.0)
+	worldTransformPlayer_.translation_.z = kCameraJumpZoom * easeT;
+
+	// 5. Y座標を放物線で動かす (sin(0) -> sin(π))
+	float yOffset = std::sin(t * std::numbers::pi_v<float>) * kTitleJumpHeight;
+	worldTransformPlayer_.translation_.y = titleGroundY_ + yOffset;
+
+	// 6. スピン回転の処理 
+	if (isSpinning_) {
+		spinTimer_ += 1.0f / 60.0f;
+		float spinProgress = spinTimer_ / kSpinDuration;
+		float spinAngle = spinProgress * 2.0f * std::numbers::pi_v<float>;
+		if (lrDirection_ == LRDirection::kLeft) {
+			spinAngle *= -1.0f;
+		}
+		worldTransformPlayer_.rotation_.z = spinAngle;
+
+		if (spinTimer_ >= kSpinDuration) {
+			isSpinning_ = false; // 1回転したら終わり
+		}
+	}
 }

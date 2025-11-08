@@ -40,8 +40,7 @@ Vector3 KabeToge::GetWorldPosition() const
 	return worldPos;
 }
 
-AABB KabeToge::GetAABB() 
-{
+AABB KabeToge::GetAABB() const {
 	Vector3 worldPos = GetWorldPosition(); // ワールド座標を取得
 	AABB aabb;
 	aabb.min = {worldPos.x - kWidth / 2.0f, worldPos.y - kHeight / 2.0f, worldPos.z - kWidth / 2.0f};

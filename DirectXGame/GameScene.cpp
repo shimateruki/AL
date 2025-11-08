@@ -336,7 +336,7 @@ void GameScene::Update() {
 		for (Enemy* enemy : enemys_) {
 			enemy->Update();
 		}
-
+		player_->CheckAndResolveTogeKabeCollision(togeKabe_);
 		CheekAllcollision();
 		CController_->Update();
 
@@ -585,14 +585,11 @@ for (Enemy* enemy : enemys_) {
 				enemy->OnStomped(player_);
 				player_->SetVelocityY(0.3f);
 			} else {
-				player_->SetIsDead(true);
+				player_->TakeDamage(1);
 			}
 		}
 	}
-	AABB aabb3 = togeKabe_->GetAABB();
-	if (math->IsCollision(aabb1, aabb3)) {
-		player_->SetIsDead(true);
-	}
+
 
 	// ==== マップチップとの当たり判定 ====
 	const uint32_t kNumBlockVertical = mapChipField_->GetNumBlockVirtcal();
@@ -621,7 +618,7 @@ for (Enemy* enemy : enemys_) {
 					isGameClear_ = true;
 				} else if (type == MapChipType::kSpike_) {
 					// 棘のダメージ処理
-					player_->SetIsDead(true); // プレイヤーを死亡状態に設定
+					player_->TakeDamage(1);
 				}
 			}
 		}

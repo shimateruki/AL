@@ -13,7 +13,7 @@ public:
 	void Draw();
 	Vector3 GetWorldPosition() const;
 
-	AABB GetAABB();
+	AABB GetAABB() const;
 	bool GetIsmove() const { return ismove; }
 	void SetIsmove(bool move) { ismove = move; }
 

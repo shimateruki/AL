@@ -14,6 +14,7 @@ void TitleScene::Initialize() {
 	player_->Initialize(playerModel_, &camera_, Vector3{0, -2.0f, -3.0f});
 	player_->GetWorldTransform().rotation_.y = std::numbers::pi_v<float>; // 180度回転 (πラジアン)
 
+
 	// 文字モデルのロードと初期化
 	titleTextModel_ = Model::CreateFromOBJ("title", true); // "title.obj" を指定
 	titleTextWorldTransform_.Initialize();
@@ -51,43 +52,64 @@ void TitleScene::Initialize() {
 }
 
 void TitleScene::Update() {
-	// フェードは常に更新
+	// 常に更新する処理
 	fade_->Update();
-	skydome_->Update(); // スカイドームの更新
-
-	// カメラの更新と転送
+	skydome_->Update();
 	camera_.UpdateMatrix();
 	camera_.TransferMatrix();
-
-	// 文字の上下揺れアニメーション
-	floatingTimer_ += floatingSpeed_;
-	titleTextWorldTransform_.translation_.y = baseTextPos_.y + std::sin(floatingTimer_) * floatingAmplitudeY_;
-
-	
-	// MathUtility::GetInstance()->worldTransFormUpdate(worldTransform_);
-	math->worldTransFormUpdate(player_->GetWorldTransform());
-	math->worldTransFormUpdate(titleTextWorldTransform_);
 
 	// ★フェーズごとの処理
 	switch (phase_) {
 	case Phase::kFadeIn:
-		if (fade_->isFinished()) { 
-			phase_ = Phase::kMain;       // フェードイン完了 -> メインフェーズへ
+		// --- フェードイン中 ---
+
+		// 文字の上下揺れ
+		floatingTimer_ += floatingSpeed_;
+		titleTextWorldTransform_.translation_.y = baseTextPos_.y + std::sin(floatingTimer_) * floatingAmplitudeY_;
+		math->worldTransFormUpdate(titleTextWorldTransform_);
+
+		// スライムのアイドリングアニメを更新
+		player_->UpdateTitleAnimation();
+
+		if (fade_->isFinished()) {
+			phase_ = Phase::kMain; 
 		}
 		break;
 
 	case Phase::kMain:
+		// --- メイン（入力待機）中 ---
 
-		// メインフェーズ中の入力待ち
-		if (Input::GetInstance()->PushKey(DIK_RETURN)) { // スペースキーが押されたら
-			phase_ = Phase::kfadeOut;                   // フェードアウトへ移行
-			fade_->Start(Fade::Status::FadeOut, 1.0f); // フェードアウト開始 
+		// 文字の上下揺れ
+		floatingTimer_ += floatingSpeed_;
+		titleTextWorldTransform_.translation_.y = baseTextPos_.y + std::sin(floatingTimer_) * floatingAmplitudeY_;
+		math->worldTransFormUpdate(titleTextWorldTransform_);
+
+		// スライムのアイドリングアニメを更新
+		player_->UpdateTitleAnimation();
+
+		// Enterキーが押されたら演出開始
+		if (Input::GetInstance()->TriggerKey(DIK_RETURN)) { 
+			phase_ = Phase::kfadeOut;                 
+
+			// スライムにカメラジャンプ開始を命令
+			player_->StartCameraJump();
+
+			fade_->Start(Fade::Status::FadeOut, 1.8f);
 		}
 		break;
 
-	case Phase::kfadeOut:
+	case Phase::kfadeOut: 
+		// --- 演出中 ---
+
+		// スライムのカメラジャンプアニメを毎フレーム更新
+		player_->UpdateCameraJump();
+
+		// タイトル文字は動かさない（最後に更新した位置で固定）
+		math->worldTransFormUpdate(titleTextWorldTransform_);
+
+		// フェードが完了したらシーン終了
 		if (fade_->isFinished()) {
-			finished_ = true;             // フェードアウト完了 -> シーン終了
+			finished_ = true;
 		}
 		break;
 	}
