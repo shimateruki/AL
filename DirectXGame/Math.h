@@ -27,7 +27,6 @@ class Math {
 public:
 	float EaseInOutSine(float t, float x1, float x2);
 	KamataEngine::Vector3 Lerp(const KamataEngine::Vector3& a, const KamataEngine::Vector3& b, float t);
-	float Lerp(float a, float b, float t);
 	KamataEngine::Matrix4x4 makeIdentity4x4();
 	KamataEngine::Matrix4x4 MakeScaleMatrix(const KamataEngine::Vector3& scale);
 
@@ -53,4 +52,13 @@ public:
 	// 正規化（長さを1にする）
 	KamataEngine::Vector3 Normalize(const KamataEngine::Vector3& v);
 	float Dot(const KamataEngine::Vector3& v1, const KamataEngine::Vector3& v2);
+	/// <summary>
+	/// 2つのfloat値を線形補間する
+	/// </summary>
+	/// <param name="a">開始値</param>
+	/// <param name="b">終了値</param>
+	/// <param name="t">補間係数（0.0fから1.0f）</param>
+	/// <returns>補間された値</returns>
+	static float Lerp(float a, float b, float t);
+
 };
