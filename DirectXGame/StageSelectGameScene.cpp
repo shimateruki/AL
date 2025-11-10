@@ -395,6 +395,7 @@ void StageSelectGameScene::ChangePhase()
 		if (isTimerFinished_) {
 			finishedTimer++;
 		}
+		player_->UpdateVictoryAnimation();
 		if (finishedTimer > 180) {
 			
 				finished_ = true;
@@ -465,6 +466,7 @@ void StageSelectGameScene::CheekAllcollision() {
 				isSprite = false; // スプライト表示
 				fade_->Start(Fade::Status::FadeOut, 3.0f);
 				nextStageID_ = signboard->GetStageID();
+				player_->StartVictoryPose();
 			}
 		}
 	}

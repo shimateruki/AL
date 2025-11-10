@@ -919,3 +919,56 @@ void Player::UpdateCameraJump() {
 		}
 	}
 }
+
+// 勝利ポーズの開始命令
+void Player::StartVictoryPose() {
+	// タイトルジャンプ用の変数を流用して、その場でジャンプさせる
+	isTitleJumping_ = true;
+	titleJumpTimer_ = 0.0f;
+
+	// スピンも開始
+	isSpinning_ = true;
+	spinTimer_ = 0.0f;
+
+	// ぽよんや移動入力は止める
+	isSquashing_ = false;
+	isMove_ = false;
+	velosity_ = {};   // 速度をリセット
+	onGround_ = true; // 地面にいる前提
+	worldTransformPlayer_.rotation_.y = std::numbers::pi_v<float>;
+	turnTimer_ = 0.0f;                                           
+}
+
+void Player::UpdateVictoryAnimation() {
+
+	// --- 待機タイマーの処理（次のジャンプの「タメ」） ---
+	if (!isTitleJumping_ && titleJumpTimer_ < 0.0f) {
+		titleJumpTimer_ += (1.0f / 60.0f); // 待機タイマーを進める
+		if (titleJumpTimer_ >= 0.0f) {
+			// 待機終了、次のジャンプを開始
+			isTitleJumping_ = true;
+			titleJumpTimer_ = 0.0f;
+		}
+	}
+
+	// --- ジャンプ（Y座標）の更新 ---
+	if (isTitleJumping_) {
+		titleJumpTimer_ += (1.0f / 60.0f);
+		float t = titleJumpTimer_ / kTitleJumpDuration; // ジャンプ時間
+
+		if (t >= 1.0f) {
+			// ジャンプ終了
+			isTitleJumping_ = false;
+			worldTransformPlayer_.translation_.y = titleGroundY_; // 地面に戻す
+			isSquashing_ = true;                                  // ★着地したので「ぽよん」を開始
+			squashTimer_ = 0.0f;
+
+			titleJumpTimer_ = -0.5f;
+		
+
+		} else {
+			float yOffset = std::sin(t * std::numbers::pi_v<float>) * kTitleJumpHeight;
+			worldTransformPlayer_.translation_.y = titleGroundY_ + yOffset;
+		}
+	}
+}

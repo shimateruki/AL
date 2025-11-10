@@ -6,6 +6,7 @@ using namespace KamataEngine; // KamataEngine名前空間を使用
 
 // GameSceneの初期化処理
 void GameScene::Initialize() {
+
 	//========================
 	// 📦 リソースの読み込み
 	//========================
@@ -29,13 +30,11 @@ void GameScene::Initialize() {
 	textureHandleGameClearText_ = TextureManager::Load("TextSpriteGameClear.png"); // ゲームクリアテキスト用テクスチャの読み込み
 	textureHandlePauseText_ = TextureManager::Load("phoseText.png");               // ポーズテキスト用テクスチャの読み込み
 	treeModel_ = Model::CreateFromOBJ("tree", true);                               // 木モデルの読み込
-
 	enemy_model_ = Model::CreateFromOBJ("enemy", true);                            // 敵モデルの読み込み
-
-	    textureHandleCountdown3_ = TextureManager::Load("3.png");                   // 3の画像
+	textureHandleCountdown3_ = TextureManager::Load("3.png");                   // 3の画像
 	textureHandleCountdown2_ = TextureManager::Load("2.png");                   // 2の画像
 	textureHandleCountdown1_ = TextureManager::Load("1.png");                   // 1の画像
-	textureHandleCountdownGo_ = TextureManager::Load("go.png");                          // GOの画像
+	textureHandleCountdownGo_ = TextureManager::Load("go.png");                 // GOの画像
 
 
 	
@@ -162,10 +161,36 @@ void GameScene::Initialize() {
 	// ゲームクリアテキストスプライトの作成
 	GameClearTextSprite_ = Sprite::Create(textureHandleGameClearText_, {0.0f, 0.0f}); // ゲームクリアテキスト用スプライトの作成
 	spriteCountdown_ = Sprite::Create(textureHandleCountdown3_, {0, 0});              // 初期スプライト（3）
+	// HPアイコンのテクスチャを読み込む
+	textureHandleHpIconNormal_ = TextureManager::Load("playerAikon.png");
+	textureHandleHpIconDamage_ = TextureManager::Load("playerAikonDamage.png");
+
+	// スプライトを生成
+	Vector2 hpIconPos = {20.0f, 650.0f}; // 表示したい座標
+	spriteHpIconNormal_ = Sprite::Create(textureHandleHpIconNormal_, hpIconPos);
+	spriteHpIconDamage_ = Sprite::Create(textureHandleHpIconDamage_, hpIconPos);
+
+	textureHandleHeart_ = TextureManager::Load("playerHp.png");
+
+	Vector2 heartBasePos = {100.0f, 650.0f}; // 1個目のハートの座標
+	float heartSpacing = 64.0f;            // ハートとハートの間隔（画像の横幅+隙間）
+
+	// HPの最大値(3回)ループして、ハートのスプライトを生成
+	for (int i = 0; i < kMaxPlayerHp; i++) {
+		// 表示座標を計算 (例: 20.0, 70.0, 120.0)
+		Vector2 pos = {heartBasePos.x + (i * heartSpacing), heartBasePos.y};
+
+		// 満タンハートのスプライトをvectorに追加
+		spriteHearts_.push_back(Sprite::Create(textureHandleHeart_, pos));
+	}
 
 
 	GameStateManager::GetInstance()->SetCurrentStageID(1); // ステージ1
 
+
+
+
+	
 	isSprite = true;
 	firstFrame = true;
 	currentSelectIndex_ = 0; // 初期選択インデックス
@@ -541,6 +566,26 @@ void GameScene::Draw() {
 		enterSprite_->Draw(); // エンターキー用スプライトの描画
 
 	}
+
+	if (!player_->IsDead()) {
+		// もしプレイヤーが「無敵時間中」なら
+		if (player_->GetIsInvincible()) {
+			spriteHpIconDamage_->Draw(); // ダメージ時のアイコン
+		} else {
+			spriteHpIconNormal_->Draw(); // 通常時のアイコン
+		}
+	}
+
+	if (!player_->IsDead()) {
+		// プレイヤーの現在のHPを取得 
+		int currentHp = player_->GetHp();
+		for (int i = 0; i < currentHp; i++) {
+
+			// ハートを描画する
+			spriteHearts_[i]->Draw();
+		}
+	}
+
 	Sprite::PostDraw();
 }
 
@@ -616,6 +661,9 @@ for (Enemy* enemy : enemys_) {
 					// ゴール処理
 					bgmVoiceHandle_ = KamataEngine::Audio::GetInstance()->PlayWave(bgmHandle_, false, 0.5f);
 					isGameClear_ = true;
+					player_->StartVictoryPose(); // 勝利ポーズ開始
+					CController_->StartVictoryZoom(player_);
+					// CController_->StartVictoryZoom(player_);
 				} else if (type == MapChipType::kSpike_) {
 					// 棘のダメージ処理
 					player_->TakeDamage(1);
@@ -682,7 +730,8 @@ void GameScene::ChangePhase() {
 
 		// 次のプレイヤー初期位置をGameStateManagerに保存
 		GameStateManager::GetInstance()->SetPlayerStartPosition(signboardPosition);
-
+		player_->UpdateVictoryAnimation(); // 勝利ポーズのアニメを更新
+		CController_->Update();
 		if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
 			isTimerFinished_ = true;                   // スペースキーが押されたらタイマー終了フラグを立てる
 			isSprite = false;                          // スプライト表示
@@ -699,9 +748,9 @@ void GameScene::ChangePhase() {
 }
 
 void GameScene::CreateHitEffect(const KamataEngine::Vector3& position) {
-	HitEffect* newHitEffect = HitEffect::create(position); // 新しいヒットエフェクトを生成
-	hitEffects_.push_back(newHitEffect);                   // ヒットエフェクトをリストに追加)
-	                                                       // ヒットエフェクトの数が最大数を超えた場合、最も古いものを削除
+	//HitEffect* newHitEffect = HitEffect::create(position); // 新しいヒットエフェクトを生成
+	//hitEffects_.push_back(newHitEffect);                   // ヒットエフェクトをリストに追加)
+	position;
 }
 
 void GameScene::LimitPlayerPosition() 

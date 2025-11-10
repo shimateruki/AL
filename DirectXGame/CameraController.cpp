@@ -1,49 +1,95 @@
 #define NOMINMAX
 #include "CameraController.h"
-
-
+#include "Player.h"
 
 using namespace KamataEngine;
 
-#include "Player.h"
-void CameraController::Initialize(KamataEngine::Camera* camera) 
-{ camera_ = camera; }
+void CameraController::Initialize(KamataEngine::Camera* camera) {
+	camera_ = camera;
+	mode_ = Mode::kFollowPlayer; // モードを初期化
 
-void CameraController::Update() 
-{
-	// 追従対象のワールドトランスフォームを参照
-	const WorldTransform& targetWorldTransform = target_->GetWorldTransform();
 
-	// 追従対象の速度を取得
-	const Vector3& targetVelocity = target_->GetVelocity();
+	if (!math_) {
+		math_ = new Math();
+	}
+}
 
-	// 追従対象とオフセットからカメラの理想的な目標地点を計算
-	Vector3 idealDestination = targetWorldTransform.translation_ + targettooffset + targetVelocity;
+void CameraController::Update() {
 
-	// 目的地の移動範囲を制限（補間を行う**前**にクランプする）
-	idealDestination.x = std::max(idealDestination.x, movebleArea_.left);
-	idealDestination.x = std::min(idealDestination.x, movebleArea_.right);
-	idealDestination.y = std::min(idealDestination.y, movebleArea_.bottom);
-	idealDestination.y = std::max(idealDestination.y, movebleArea_.top);
+	// ★モードに応じて処理を切り替える
+	switch (mode_) {
 
-	// 補間により、カメラの座標を目標地点へゆっくり移動させる
-	camera_->translation_ = math_->Lerp(camera_->translation_, idealDestination, kInterpolationRate);
+	case Mode::kFollowPlayer: { // --- 通常の追従処理 ---
+		// 追従対象のワールドトランスフォームを参照
+		const WorldTransform& targetWorldTransform = target_->GetWorldTransform();
+		// 追従対象の速度を取得
+		const Vector3& targetVelocity = target_->GetVelocity();
+		// 追従対象とオフセットからカメラの理想的な目標地点を計算
+		Vector3 idealDestination = targetWorldTransform.translation_ + targettooffset + targetVelocity;
 
-	// カメラの行列を更新
+		// 目的地の移動範囲を制限
+		idealDestination.x = std::max(idealDestination.x, movebleArea_.left);
+		idealDestination.x = std::min(idealDestination.x, movebleArea_.right);
+		idealDestination.y = std::min(idealDestination.y, movebleArea_.bottom);
+		idealDestination.y = std::max(idealDestination.y, movebleArea_.top);
+
+		// 補間により、カメラの座標を目標地点へゆっくり移動させる
+		camera_->translation_ = math_->Lerp(camera_->translation_, idealDestination, kInterpolationRate);
+	} break;
+
+	case Mode::kVictoryZoom: { // --- ズーム演出の処理 ---
+		UpdateVictoryZoom();
+	} break;
+	}
+
+	// カメラの行列は常に更新
 	camera_->UpdateMatrix();
 }
 
-void CameraController::Reset() 
-{
+void CameraController::Reset() {
 
-		const WorldTransform& targetWorldTransform = target_->GetWorldTransform();
+	const WorldTransform& targetWorldTransform = target_->GetWorldTransform();
 	Vector3 idealDestination = targetWorldTransform.translation_ + targettooffset;
-
-	// その地点をクランプしてからカメラに直接代入する
 	idealDestination.x = std::max(idealDestination.x, movebleArea_.left);
 	idealDestination.x = std::min(idealDestination.x, movebleArea_.right);
 	idealDestination.y = std::min(idealDestination.y, movebleArea_.bottom);
 	idealDestination.y = std::max(idealDestination.y, movebleArea_.top);
-
 	camera_->translation_ = idealDestination;
+
+	// Reset時もモードを戻しておく
+	mode_ = Mode::kFollowPlayer;
+}
+
+
+
+// ズーム演出を開始する（GameSceneから呼ばれる）
+void CameraController::StartVictoryZoom(Player* target) {
+	mode_ = Mode::kVictoryZoom;
+	zoomTimer_ = 0.0f;
+	zoomStartPos_ = camera_->translation_; // 現在のカメラ位置を保存
+
+	// 目標地点を計算（
+	Vector3 targetPos = target->GetWorldPosition();
+	zoomTargetPos_ = {targetPos.x, targetPos.y + 1.0f, -5.0f};
+
+
+}
+
+// ズーム演出の更新処理（Updateから呼ばれる）
+void CameraController::UpdateVictoryZoom() {
+	if (zoomTimer_ >= kZoomDuration) {
+		// ズームが完了したら、動かない
+		camera_->translation_ = zoomTargetPos_;
+		return;
+	}
+
+	// タイマーを進める
+	zoomTimer_ += (1.0f / 60.0f);
+	float t = zoomTimer_ / kZoomDuration;
+
+	// EaseInOutSineで滑らかに補間
+	float easedT = math_->EaseInOutSine(t, 0.0f, 1.0f);
+
+	// カメラ座標をスタート地点から目標地点へ滑らかに移動させる
+	camera_->translation_ = math_->Lerp(zoomStartPos_, zoomTargetPos_, easedT);
 }

@@ -675,7 +675,7 @@ void GameScene2_1::ChangePhase() {
 void GameScene2_1::CreateHitEffect(const KamataEngine::Vector3& position) {
 	HitEffect* newHitEffect = HitEffect::create(position); // 新しいヒットエフェクトを生成
 	hitEffects_.push_back(newHitEffect);                   // ヒットエフェクトをリストに追加)
-	                                                       // ヒットエフェクトの数が最大数を超えた場合、最も古いものを削除
+	                                               
 }
 
 void GameScene2_1::LimitPlayerPosition() {
