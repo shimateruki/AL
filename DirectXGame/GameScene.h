@@ -169,5 +169,24 @@ private:
 	uint32_t textureHandleCountdown1_ = 0;
 	uint32_t textureHandleCountdownGo_ = 0;
 
+	//----------------------------------------
+	// HPアイコン
+	//----------------------------------------
+	uint32_t textureHandleHpIconNormal_ = 0;
+	uint32_t textureHandleHpIconDamage_ = 0;
+	KamataEngine::Sprite* spriteHpIconNormal_ = nullptr;
+	KamataEngine::Sprite* spriteHpIconDamage_ = nullptr;
+
+	//----------------------------------------
+	// HPハート
+	//----------------------------------------
+	uint32_t textureHandleHeart_ = 0; // 満タンのハートの画像
+
+	// ★HPの最大値（Player.cppのhp_ = 3; と合わせる）
+	static const int kMaxPlayerHp = 3;
+
+	// ★満タンハートのスプライトだけを持つ
+	std::vector<KamataEngine::Sprite*> spriteHearts_;
+
 	KamataEngine::Sprite* spriteCountdown_ = nullptr;
 };

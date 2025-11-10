@@ -73,7 +73,7 @@ public:
 	void SetCloudDelta(const Vector3& delta) { cloudDelta_ = delta; }
 	bool GetisMove() const { return isMove_; }
 	void SetisMove(bool move) { isMove_ = move; }
-
+	int GetHp() const { return hp_; }
 	//----------------------------------------
 	// 衝突
 	//----------------------------------------
@@ -102,6 +102,8 @@ public:
 	void UpdateTitleAnimation();
 	void StartCameraJump();  // カメラジャンプを開始する
 	void UpdateCameraJump(); // カメラジャンプ中のアニメーション更新
+	void StartVictoryPose(); // 勝利ポーズを開始する
+	void UpdateVictoryAnimation(); // 勝利ポーズ中のアニメーション更新
 
 
 private:
