@@ -49,6 +49,14 @@ void TitleScene::Initialize() {
 
 	startSprite_ = Sprite::Create(textureHandleStart_, {0.0f, 0.0f}); // スタートボタン用スプライトの作成
 	enterSprite_ = Sprite::Create(textureHandleEnter_, {0.0f, 0.0f}); // エンターキー用スプライトの作成
+
+	//音楽
+	bgmHandle_ = bgmAudio->GetInstance()->LoadWave("BGM/titleBGM.wav");
+
+	isMusic = false;
+
+  enterSeHandle = seAudio->GetInstance()->LoadWave("SE/confirm.wav");
+
 }
 
 void TitleScene::Update() {
@@ -57,7 +65,11 @@ void TitleScene::Update() {
 	skydome_->Update();
 	camera_.UpdateMatrix();
 	camera_.TransferMatrix();
-
+	//if (!isMusic) {
+	//	bgmVoiceHandle_ = bgmAudio->GetInstance()->PlayWave(bgmHandle_, true, 0.5f); // trueでループ再生
+	//	isMusic = true;
+	//}
+	
 	// ★フェーズごとの処理
 	switch (phase_) {
 	case Phase::kFadeIn:
@@ -93,8 +105,10 @@ void TitleScene::Update() {
 
 			// スライムにカメラジャンプ開始を命令
 			player_->StartCameraJump();
+			//se再生
 
 			fade_->Start(Fade::Status::FadeOut, 1.8f);
+			enterVoice = seAudio->GetInstance()->PlayWave(enterSeHandle, false, 0.5f);
 		}
 		break;
 
@@ -135,7 +149,8 @@ void TitleScene::Draw() {
 }
 
 TitleScene::~TitleScene() {
-	
+	//Audio::GetInstance()->StopWave(bgmVoiceHandle_);
+	//Audio::GetInstance()->StopWave(enterVoice);
 	delete player_;
 	delete playerModel_;
 	delete titleTextModel_;

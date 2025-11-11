@@ -44,8 +44,21 @@ private:
 	bool finished_ = false;
 	Fade* fade_ = nullptr;
 	Phase phase_ = Phase::kFadeIn;
-	// ★追加: テクスチャハンドル
+	//  テクスチャハンドル
 	uint32_t textureHandleStart_ = 0;      // テクスチャハンドル
 	uint32_t textureHandleEnter_ = 0; // テクスチャハンドル
+	//----------------------------------------
+	// オーディオハンドル
+	//----------------------------------------
+	// BGM
+	uint32_t bgmHandle_ = 0;
+	uint32_t bgmVoiceHandle_ = 0; // 再生中のBGMを停止するために必要
+	bool isMusic;
+	Audio *bgmAudio;
+	//Se
+	uint32_t enterSeHandle = 0;
+	uint32_t enterVoice = 0;
+
+	Audio* seAudio;
 
 };

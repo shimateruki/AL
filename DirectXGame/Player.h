@@ -183,14 +183,14 @@ private:
 	//----------------------------------------
 	// 定数（移動物理）
 	//----------------------------------------
-	const float kAcceleration = 0.5f;
-	const float kIceAttenuation = 0.05f;
-	const float kAtteunuation = 0.3f;
-	const float kAttenuationLanding = 0.8f;
-	const float kAttenuationWall = 0.8f;
-	const float kLimitRunSpeed = 0.3f;
-	const float kJumpAccleration = 20.0f;
-	const float kGgravityAcceleration = 0.8f;
+	const float kAcceleration = 0.5f;//加速度
+	const float kIceAttenuation = 0.05f;//アイス版摩擦
+	const float kAtteunuation = 0.3f;//通常摩擦
+	const float kAttenuationLanding = 0.8f;//減衰着地
+	const float kAttenuationWall = 0.8f;//減衰壁
+	const float kLimitRunSpeed = 0.2f;//リミット実行速度
+	const float kJumpAccleration = 15.0f;//ジャンプ加速
+	const float kGgravityAcceleration = 0.8f;//重力加速度
 	const float kLimitFallSpeed = 0.5f;
 
 	const float kBlank = 0.1f;              // めり込み防止

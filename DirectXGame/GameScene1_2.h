@@ -138,7 +138,7 @@ private:
 	bool isTimerFinished_ = false; // タイマー完了フラグ
 
 	// ===== オーディオ =====
-	uint32_t bgmHandle_ = 0;      // BGMデータのハンドル
+	uint32_t clearbgmHandle_ = 0;      // BGMデータのハンドル
 	uint32_t bgmVoiceHandle_ = 0; // BGM再生のハンドル
 
 	int textureHandle = 0; // テクスチャハンドル
@@ -177,5 +177,36 @@ private:
 	bool firstFrame;
 
 	KamataEngine::Sprite* spriteCountdown_ = nullptr;
+	//----------------------------------------
+	// HPアイコン
+	//----------------------------------------
+	uint32_t textureHandleHpIconNormal_ = 0;
+	uint32_t textureHandleHpIconDamage_ = 0;
+	KamataEngine::Sprite* spriteHpIconNormal_ = nullptr;
+	KamataEngine::Sprite* spriteHpIconDamage_ = nullptr;
+
+	//----------------------------------------
+	// HPハート
+	//----------------------------------------
+	uint32_t textureHandleHeart_ = 0; // 満タンのハートの画像
+
+	// ★HPの最大値（Player.cppのhp_ = 3; と合わせる）
+	static const int kMaxPlayerHp = 3;
+
+	// ★満タンハートのスプライトだけを持つ
+	std::vector<KamataEngine::Sprite*> spriteHearts_;
+
+	
+	// BGM
+	uint32_t bgmHandle;
+	uint32_t bgmVoiceHandle;
+
+	// SE
+	uint32_t SeHandle;
+	uint32_t seVoiceHandle;
+	uint32_t consorlSelectHandle;
+	uint32_t consorlVoiceSelectHandle;
+
+
 
 };

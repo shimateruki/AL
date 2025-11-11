@@ -27,7 +27,7 @@ private:
 
 	Math* math = nullptr; // 数学ユーティリティクラスのインスタンス
 
-	const float kWidth = 0.95f;  // 幅
+	const float kWidth = 0.15f;  // 幅
 	const float kHeight = 20.0f; // 高さ
 
 	KamataEngine::ObjectColor color_;

@@ -141,8 +141,7 @@ yama_.push_back(new Yama());
 
 	Audio::GetInstance()->Initialize("Resources/BGM/");
 
-	// BGMの読み込み（.wavファイル）
-	bgmHandle_ = KamataEngine::Audio::GetInstance()->LoadWave("Clear1.wav");
+
 
 	Textmodel1_3 = Sprite::Create(textureHandle, {100.50});
 	poseSprite = Sprite::Create(textureHandlePhose_, {0.0});
@@ -151,6 +150,42 @@ yama_.push_back(new Yama());
 	pauseTextSprite_ = Sprite::Create(textureHandlePauseText_, {0.0f, 0.0f}); // ポーズメニュー用スプライトの作成
 	GameClearTextSprite_ = Sprite::Create(textureHandleGameClearText_, {0.0f, 0.0f}); // ゲームクリアテキスト用スプライトの作成
 	spriteCountdown_ = Sprite::Create(textureHandleCountdown3_, {0, 0});              // 初期スプライト（3）
+
+		// ゲームクリアテキストスプライトの作成
+	GameClearTextSprite_ = Sprite::Create(textureHandleGameClearText_, {0.0f, 0.0f}); // ゲームクリアテキスト用スプライトの作成
+	spriteCountdown_ = Sprite::Create(textureHandleCountdown3_, {0, 0});              // 初期スプライト（3）
+	// HPアイコンのテクスチャを読み込む
+	textureHandleHpIconNormal_ = TextureManager::Load("playerAikon.png");
+	textureHandleHpIconDamage_ = TextureManager::Load("playerAikonDamage.png");
+
+	// スプライトを生成
+	Vector2 hpIconPos = {20.0f, 650.0f}; // 表示したい座標
+	spriteHpIconNormal_ = Sprite::Create(textureHandleHpIconNormal_, hpIconPos);
+	spriteHpIconDamage_ = Sprite::Create(textureHandleHpIconDamage_, hpIconPos);
+
+	textureHandleHeart_ = TextureManager::Load("playerHp.png");
+
+	Vector2 heartBasePos = {100.0f, 650.0f}; // 1個目のハートの座標
+	float heartSpacing = 64.0f;              // ハートとハートの間隔（画像の横幅+隙間）
+
+	// HPの最大値(3回)ループして、ハートのスプライトを生成
+	for (int i = 0; i < kMaxPlayerHp; i++) {
+		// 表示座標を計算 (例: 20.0, 70.0, 120.0)
+		Vector2 pos = {heartBasePos.x + (i * heartSpacing), heartBasePos.y};
+
+		// 満タンハートのスプライトをvectorに追加
+		spriteHearts_.push_back(Sprite::Create(textureHandleHeart_, pos));
+	}
+
+	Audio::GetInstance()->Initialize("Resources/BGM/");
+
+	// BGMの読み込み
+	clearbgmHandle_ = KamataEngine::Audio::GetInstance()->LoadWave("Clear1.wav");
+	bgmHandle = KamataEngine::Audio::GetInstance()->LoadWave("gameBGM1.wav");
+
+	// Se読み込み
+	Audio::GetInstance()->Initialize("Resources/SE/");
+	consorlSelectHandle = KamataEngine::Audio::GetInstance()->LoadWave("cursorMove.wav");
 
 	GameStateManager::GetInstance()->SetCurrentStageID(3); // ステージ2
 
@@ -176,6 +211,7 @@ void GameScene1_3::Update() {
 	}
 	// ポーズ状態の切り替え
 	if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_P) && !player_->IsDead()&&!isGameClear_) {
+		consorlVoiceSelectHandle = KamataEngine::Audio::GetInstance()->PlayWave(consorlSelectHandle, false, 0.5f);
 		isPaused_ = !isPaused_;
 	}
 
@@ -191,6 +227,7 @@ void GameScene1_3::Update() {
 	if (isPaused_) {
 		// Wキーで上に移動
 		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_W)) {
+			consorlVoiceSelectHandle = KamataEngine::Audio::GetInstance()->PlayWave(consorlSelectHandle, false, 0.5f);
 			if (currentSelect_ == PauseSelect::kContinue) {
 				currentSelect_ = PauseSelect::kTitle;
 			} else if (currentSelect_ == PauseSelect::kStageSelect) {
@@ -201,6 +238,7 @@ void GameScene1_3::Update() {
 		}
 		// Sキーで下に移動
 		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_S)) {
+			consorlVoiceSelectHandle = KamataEngine::Audio::GetInstance()->PlayWave(consorlSelectHandle, false, 0.5f);
 			if (currentSelect_ == PauseSelect::kContinue) {
 				currentSelect_ = PauseSelect::kStageSelect;
 			} else if (currentSelect_ == PauseSelect::kStageSelect) {
@@ -212,6 +250,7 @@ void GameScene1_3::Update() {
 
 		// 決定（Enterキー）
 		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_RETURN)) {
+			consorlVoiceSelectHandle = KamataEngine::Audio::GetInstance()->PlayWave(consorlSelectHandle, false, 0.5f);
 			if (currentSelect_ == PauseSelect::kContinue) {
 				isPaused_ = false; // ポーズを解除
 			} else if (currentSelect_ == PauseSelect::kStageSelect) {
@@ -231,11 +270,6 @@ void GameScene1_3::Update() {
 		return;
 	}
 
-
-
-
-
-	// ==============================
 
 	for (auto& floor : breakableFloors_) {
 		floor->Update();
@@ -267,8 +301,7 @@ void GameScene1_3::Update() {
 			enemy->Update();
 		}
 
-		// 当たり判定
-		CheekAllcollision();
+
 
 		// カメラコントローラーの更新
 		CController_->Update();
@@ -341,6 +374,7 @@ void GameScene1_3::Update() {
 			enemy->Update();
 		}
 
+		player_->CheckAndResolveTogeKabeCollision(togeKabe_);
 		CheekAllcollision();
 		CController_->Update();
 
@@ -539,6 +573,25 @@ void GameScene1_3::Draw() {
 		GameClearTextSprite_->Draw();
 		enterSprite_->Draw(); // エンターキー用スプライトの描画
 	}
+	if (!player_->IsDead()) {
+		// もしプレイヤーが「無敵時間中」なら
+		if (player_->GetIsInvincible()) {
+			spriteHpIconDamage_->Draw(); // ダメージ時のアイコン
+		} else {
+			spriteHpIconNormal_->Draw(); // 通常時のアイコン
+		}
+	}
+
+	if (!player_->IsDead()) {
+		// プレイヤーの現在のHPを取得
+		int currentHp = player_->GetHp();
+		for (int i = 0; i < currentHp; i++) {
+
+			// ハートを描画する
+			spriteHearts_[i]->Draw();
+		}
+	}
+
 	Sprite::PostDraw();
 }
 
@@ -595,14 +648,11 @@ for (Enemy* enemy : enemys_) {
 				enemy->OnStomped(player_);
 				player_->SetVelocityY(0.3f);
 			} else {
-				player_->SetIsDead(true);
+				player_->TakeDamage(1);
 			}
 		}
 	}
-	AABB aabb3 = togeKabe_->GetAABB();
-	//if (math->IsCollision(aabb1,aabb3)) {
-	//	player_->SetIsDead(true);
-	//}
+
 
 	// ==== マップチップとの当たり判定 ====
 	const uint32_t kNumBlockVertical = mapChipField_->GetNumBlockVirtcal();
@@ -627,11 +677,13 @@ for (Enemy* enemy : enemys_) {
 			if (math->IsCollision(aabb1, chipAABB)) {
 				if (type == MapChipType::kGoal_) {
 					// ゴール処理
-					bgmVoiceHandle_ = KamataEngine::Audio::GetInstance()->PlayWave(bgmHandle_, false, 0.5f);
+					bgmVoiceHandle_ = KamataEngine::Audio::GetInstance()->PlayWave(clearbgmHandle_, false, 0.5f);
+					player_->StartVictoryPose(); // 勝利ポーズ開始
+					CController_->StartVictoryZoom(player_);
 					isGameClear_ = true;
 				} else if (type == MapChipType::kSpike_) {
 					// 棘のダメージ処理
-					player_->SetIsDead(true); // プレイヤーを死亡状態に設定
+					player_->TakeDamage(1);
 				}
 			}
 		}
@@ -683,6 +735,9 @@ void GameScene1_3::ChangePhase() {
 		// ★ 修正: ステージセレクト画面の1-1看板のマップチップ座標を指定
 		signboardPosition = mapChipField_->GetChipPositionIndex(30, 17);
 
+		player_->UpdateVictoryAnimation(); // 勝利ポーズのアニメを更新
+		CController_->Update();
+
 		// 次のプレイヤー初期位置をGameStateManagerに保存
 		GameStateManager::GetInstance()->SetPlayerStartPosition(signboardPosition);
 		if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
@@ -701,9 +756,10 @@ void GameScene1_3::ChangePhase() {
 }
 
 void GameScene1_3::CreateHitEffect(const KamataEngine::Vector3& position) {
-	HitEffect* newHitEffect = HitEffect::create(position); // 新しいヒットエフェクトを生成
-	hitEffects_.push_back(newHitEffect);                   // ヒットエフェクトをリストに追加)
-	                                                       // ヒットエフェクトの数が最大数を超えた場合、最も古いものを削除
+	position;
+	//HitEffect* newHitEffect = HitEffect::create(position); // 新しいヒットエフェクトを生成
+	//hitEffects_.push_back(newHitEffect);                   // ヒットエフェクトをリストに追加)
+	//                                                       // ヒットエフェクトの数が最大数を超えた場合、最も古いものを削除
 }
 
 void GameScene1_3::LimitPlayerPosition() {
