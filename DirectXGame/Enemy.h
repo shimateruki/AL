@@ -72,7 +72,7 @@ public:
 
 	  bool IsReadyToExplode() const { return isReadyToExplode_; }
 	  void SetVelocity(const Vector3& velocity) { velocity_ = velocity; }
-
+	  void TakeDamage(int damage);
   private:
 	// 敵のワールド変換 
 	WorldTransform worldTransformEnemy_;
@@ -179,4 +179,7 @@ public:
 	float explosionTimer_ = 0.0f;        // 経過時間
 	const float kExplosionTime = 2.0f;   // 爆発までの時間（2秒）
 	bool isReadyToExplode_ = false;      // 爆発フラグ
+
+	int hp_ = 0; // 敵の体力
+	float damageBlinkTimer_ = 0.0f; // ダメージ点滅用タイマー
 };

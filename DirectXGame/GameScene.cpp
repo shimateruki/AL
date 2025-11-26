@@ -684,16 +684,13 @@ void GameScene::CheekAllcollision() {
 
 				// 命中！
 
-				// 1. 弾を消す
+				// 弾が当たった！
 				bullet->OnCollision();
 
-				// 2. 敵を倒す (踏んだ時と同じ処理)
-				// ※HP制の敵なら TakeDamage() を呼ぶ
-				enemy->OnStomped(player_);
+				
+				enemy->TakeDamage(bullet->GetDamage());
 
-				// 3. ヒットエフェクトや音
 				CreateHitEffect(enemy->GetWorldPosition());
-				// Audio::GetInstance()->PlayWave(seHitHandle_);
 			}
 		}
 	}

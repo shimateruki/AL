@@ -3,14 +3,11 @@
 #include "GameScene.h"
 #include "GameScene1_2.h"
 #include "GameScene1_3.h"
-#include"GameScene2_1.h"
+#include "GameScene2_1.h"
 #include "Player.h"
+#include <algorithm> // std::clamp, std::max, std::min
 #include <cassert>
 #include <numbers>
-#include <algorithm> // std::clamp, std::max, std::min
-
-
-
 
 using namespace KamataEngine;
 
@@ -38,8 +35,18 @@ void Enemy::Initialize(Model* model, Camera* camera, const Vector3& position, Ty
 	shotTimer_ = 0.0f;
 	startPosition_ = position; // 初期位置を記憶
 	flightTimer_ = 0.0f;
+	if (type_ == Type::kWalk) {
+		hp_ = 2;
+	} else if (type_ == Type::kShooter) {
+		hp_ = 2;
+	} else if (type_ == Type::kFlying) {
+		hp_ = 3;
+	} else if (type_ == Type::kHoming) {
+		hp_ = 4;
+	}
 	if (type_ == Type::kSplit) {
 		worldTransformEnemy_.scale_ = {2.0f, 2.0f, 2.0f};
+		hp_ = 5;
 	} else {
 		worldTransformEnemy_.scale_ = {1.0f, 1.0f, 1.0f};
 	}
@@ -294,18 +301,28 @@ void Enemy::Update() {
 		}
 		break;
 	}
-
+	if (damageBlinkTimer_ > 0.0f) {
+		damageBlinkTimer_ -= 1.0f / 60.0f;
+	}
 	// 4. 行列更新
 	math->worldTransFormUpdate(worldTransformEnemy_);
 }
 
 void Enemy::Draw() {
-	// 敵本体の描画
-	model_->Draw(worldTransformEnemy_, *camera_);
 	// 弾の描画
 	for (EnemyBullet* bullet : bullets_) {
 		bullet->Draw(*camera_);
 	}
+	if (damageBlinkTimer_ > 0.0f) {
+		// 0.05秒周期で点滅 
+		if (std::fmod(damageBlinkTimer_, 0.1f) < 0.05f) {
+
+			return;
+		}
+	}
+	// 敵本体の描画
+	model_->Draw(worldTransformEnemy_, *camera_);
+
 }
 
 //-----------------------------------------------------------------------------
@@ -365,7 +382,7 @@ void Enemy::OnStomped(const Player* player) {
 //-----------------------------------------------------------------------------
 // ユーティリティ
 //-----------------------------------------------------------------------------
-bool Enemy::IsWalkable(MapChipType type) { return (type == MapChipType::kDirt_ || type == MapChipType::kGrass_ || type == MapChipType::kJumpPad_||type==MapChipType::kBreakable_); }
+bool Enemy::IsWalkable(MapChipType type) { return (type == MapChipType::kDirt_ || type == MapChipType::kGrass_ || type == MapChipType::kJumpPad_ || type == MapChipType::kBreakable_); }
 
 // プレイヤーのCarnerPositionと同様の処理
 Vector3 Enemy::CarnerPosition(const Vector3& center, Corner cornter) {
@@ -558,5 +575,37 @@ void Enemy::UpdateOnWall(const CollisionMapInfo& info) {
 	if (info.hitWall) {
 		// 壁にぶつかったら反転する
 		velocity_.x *= -1;
+	}
+}
+
+void Enemy::TakeDamage(int damage) {
+	// すでに死んでいたら何もしない
+	if (isDead_ || behavior_ == Behavior::kisDead) {
+		return;
+	}
+
+	// HPを減らす
+	hp_ -= damage;
+	damageBlinkTimer_ = 0.2f;
+	// HPが0以下になったら死亡
+	if (hp_ <= 0) {
+		hp_ = 0;
+	
+		// 死亡状態へ移行
+		isCollisDisabled_ = true;
+		behaviorRequest_ = Behavior::kisDead;
+
+		// 死亡エフェクト
+		if (gameScene_) {
+			gameScene_->CreateHitEffect(GetWorldPosition());
+		} else if (gameScene1_2_) {
+			gameScene1_2_->CreateHitEffect(GetWorldPosition());
+		}
+	} else {
+		if (gameScene_) {
+			gameScene_->CreateHitEffect(GetWorldPosition());
+		} else if (gameScene1_2_) {
+			gameScene1_2_->CreateHitEffect(GetWorldPosition());
+		}
 	}
 }

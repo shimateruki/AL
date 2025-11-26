@@ -303,4 +303,8 @@ private:
 	float attackCooldown_ = 0.0f;
 	const float kAttackInterval = 0.5f; // 0.5秒に1発
 
+	float chargeTimer_ = 0.0f;
+	const float kMaxChargeTime = 1.0f; // 1秒でフルチャージ
+	bool isCharging_ = false;          // チャージ中フラグ
+
 };
