@@ -226,31 +226,68 @@ void Player::Move() {
 		attackCooldown_ -= 1.0f / 60.0f;
 	}
 
-	// Fキーで発射
-	if (Input::GetInstance()->TriggerKey(DIK_F) && attackCooldown_ <= 0.0f) {
-		attackCooldown_ = kAttackInterval;
+	if (Input::GetInstance()->PushKey(DIK_F)) {
+		isCharging_ = true;
+		chargeTimer_ += 1.0f / 60.0f;
+
+		// チャージ演出
+		if (chargeTimer_ >= kMaxChargeTime) {
+			// フルチャージ完了！
+			// ブルブル震えさせて「溜まった感」を出す
+			float shake = std::sin(chargeTimer_ * 50.0f) * 0.05f;
+			worldTransformPlayer_.scale_ = {originalScaleY_ + shake, originalScaleY_ - shake, originalScaleY_ + shake};
+
+			// もしチャージ完了音を1回だけ鳴らしたいならフラグ管理が必要ですが
+			// 今回は振動だけで表現します
+		} else {
+			// チャージ中... 少しずつ縮ませる（力を溜める感じ）
+			float squeeze = (chargeTimer_ / kMaxChargeTime) * 0.2f;
+			worldTransformPlayer_.scale_.y = originalScaleY_ - squeeze;
+			worldTransformPlayer_.scale_.x = originalScaleY_ + (squeeze * 0.5f);
+		}
+	}
+	// 2. ボタンを離した瞬間：発射！
+	else if (isCharging_) { // さっきまで押していた(=離した瞬間)
+
+		isCharging_ = false; // チャージ終了
 
 		// 弾を生成
 		PlayerBullet* newBullet = new PlayerBullet();
 
-		// 向きを決定（プレイヤーが向いている方向）
 		Vector3 velocity = {0, 0, 0};
-		float speed = 0.4f; // 弾速
-		if (lrDirection_ == LRDirection::kRight) {
+		float speed = 0.4f;
+		if (lrDirection_ == LRDirection::kRight)
 			velocity.x = speed;
-		} else {
+		else
 			velocity.x = -speed;
+
+		Vector3 spawnPos = worldTransformPlayer_.translation_;
+
+		// ★チャージ時間によって弾の性能を変える
+		if (chargeTimer_ >= kMaxChargeTime) {
+			// --- フルチャージ弾（強力！） ---
+			// サイズ: 0.8倍 (通常は0.4)
+			// ダメージ: 3 (通常は1)
+			newBullet->Initialize(model_, spawnPos, velocity, mapchipField_, 0.8f, 3);
+			// 強そうなSEを鳴らす
+			// Audio::GetInstance()->PlayWave(seChargeShotHandle_);
+		} else {
+			// --- 通常弾 ---
+			// サイズ: 0.4倍
+			// ダメージ: 1
+			newBullet->Initialize(model_, spawnPos, velocity, mapchipField_, 0.4f, 1);
+			// 普通のSE
+			// Audio::GetInstance()->PlayWave(seShotHandle_);
 		}
 
-		// 発射位置（プレイヤーの中心より少し前）
-		Vector3 spawnPos = worldTransformPlayer_.translation_;
-		// spawnPos.y += 0.5f; // 必要なら高さ調整
-
-		// 初期化
-		newBullet->Initialize(model_, spawnPos, velocity, mapchipField_);
 		bullets_.push_back(newBullet);
 
-
+		// タイマーリセット & 体のスケールを元に戻す
+		chargeTimer_ = 0.0f;
+		worldTransformPlayer_.scale_ = {originalScaleY_, originalScaleY_, originalScaleY_};
+	} else {
+		// 何もしていない時はタイマー0
+		chargeTimer_ = 0.0f;
 	}
 
 

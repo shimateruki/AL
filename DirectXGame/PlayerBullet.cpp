@@ -2,12 +2,18 @@
 
 using namespace KamataEngine;
 
-void PlayerBullet::Initialize(Model* model, const Vector3& position, const Vector3& velocity, MapChipField* mapChipField) {
+void PlayerBullet::Initialize(KamataEngine::Model* model, const KamataEngine::Vector3& position, const KamataEngine::Vector3& velocity, MapChipField* mapChipField, float scale, int damage) {
 	model_ = model;
 	mapChipField_ = mapChipField;
 	worldTransform_.Initialize();
 	worldTransform_.translation_ = position;
 	worldTransform_.scale_ = {0.4f, 0.4f, 0.4f}; // 本体より小さく
+	velocity_ = velocity;
+	isDead_ = false;
+	lifeTimer_ = 0.0f;
+	worldTransform_.scale_ = {scale, scale, scale};
+	damage_ = damage;
+
 	velocity_ = velocity;
 	isDead_ = false;
 	lifeTimer_ = 0.0f;
@@ -48,8 +54,14 @@ Vector3 PlayerBullet::GetWorldPosition() const { return worldTransform_.translat
 
 AABB PlayerBullet::GetAABB() {
 	Vector3 pos = worldTransform_.translation_;
+
+	
+	float scaledRadius = kRadius * worldTransform_.scale_.x;
+
+
 	AABB aabb;
-	aabb.min = {pos.x - kRadius, pos.y - kRadius, pos.z - kRadius};
-	aabb.max = {pos.x + kRadius, pos.y + kRadius, pos.z + kRadius};
+	aabb.min = {pos.x - scaledRadius, pos.y - scaledRadius, pos.z - scaledRadius};
+	aabb.max = {pos.x + scaledRadius, pos.y + scaledRadius, pos.z + scaledRadius};
+
 	return aabb;
 }
