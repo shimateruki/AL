@@ -72,10 +72,11 @@ void GameScene::Initialize() {
 	// 👾 敵の初期化
 	//========================
 	enemys_.push_back(new Enemy());
-	enemys_.back()->Initialize(enemy_model_, &camera_, mapChipField_->GetChipPositionIndex(15, 15),Enemy::Type::kShooter);
+	enemys_.back()->Initialize(enemy_model_, &camera_, mapChipField_->GetChipPositionIndex(15, 15),Enemy::Type::kWalk);
 	enemys_.back()->SetMapChipField(mapChipField_);
 	enemys_.back()->SetGameScene(this);
 	enemys_.back()->SetPlayer(player_);
+	enemys_.back()->SetFlightPattern(Enemy::FlightPattern::kHorizontal);
 	enemys_.push_back(new Enemy());
 	enemys_.back()->Initialize(enemy_model_, &camera_, mapChipField_->GetChipPositionIndex(89, 14));
 	enemys_.back()->SetMapChipField(mapChipField_);
@@ -360,7 +361,7 @@ void GameScene::Update() {
 		for (Enemy* enemy : enemys_) {
 			enemy->Update();
 		}
-		player_->CheckAndResolveTogeKabeCollision(togeKabe_);
+		//player_->CheckAndResolveTogeKabeCollision(togeKabe_);
 		CheekAllcollision();
 		CController_->Update();
 
@@ -615,8 +616,8 @@ void GameScene::GenerrateBlock() {
 void GameScene::CheekAllcollision() {
 	// プレイヤーAABB
 	AABB aabb1 = player_->GetAABB();
-
-for (Enemy* enemy : enemys_) {
+	const auto& pBullets = player_->GetBullets(); // プレイヤーの弾リスト
+	for (Enemy* enemy : enemys_) {
 		// 死亡しているか、当たり判定が無効化されている敵はスキップ
 		if (enemy->isDead() || enemy->isCollisonDisabled()) {
 			continue;
@@ -624,10 +625,37 @@ for (Enemy* enemy : enemys_) {
 
 		AABB aabb2 = enemy->GetAABB();
 		if (math->IsCollision(aabb1, aabb2)) {
+
+			if (enemy->GetType() == Enemy::Type::kHoming) {
+
+				// 1. 大ダメージを与える
+				player_->TakeDamage(2);
+
+				// 2. 派手なSEを鳴らす（ダメージ音や爆発音）
+		/*		Audio::GetInstance()->PlayWave(seDamageHandle_, false, 1.0f);*/
+
+				// 3. 敵は自爆して消滅
+				enemy->SetDead(true);
+
+				// 4. その場にパーティクル（爆発エフェクト）を出す
+				// 既存の DeathParticles を流用して爆発っぽく見せる
+				deatparticles_->Initialize(deatparticlesModel_, &camera_, player_, enemy->GetWorldPosition());
+
+				// 衝突処理終わり
+				continue;
+			}
+
+
+
+
 			// ここでは、踏んだかどうかの判定のみに集中する
 			if (aabb1.min.y >= aabb2.max.y - 4.0f && !player_->GetOnGround()) {
-				enemy->OnStomped(player_);
-				player_->SetVelocityY(0.3f);
+				if (enemy->GetType() == Enemy::Type::kFlying) {
+					player_->SetVelocityY(0.8f); // 大ジャンプ
+				} else {
+					player_->SetVelocityY(0.3f); // 通常ジャンプ
+				}
+
 			} else {
 				player_->TakeDamage(1);
 			}
@@ -647,7 +675,30 @@ for (Enemy* enemy : enemys_) {
 			}
 		}
 
+		for (PlayerBullet* bullet : pBullets) {
+			if (bullet->IsDead())
+				continue;
+
+			AABB bulletAABB = bullet->GetAABB();
+			if (math->IsCollision(aabb2, bulletAABB)) {
+
+				// 命中！
+
+				// 1. 弾を消す
+				bullet->OnCollision();
+
+				// 2. 敵を倒す (踏んだ時と同じ処理)
+				// ※HP制の敵なら TakeDamage() を呼ぶ
+				enemy->OnStomped(player_);
+
+				// 3. ヒットエフェクトや音
+				CreateHitEffect(enemy->GetWorldPosition());
+				// Audio::GetInstance()->PlayWave(seHitHandle_);
+			}
+		}
 	}
+
+	
 
 
 	// ==== マップチップとの当たり判定 ====

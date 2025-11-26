@@ -20,8 +20,15 @@ public:
 	enum class Type {
 		kWalk,    // 普通に歩く
 		kShooter, // その場で撃ってくる
+		kFlying,  // 飛行タイプ
+		kHoming,  // ホーミングタイプ(爆発)
+		kSplit,   // 分裂タイプ
 	};
-
+	// 飛行パターンを表す列挙型
+	enum class FlightPattern {
+		kVertical,   // 上下移動
+		kHorizontal, // 左右移動
+	};
 
 	// 敵の行動状態を表す列挙型
 	enum class Behavior {
@@ -48,6 +55,7 @@ public:
 	bool GetIsDead(){ return isDead_; } // 敵が死亡しているかどうかを取得するメソッド
 	AABB GetAABB();
 	void onCollision(const Player* player);
+	void SetDead(bool dead) { isDead_ = dead; } // 敵の死亡状態を設定するメソッド
 	void OnStomped(const Player* player);
 	bool IsWalkable(MapChipType type);
 	bool isCollisonDisabled() const { return isCollisDisabled_; } // 衝突無効化フラグを取得
@@ -58,10 +66,14 @@ public:
 	void SetGameScene2_1(GameScene2_1* GameScene2_1) { gameScene2_1_ = GameScene2_1; } // GameScene1_2へのポインタを設定
 	bool isDead() const { return isDead_; }  
 	  void SetMapChipField(MapChipField* field) { mapChipField_ = field; }
-                                          // 敵が死亡しているかどうかを取得するメソッド
+                                        
+	  Type GetType() const { return type_; } // 敵のタイプを取得するメソッド
+	  void SetFlightPattern(FlightPattern pattern) { flightPattern_ = pattern; }
 
+	  bool IsReadyToExplode() const { return isReadyToExplode_; }
+	  void SetVelocity(const Vector3& velocity) { velocity_ = velocity; }
 
-private:
+  private:
 	// 敵のワールド変換 
 	WorldTransform worldTransformEnemy_;
 	MapChipField* mapChipField_ = nullptr;
@@ -153,4 +165,18 @@ private:
 	float shotTimer_ = 0.0f;
 	const float kShotInterval = 2.0f; // 2秒に1回発射
 
+	// 飛行用
+	FlightPattern flightPattern_ = FlightPattern::kVertical;
+	Vector3 startPosition_ = {};
+	float flightTimer_ = 0.0f;
+	const float kFlightRange = 3.0f; // 動く幅
+	const float kFlightSpeed = 2.0f; // 動く速さ
+	const float kEnemyJumpSpeed = 12.0f;
+	// ホーミング用
+	const float kHomingSpeed = 0.01f;    // 追尾スピード（少し速め）
+	const float kDetectionRange = 10.0f; // プレイヤーを見つける距離
+	float homingTimer_ = 0.0f;           // アニメーション用
+	float explosionTimer_ = 0.0f;        // 経過時間
+	const float kExplosionTime = 2.0f;   // 爆発までの時間（2秒）
+	bool isReadyToExplode_ = false;      // 爆発フラグ
 };
