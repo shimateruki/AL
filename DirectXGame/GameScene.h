@@ -144,8 +144,8 @@ private:
 	bool isTimerFinished_ = false; // タイマー完了フラグ
 
 	// ===== オーディオ =====
-	uint32_t bgmHandle_ = 0;      // BGMデータのハンドル
-	uint32_t bgmVoiceHandle_ = 0; // BGM再生のハンドル
+	uint32_t clearbgmHandle_ = 0;      // BGMデータのハンドル
+	uint32_t clearbgmVoiceHandle_ = 0; // BGM再生のハンドル
 
 	uint32_t textureHandle;
 	uint32_t textureHandlePhose_ = 0; 
@@ -187,6 +187,17 @@ private:
 
 	// ★満タンハートのスプライトだけを持つ
 	std::vector<KamataEngine::Sprite*> spriteHearts_;
+
+	//BGM
+	uint32_t bgmHandle;
+	uint32_t bgmVoiceHandle;
+
+	//SE
+	uint32_t SeHandle;
+	uint32_t seVoiceHandle;
+	uint32_t consorlSelectHandle;
+	uint32_t consorlVoiceSelectHandle;
+
 
 	KamataEngine::Sprite* spriteCountdown_ = nullptr;
 };

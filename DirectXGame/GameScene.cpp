@@ -1,8 +1,8 @@
-#include "GameScene.h" // GameSceneクラスのヘッダーファイルをインクルード
+#include "GameScene.h" 
 #include <iostream>
 #include "GameStateManager.h"
 
-using namespace KamataEngine; // KamataEngine名前空間を使用
+using namespace KamataEngine; 
 
 // GameSceneの初期化処理
 void GameScene::Initialize() {
@@ -23,6 +23,7 @@ void GameScene::Initialize() {
 	togeModel_ = Model::CreateFromOBJ("toge", true);
 	textureHandle = TextureManager::Load("1-1.png");
 	yamaModel = Model::CreateFromOBJ("yama", true); // 山モデルの読み込み
+
 	// 数字表示用テクスチャの読み込み
 	textureHandlePhose_ = TextureManager::Load("Phose.png");
 	TextureHandleYazirusi_ = TextureManager::Load("yazirusi.png");
@@ -71,9 +72,10 @@ void GameScene::Initialize() {
 	// 👾 敵の初期化
 	//========================
 	enemys_.push_back(new Enemy());
-	enemys_.back()->Initialize(enemy_model_, &camera_, mapChipField_->GetChipPositionIndex(15, 15));
+	enemys_.back()->Initialize(enemy_model_, &camera_, mapChipField_->GetChipPositionIndex(15, 15),Enemy::Type::kShooter);
 	enemys_.back()->SetMapChipField(mapChipField_);
 	enemys_.back()->SetGameScene(this);
+	enemys_.back()->SetPlayer(player_);
 	enemys_.push_back(new Enemy());
 	enemys_.back()->Initialize(enemy_model_, &camera_, mapChipField_->GetChipPositionIndex(89, 14));
 	enemys_.back()->SetMapChipField(mapChipField_);
@@ -115,9 +117,6 @@ void GameScene::Initialize() {
 	fade_->Start(Fade::Status::FadeIn, 1.0f);
 	finishedTimer = 0;
 
-
-
-
 	//========================
 	// 🎉 ゲームクリアテキスト
 	//========================
@@ -146,12 +145,6 @@ void GameScene::Initialize() {
 	tree_.push_back(new Tree());
 	tree_.back()->Initialize(treeModel_, &camera_, mapChipField_->GetChipPositionIndex(90, 19));
 
-
-
-	Audio::GetInstance()->Initialize("Resources/BGM/");
-
-	// BGMの読み込み（.wavファイル）
-	bgmHandle_ = KamataEngine::Audio::GetInstance()->LoadWave("Clear1.wav");
 
 	TextSprite1_1 = Sprite::Create(textureHandle, {100.50});
 	poseSprite = Sprite::Create(textureHandlePhose_, {0.0});
@@ -184,6 +177,9 @@ void GameScene::Initialize() {
 		spriteHearts_.push_back(Sprite::Create(textureHandleHeart_, pos));
 	}
 
+	
+	
+
 
 	GameStateManager::GetInstance()->SetCurrentStageID(1); // ステージ1
 
@@ -215,6 +211,7 @@ void GameScene::Update() {
 	// ポーズ状態の切り替え
 	if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_P)&&!player_->IsDead()&&!isGameClear_) {
 		isPaused_ = !isPaused_;
+		consorlVoiceSelectHandle = KamataEngine::Audio::GetInstance()->PlayWave(consorlSelectHandle, false, 0.5f);
 	}
 
 	if (currentSelect_ == PauseSelect::kContinue) {
@@ -230,6 +227,7 @@ void GameScene::Update() {
 	if (isPaused_) {
 		// Wキーで上に移動
 		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_W)) {
+			consorlVoiceSelectHandle = KamataEngine::Audio::GetInstance()->PlayWave(consorlSelectHandle, false, 0.5f);
 			if (currentSelect_ == PauseSelect::kContinue) {
 				currentSelect_ = PauseSelect::kTitle;
 			} else if (currentSelect_ == PauseSelect::kStageSelect) {
@@ -240,6 +238,7 @@ void GameScene::Update() {
 		}
 		// Sキーで下に移動
 		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_S)) {
+			consorlVoiceSelectHandle = KamataEngine::Audio::GetInstance()->PlayWave(consorlSelectHandle, false, 0.5f);
 			if (currentSelect_ == PauseSelect::kContinue) {
 				currentSelect_ = PauseSelect::kStageSelect;
 			} else if (currentSelect_ == PauseSelect::kStageSelect) {
@@ -633,6 +632,21 @@ for (Enemy* enemy : enemys_) {
 				player_->TakeDamage(1);
 			}
 		}
+
+		for (EnemyBullet* bullet : enemy->GetBullets()) {
+			if (bullet->IsDead())
+				continue;
+
+			AABB bulletAABB = bullet->GetAABB();
+			if (math->IsCollision(aabb1, bulletAABB)) {
+				// プレイヤーにダメージ
+				player_->TakeDamage(1);
+
+				// 弾を消す
+				bullet->OnCollision();
+			}
+		}
+
 	}
 
 
@@ -659,7 +673,7 @@ for (Enemy* enemy : enemys_) {
 			if (math->IsCollision(aabb1, chipAABB)) {
 				if (type == MapChipType::kGoal_) {
 					// ゴール処理
-					bgmVoiceHandle_ = KamataEngine::Audio::GetInstance()->PlayWave(bgmHandle_, false, 0.5f);
+					clearbgmVoiceHandle_ = KamataEngine::Audio::GetInstance()->PlayWave(clearbgmHandle_, false, 0.5f);
 					isGameClear_ = true;
 					player_->StartVictoryPose(); // 勝利ポーズ開始
 					CController_->StartVictoryZoom(player_);

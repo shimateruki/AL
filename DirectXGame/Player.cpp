@@ -235,8 +235,7 @@ void Player::Update() {
 
 
 
-	ImGui::Begin("player");
-	ImGui::Text("%d", hp_);
+	
 }
 
 void Player::Draw() {
@@ -877,6 +876,7 @@ void Player::StartCameraJump() {
 	spinTimer_ = 0.0f;
 	isSquashing_ = false; // ぽよんを止める
 	onGround_ = false;    // 地面から離れる
+	worldTransformPlayer_.rotation_.y = std::numbers::pi_v<float>;
 }
 
 // カメラジャンプ中のアニメーション更新
