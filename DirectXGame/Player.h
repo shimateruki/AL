@@ -7,6 +7,8 @@
 #include "Math.h"         // 数学ユーティリティ
 #include <array>          // std::array 用
 #include <numbers>        // 円周率など
+#include "PlayerBullet.h"
+#include <list>
 
 using namespace KamataEngine;
 
@@ -74,6 +76,7 @@ public:
 	bool GetisMove() const { return isMove_; }
 	void SetisMove(bool move) { isMove_ = move; }
 	int GetHp() const { return hp_; }
+	const std::list<PlayerBullet*>& GetBullets() const { return bullets_; }
 	//----------------------------------------
 	// 衝突
 	//----------------------------------------
@@ -294,4 +297,10 @@ private:
 	const float kCameraJumpDuration = 1.8f; // カメラジャンプの時間
 	const float kCameraJumpZoom = 15.0f;    // 最終的なZ座標
 	const float kCameraJumpScale = 10.0f;   // 最終的なスケール
+
+	// 弾関連
+	std::list<PlayerBullet*> bullets_;
+	float attackCooldown_ = 0.0f;
+	const float kAttackInterval = 0.5f; // 0.5秒に1発
+
 };

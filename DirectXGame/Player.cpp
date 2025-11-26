@@ -210,6 +210,52 @@ void Player::Move() {
 	if (std::abs(velosity_.x) <= 0.0001f) {
 		velosity_.x = 0.0f;
 	}
+
+	for (auto it = bullets_.begin(); it != bullets_.end();) {
+		(*it)->Update();
+		if ((*it)->IsDead()) {
+			delete (*it);
+			it = bullets_.erase(it);
+		} else {
+			++it;
+		}
+	}
+
+	// --- 攻撃入力 (例: Fキー または 左クリック) ---
+	if (attackCooldown_ > 0.0f) {
+		attackCooldown_ -= 1.0f / 60.0f;
+	}
+
+	// Fキーで発射
+	if (Input::GetInstance()->TriggerKey(DIK_F) && attackCooldown_ <= 0.0f) {
+		attackCooldown_ = kAttackInterval;
+
+		// 弾を生成
+		PlayerBullet* newBullet = new PlayerBullet();
+
+		// 向きを決定（プレイヤーが向いている方向）
+		Vector3 velocity = {0, 0, 0};
+		float speed = 0.4f; // 弾速
+		if (lrDirection_ == LRDirection::kRight) {
+			velocity.x = speed;
+		} else {
+			velocity.x = -speed;
+		}
+
+		// 発射位置（プレイヤーの中心より少し前）
+		Vector3 spawnPos = worldTransformPlayer_.translation_;
+		// spawnPos.y += 0.5f; // 必要なら高さ調整
+
+		// 初期化
+		newBullet->Initialize(model_, spawnPos, velocity, mapchipField_);
+		bullets_.push_back(newBullet);
+
+
+	}
+
+
+
+
 }
 
 
@@ -263,6 +309,9 @@ void Player::Draw() {
 	
 	model_->Draw(worldTransformPlayer_, *camera_);
 
+	for (PlayerBullet* bullet : bullets_) {
+		bullet->Draw(*camera_);
+	}
 }
 
 // 各方向のマップチップとの当たり判定
