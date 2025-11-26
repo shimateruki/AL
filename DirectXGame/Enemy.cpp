@@ -24,7 +24,7 @@ const float kGgravityAcceleration = 0.8f;
 //-----------------------------------------------------------------------------
 // 初期化・更新・描画
 //-----------------------------------------------------------------------------
-void Enemy::Initialize(Model* model, Camera* camera, const Vector3& position) {
+void Enemy::Initialize(Model* model, Camera* camera, const Vector3& position, Type type) {
 	assert(model);
 	model_ = model;
 	camera_ = camera;
@@ -34,9 +34,29 @@ void Enemy::Initialize(Model* model, Camera* camera, const Vector3& position) {
 	velocity_ = {-kWalkSpeed, 0, 0};
 	walkTimer = 0.0f;
 	gameScene_ = nullptr;
+	type_ = type;
+	shotTimer_ = 0.0f;
 }
 
+// Enemy.cpp の Update() 完全版
+
 void Enemy::Update() {
+	// ----------------------------------------
+	// 1. 弾の更新（敵の状態に関わらず行う）
+	// ----------------------------------------
+	for (auto it = bullets_.begin(); it != bullets_.end();) {
+		(*it)->Update();
+		if ((*it)->IsDead()) {
+			delete (*it);
+			it = bullets_.erase(it);
+		} else {
+			++it;
+		}
+	}
+
+	// ----------------------------------------
+	// 2. 行動状態の遷移リクエスト処理
+	// ----------------------------------------
 	if (flipCooldownTimer > 0) {
 		flipCooldownTimer -= 1.0f / 60.0f;
 	}
@@ -53,15 +73,15 @@ void Enemy::Update() {
 		behaviorRequest_ = Behavior::kUnKnow;
 	}
 
+	// ----------------------------------------
+	// 3. 行動ごとの更新処理
+	// ----------------------------------------
 	switch (behavior_) {
 	case Enemy::Behavior::kUnKnow:
-		// 特に処理なし
 		break;
+
 	case Enemy::Behavior::kRoot: {
-
-		// ▼▼▼ ここから新しいマップチップ当たり判定のロジック ▼▼▼
-
-		// 重力適用
+		// --- 共通: 重力適用 ---
 		if (!onGround_) {
 			velocity_.y += -kGgravityAcceleration / 60.0f;
 			velocity_.y = std::max(velocity_.y, -kLimitFallSpeed);
@@ -69,31 +89,102 @@ void Enemy::Update() {
 			velocity_.y = 0.0f;
 		}
 
-		// 崖の端で引き返すロジック
-		// プレイヤーのUpdateOnGround()の落下判定を応用する
-		if (onGround_) {
-			// 足元を探索する座標を計算
-			Vector3 pos = GetWorldPosition();
-			Vector3 positionsCheck = pos + Vector3(0, -kGroundSearchHeight, 0);
-			positionsCheck.x += (velocity_.x > 0 ? kWidth / 2.0f : -kWidth / 2.0f); // 進む方向の足元をチェック
+		// ==========================================
+		// タイプ別の挙動 (歩く vs 撃つ)
+		// ==========================================
+		if (type_ == Type::kWalk) {
+			// ★歩く敵のロジック
 
-			MapChipType mapchipType = MapChipType::kBlank_; // 初期化
-			MapChipField::IndexSet indexSet;
-			if (mapChipField_) {
-				indexSet = mapChipField_->GetMapChipIndexSetByPosition(positionsCheck);
-				mapchipType = mapChipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
+			// 崖の端で引き返すロジック
+			if (onGround_) {
+				Vector3 pos = GetWorldPosition();
+				Vector3 positionsCheck = pos + Vector3(0, -kGroundSearchHeight, 0);
+				positionsCheck.x += (velocity_.x > 0 ? kWidth / 2.0f : -kWidth / 2.0f);
+
+				MapChipType mapchipType = MapChipType::kBlank_;
+				MapChipField::IndexSet indexSet;
+				if (mapChipField_) {
+					indexSet = mapChipField_->GetMapChipIndexSetByPosition(positionsCheck);
+					mapchipType = mapChipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
+				}
+
+				// 足元に歩けるマップチップがない場合
+				if (!IsWalkable(mapchipType)) {
+					if (flipCooldownTimer <= 0) {
+						velocity_.x *= -1;
+						flipCooldownTimer = kFlipCooldown;
+					}
+				}
 			}
 
-			// 足元に歩けるマップチップがない場合
-			if (!IsWalkable(mapchipType)) {
-				if (flipCooldownTimer <= 0) {
-					velocity_.x *= -1;
-					flipCooldownTimer = kFlipCooldown; // タイマーをリセット
+			// アニメーション用の回転処理
+			walkTimer += 1.0f / 60.0f;
+			worldTransformEnemy_.rotation_.y = (velocity_.x > 0) ? std::numbers::pi_v<float> / 2.0f : std::numbers::pi_v<float> * 3.0f / 2.0f;
+			worldTransformEnemy_.rotation_.x = std::sin(std::numbers::pi_v<float> * 2.0f * walkTimer / 1.0f);
+
+		} else if (type_ == Type::kShooter) {
+			// ★撃つ敵のロジック
+			velocity_.x = 0.0f; // 動かない
+
+			// --- 棒立ち回避：呼吸アニメーション ---
+			// shotTimer_ を利用して、フワフワと伸縮させる
+			// (sin波を使って 0.9 ～ 1.1倍 の間を行き来させる)
+			float breathe = std::sin(shotTimer_ * 5.0f) * 0.1f;
+			worldTransformEnemy_.scale_.y = 1.0f + breathe;
+			worldTransformEnemy_.scale_.x = 1.0f - breathe; // 縦に伸びたら横に縮む
+
+			if (player_) {
+				Vector3 myPos = worldTransformEnemy_.translation_;
+				Vector3 targetPos = player_->GetWorldPosition();
+
+				// プレイヤーの方を向く
+				Vector3 diff = targetPos - myPos;
+				if (diff.x > 0) {
+					worldTransformEnemy_.rotation_.y = std::numbers::pi_v<float> / 2.0f; // 右
+				} else {
+					worldTransformEnemy_.rotation_.y = std::numbers::pi_v<float> * 3.0f / 2.0f; // 左
+				}
+				worldTransformEnemy_.rotation_.x = 0.0f;
+
+				// 距離を計算
+				float dist = std::sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
+
+				// ★★★ 距離制限：15ブロック以内なら攻撃する ★★★
+				const float kAttackRange = 15.0f;
+
+				if (dist <= kAttackRange) {
+					// 発射タイマーを進める
+					shotTimer_ += 1.0f / 60.0f;
+
+					// 発射直前は少し震えるなどの演出を入れても良いかも
+
+					if (shotTimer_ >= kShotInterval) {
+						shotTimer_ = 0.0f;
+
+						// 弾生成
+						if (dist > 0.0f) {
+							EnemyBullet* newBullet = new EnemyBullet();
+							Vector3 velocity = diff;
+							velocity.x /= dist;
+							velocity.y /= dist;
+							velocity.z /= dist; // 正規化
+							velocity *= 0.2f;   // 弾速
+
+							// ★重要：マップチップフィールドを弾に渡す
+							newBullet->Initialize(model_, myPos, velocity, mapChipField_);
+							bullets_.push_back(newBullet);
+						}
+					}
+				} else {
+			
+					shotTimer_ += 1.0f / 60.0f;
 				}
 			}
 		}
 
-		// 衝突情報を初期化し、現在の速度を移動量として設定
+		// ==========================================
+		// 共通: マップチップ衝突判定 (移動と押し出し)
+		// ==========================================
 		CollisionMapInfo collisionInfo = {};
 		collisionInfo.isMovement = velocity_;
 
@@ -106,28 +197,22 @@ void Enemy::Update() {
 		// 調整された移動量を敵の位置に適用
 		worldTransformEnemy_.translation_ += collisionInfo.isMovement;
 
-		// 天井にぶつかったらY速度を0にする
+		// 天井ヒット
 		if (collisionInfo.isHitTop) {
 			velocity_.y = 0;
 		}
 
-		// 壁にぶつかったらX速度を反転する
-		if (collisionInfo.hitWall) {
+		// 壁ヒット（歩く敵のみ反転）
+		if (collisionInfo.hitWall && type_ == Type::kWalk) {
 			velocity_.x *= -1;
 		}
 
 		// 接地状態の更新
 		UpdateOnGround(collisionInfo);
+	} break;
 
-		// ▲▲▲ 新しいロジックここまで ▲▲▲
-
-		// アニメーション用の回転処理
-		walkTimer += 1.0f / 60.0f;
-		worldTransformEnemy_.rotation_.y = (velocity_.x > 0) ? std::numbers::pi_v<float> / 2.0f : std::numbers::pi_v<float> * 3.0f / 2.0f;
-		worldTransformEnemy_.rotation_.x = std::sin(std::numbers::pi_v<float> * 2.0f * walkTimer / 1.0f); // 1.0fはモーションの時間
-	}
-		break;
 	case Enemy::Behavior::kisDead:
+		// 死亡演出
 		walkTimer += 1.0f / 60.0f;
 		worldTransformEnemy_.rotation_.y = math->EaseInOutSine(walkTimer / 1.0f, 0.0f, -std::numbers::pi_v<float> / 2.0f);
 		worldTransformEnemy_.rotation_.x = math->EaseInOutSine(walkTimer / 1.0f, 0.0f, -std::numbers::pi_v<float> / 2.0f);
@@ -137,10 +222,18 @@ void Enemy::Update() {
 		break;
 	}
 
+	// 4. 行列更新
 	math->worldTransFormUpdate(worldTransformEnemy_);
 }
 
-void Enemy::Draw() { model_->Draw(worldTransformEnemy_, *camera_); }
+void Enemy::Draw() {
+	// 敵本体の描画
+	model_->Draw(worldTransformEnemy_, *camera_);
+	// 弾の描画
+	for (EnemyBullet* bullet : bullets_) {
+		bullet->Draw(*camera_);
+	}
+}
 
 //-----------------------------------------------------------------------------
 // Getter / Setter

@@ -2,6 +2,7 @@
 #include "KamataEngine.h" // KamataEngineの基本機能（Model, WorldTransform, Cameraなど）をインクルード
 #include "math.h"         // 数学関連のユーティリティ（Mathクラスや関連関数）をインクルード
 #include "MapChipField.h" // MapChipFieldクラスの定義をインクルード
+#include "EnemyBullet.h"
 
 
 using namespace KamataEngine; // KamataEngine名前空間を使用
@@ -16,6 +17,12 @@ class GameScene2_1;
 class Enemy {
 
 public:
+	enum class Type {
+		kWalk,    // 普通に歩く
+		kShooter, // その場で撃ってくる
+	};
+
+
 	// 敵の行動状態を表す列挙型
 	enum class Behavior {
 		kUnKnow,
@@ -23,10 +30,14 @@ public:
 		kisDead, // 死亡状態
 
 	};
+	// 初期化に type を追加
+	void Initialize(Model* model, Camera* camera, const Vector3& position, Type type = Type::kWalk);
 
-	// model: 敵のモデル、camera: カメラ、position: 初期位置
-	void Initialize(Model* model, Camera* camera, const Vector3& position);
+	// プレイヤーの位置を知るためにセットする関数
+	void SetPlayer(Player* player) { player_ = player; }
 
+	// 弾のリストを取得する関数（GameSceneでの当たり判定用）
+	const std::list<EnemyBullet*>& GetBullets() const { return bullets_; }
 	// 更新処理 
 	void Update();
 
@@ -133,4 +144,13 @@ private:
     float flipCooldownTimer = 0.0f;
 	const float kFlipCooldown = 2.0f; // 0.5秒間は反転しない
 	bool animationPlaying = false;    // 死亡アニメーション中かどうかのフラグ
+
+	Type type_ = Type::kWalk;
+	Player* player_ = nullptr; // 狙う対象
+
+	// 弾関連
+	std::list<EnemyBullet*> bullets_;
+	float shotTimer_ = 0.0f;
+	const float kShotInterval = 2.0f; // 2秒に1回発射
+
 };

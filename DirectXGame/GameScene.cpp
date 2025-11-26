@@ -72,9 +72,10 @@ void GameScene::Initialize() {
 	// 👾 敵の初期化
 	//========================
 	enemys_.push_back(new Enemy());
-	enemys_.back()->Initialize(enemy_model_, &camera_, mapChipField_->GetChipPositionIndex(15, 15));
+	enemys_.back()->Initialize(enemy_model_, &camera_, mapChipField_->GetChipPositionIndex(15, 15),Enemy::Type::kShooter);
 	enemys_.back()->SetMapChipField(mapChipField_);
 	enemys_.back()->SetGameScene(this);
+	enemys_.back()->SetPlayer(player_);
 	enemys_.push_back(new Enemy());
 	enemys_.back()->Initialize(enemy_model_, &camera_, mapChipField_->GetChipPositionIndex(89, 14));
 	enemys_.back()->SetMapChipField(mapChipField_);
@@ -631,6 +632,21 @@ for (Enemy* enemy : enemys_) {
 				player_->TakeDamage(1);
 			}
 		}
+
+		for (EnemyBullet* bullet : enemy->GetBullets()) {
+			if (bullet->IsDead())
+				continue;
+
+			AABB bulletAABB = bullet->GetAABB();
+			if (math->IsCollision(aabb1, bulletAABB)) {
+				// プレイヤーにダメージ
+				player_->TakeDamage(1);
+
+				// 弾を消す
+				bullet->OnCollision();
+			}
+		}
+
 	}
 
 
