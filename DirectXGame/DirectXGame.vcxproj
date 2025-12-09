@@ -115,9 +115,6 @@
     <ClCompile Include="Fade.cpp" />
     <ClCompile Include="GameOver.cpp" />
     <ClCompile Include="GameScene.cpp" />
-    <ClCompile Include="GameScene1_2.cpp" />
-    <ClCompile Include="GameScene1_3.cpp" />
-    <ClCompile Include="GameScene2_1.cpp" />
     <ClCompile Include="GameStateManager.cpp" />
     <ClCompile Include="gorl.cpp" />
     <ClCompile Include="HitEffect.cpp" />
@@ -126,6 +123,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MapChipField.cpp" />
     <ClCompile Include="Math.cpp" />
+    <ClCompile Include="ParticleManager.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="PlayerBullet.cpp" />
     <ClCompile Include="Signboard.cpp" />
@@ -224,9 +222,6 @@
     <ClInclude Include="Fade.h" />
     <ClInclude Include="GameOver.h" />
     <ClInclude Include="GameScene.h" />
-    <ClInclude Include="GameScene1_2.h" />
-    <ClInclude Include="GameScene1_3.h" />
-    <ClInclude Include="GameScene2_1.h" />
     <ClInclude Include="GameStateManager.h" />
     <ClInclude Include="gorl.h" />
     <ClInclude Include="HitEffect.h" />
@@ -234,6 +229,7 @@
     <ClInclude Include="keyModel.h" />
     <ClInclude Include="MapChipField.h" />
     <ClInclude Include="math.h" />
+    <ClInclude Include="ParticleManager.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="PlayerBullet.h" />
     <ClInclude Include="resource.h" />

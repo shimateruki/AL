@@ -1,9 +1,6 @@
 #define NOMINMAX
 #include "Enemy.h"
 #include "GameScene.h"
-#include "GameScene1_2.h"
-#include "GameScene1_3.h"
-#include "GameScene2_1.h"
 #include "Player.h"
 #include <algorithm> // std::clamp, std::max, std::min
 #include <cassert>
@@ -286,7 +283,7 @@ void Enemy::Update() {
 		// 5. 接地判定
 		UpdateOnGround(collisionInfo);
 
-		// ▲▲▲ 復活ここまで ▲▲▲
+	
 
 		break;
 	}
@@ -356,8 +353,6 @@ void Enemy::onCollision(const Player* player) {
 	Vector3 effectPos = (GetWorldPosition() + player->GetWorldPosition()) / 2.0f;
 	if (gameScene_) {
 		gameScene_->CreateHitEffect(effectPos);
-	} else if (gameScene1_2_) {
-		gameScene1_2_->CreateHitEffect(effectPos);
 	}
 }
 
@@ -371,12 +366,6 @@ void Enemy::OnStomped(const Player* player) {
 	effectPos.y -= 1.5f; // 少し下にずらす
 	if (gameScene_) {
 		gameScene_->CreateHitEffect(effectPos);
-	} else if (gameScene1_2_) {
-		gameScene1_2_->CreateHitEffect(effectPos);
-	} else if (gameScene1_3_) {
-		gameScene1_3_->CreateHitEffect(effectPos);
-	} else if (gameScene2_1_) {
-		gameScene2_1_->CreateHitEffect(effectPos);
 	}
 }
 //-----------------------------------------------------------------------------
@@ -535,7 +524,6 @@ void Enemy::MapChipRight(CollisionMapInfo& info) {
 	}
 }
 
-// プレイヤーのUpdateOnGroundと同様の処理
 void Enemy::UpdateOnGround(const CollisionMapInfo& info) {
 	if (onGround_) {
 		// 落下判定: 現在の位置から少し下のマップチップを探索
@@ -590,7 +578,7 @@ void Enemy::TakeDamage(int damage) {
 	// HPが0以下になったら死亡
 	if (hp_ <= 0) {
 		hp_ = 0;
-	
+
 		// 死亡状態へ移行
 		isCollisDisabled_ = true;
 		behaviorRequest_ = Behavior::kisDead;
@@ -598,14 +586,6 @@ void Enemy::TakeDamage(int damage) {
 		// 死亡エフェクト
 		if (gameScene_) {
 			gameScene_->CreateHitEffect(GetWorldPosition());
-		} else if (gameScene1_2_) {
-			gameScene1_2_->CreateHitEffect(GetWorldPosition());
-		}
-	} else {
-		if (gameScene_) {
-			gameScene_->CreateHitEffect(GetWorldPosition());
-		} else if (gameScene1_2_) {
-			gameScene1_2_->CreateHitEffect(GetWorldPosition());
 		}
 	}
 }

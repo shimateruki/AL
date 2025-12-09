@@ -41,7 +41,7 @@ void StageSelectGameScene::Initialize() {
 	// 🗺️ マップ読み込み
 	//========================
 	mapChipField_ = new MapChipField();
-	mapChipField_->LoadMapChipCsv("Resources/heimen.csv");
+	mapChipField_->LoadMapChipCsv("Resources/map/heimen.csv");
 
 	//========================
 	// 🧍 プレイヤーの初期化

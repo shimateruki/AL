@@ -9,6 +9,8 @@
 #include <numbers>        // 円周率など
 #include "PlayerBullet.h"
 #include <list>
+#include "ParticleManager.h"
+#include"KabeToge.h"
 
 using namespace KamataEngine;
 
@@ -108,7 +110,7 @@ public:
 	void StartVictoryPose(); // 勝利ポーズを開始する
 	void UpdateVictoryAnimation(); // 勝利ポーズ中のアニメーション更新
 
-
+	void SetParticleManager(ParticleManager* manager) { particleManager_ = manager; }
 private:
 	//----------------------------------------
 	// 移動処理
@@ -306,5 +308,7 @@ private:
 	float chargeTimer_ = 0.0f;
 	const float kMaxChargeTime = 1.0f; // 1秒でフルチャージ
 	bool isCharging_ = false;          // チャージ中フラグ
+
+	ParticleManager* particleManager_ = nullptr;
 
 };

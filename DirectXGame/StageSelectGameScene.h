@@ -60,6 +60,7 @@ private:
 	KamataEngine::Sprite* SpriteMove = nullptr; // 移動用スプライト
 	KamataEngine::Sprite* SpriteJump = nullptr; // ジャンプ用スプライト
 	KamataEngine::Sprite* SpriteSutage = nullptr; // ステージ用スプライト
+	KamataEngine::Sprite* FKeysBulletText = nullptr;//Fキーで弾発射を伝えるbullets
 
 
 
@@ -114,6 +115,7 @@ private:
 	 int32_t textureHandleMove = 0;    // テクスチャハンドル
 	 int32_t textureHandleJump = 0;  // テクスチャハンドル
 	 int32_t textureHandleSutage = 0;     // テクスチャハンドル
+	 int32_t textureHandleBullet =  0;
 
 	   // 現在アクティブなスプライトを追跡するためのポインタ
 	 Sprite* activeSprite_ = nullptr;

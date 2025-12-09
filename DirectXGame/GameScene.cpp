@@ -5,8 +5,8 @@
 using namespace KamataEngine; 
 
 // GameSceneの初期化処理
-void GameScene::Initialize() {
-
+void GameScene::Initialize(int stageID) {
+	currentStageID_ = stageID;
 	//========================
 	// 📦 リソースの読み込み
 	//========================
@@ -16,13 +16,20 @@ void GameScene::Initialize() {
 	modelSkydome_ = Model::CreateFromOBJ("skydome", true);
 	playerModel_ = Model::CreateFromOBJ("player", true);
 	deatparticlesModel_ = Model::CreateFromOBJ("deathParticle", true);
+	breakableBlockModel_ = Model::CreateFromOBJ("Breakable", true); // 破壊可能ブロックのモデル読み込み
 	hitEffectModel_ = Model::CreateFromOBJ("hit", true);
 	goalModel_ = Model::CreateFromOBJ("gorl", true);
 	GameClearTextModel_ = Model::CreateFromOBJ("GameClear", true);
 	togeKabeModel_ = Model::CreateFromOBJ("kabeToge", true);
 	togeModel_ = Model::CreateFromOBJ("toge", true);
-	textureHandle = TextureManager::Load("1-1.png");
 	yamaModel = Model::CreateFromOBJ("yama", true); // 山モデルの読み込み
+	kinokoModel_ = Model::CreateFromOBJ("kinoko", true); // キノコモデルの読み込み
+	enemy_model_Walk = Model::CreateFromOBJ("enemy", true);  // 敵モデルの読み込み
+	enemy_model_Shooter = Model::CreateFromOBJ("enemyShooter", true); // 敵モデルの読み込み
+	enemy_model_Homing = Model::CreateFromOBJ("enemyHoming", true);  // 敵モデルの読み込み
+	iceBlockModel_ = Model::CreateFromOBJ("iceBlock", true);
+	// パーティクル用のモデル読み込み
+	particleModel_ = Model::CreateFromOBJ("particle", true);
 
 	// 数字表示用テクスチャの読み込み
 	textureHandlePhose_ = TextureManager::Load("Phose.png");
@@ -31,13 +38,19 @@ void GameScene::Initialize() {
 	textureHandleGameClearText_ = TextureManager::Load("TextSpriteGameClear.png"); // ゲームクリアテキスト用テクスチャの読み込み
 	textureHandlePauseText_ = TextureManager::Load("phoseText.png");               // ポーズテキスト用テクスチャの読み込み
 	treeModel_ = Model::CreateFromOBJ("tree", true);                               // 木モデルの読み込
-	enemy_model_ = Model::CreateFromOBJ("enemy", true);                            // 敵モデルの読み込み
+	textureHandle1_1_ = TextureManager::Load("1-1.png");
+	textureHandle1_2_ = TextureManager::Load("1-2.png");
+	textureHandle1_3_ = TextureManager::Load("1-3.png");
+
+
 	textureHandleCountdown3_ = TextureManager::Load("3.png");                   // 3の画像
 	textureHandleCountdown2_ = TextureManager::Load("2.png");                   // 2の画像
 	textureHandleCountdown1_ = TextureManager::Load("1.png");                   // 1の画像
 	textureHandleCountdownGo_ = TextureManager::Load("go.png");                 // GOの画像
 
-
+	//パーティクルの初期化
+	particleManager_ = new ParticleManager();
+	particleManager_->Initialize(particleModel_, &camera_);
 	
 	//========================
 	// 🎥 カメラの設定
@@ -50,8 +63,10 @@ void GameScene::Initialize() {
 	//========================
 	// 🗺️ マップ読み込み
 	//========================
+	std::stringstream ss;
+	ss << "Resources/map/1-" << stageID << ".csv";
 	mapChipField_ = new MapChipField();
-	mapChipField_->LoadMapChipCsv("Resources/1-1.csv");
+	mapChipField_->LoadMapChipCsv(ss.str()); 
 
 	//========================
 	// 🧍 プレイヤーの初期化
@@ -61,6 +76,7 @@ void GameScene::Initialize() {
 	player_->Initialize(playerModel_, &camera_, playerPosition);
 	player_->SetMapChipField(mapChipField_);
 	player_->SetisMove(false);
+	player_->SetParticleManager(particleManager_);
 
 	//========================
 	// 💥 ヒットエフェクト設定
@@ -71,18 +87,7 @@ void GameScene::Initialize() {
 	//========================
 	// 👾 敵の初期化
 	//========================
-	enemys_.push_back(new Enemy());
-	enemys_.back()->Initialize(enemy_model_, &camera_, mapChipField_->GetChipPositionIndex(15, 15),Enemy::Type::kWalk);
-	enemys_.back()->SetMapChipField(mapChipField_);
-	enemys_.back()->SetGameScene(this);
-	enemys_.back()->SetPlayer(player_);
-	enemys_.back()->SetFlightPattern(Enemy::FlightPattern::kHorizontal);
-	enemys_.push_back(new Enemy());
-	enemys_.back()->Initialize(enemy_model_, &camera_, mapChipField_->GetChipPositionIndex(89, 14));
-	enemys_.back()->SetMapChipField(mapChipField_);
-	enemys_.back()->SetGameScene(this);
-	
-
+	SpawnEnemies(stageID);
 	//========================
 	// 🌪️ パーティクルの生成
 	//========================
@@ -133,28 +138,30 @@ void GameScene::Initialize() {
 	togeKabe_->Initialize(togeKabeModel_, &camera_, mapChipField_->GetChipPositionIndex(0, 18));
 	togeKabe_->SetIsmove(false);
 
-
+	//山の初期化
 	yama_.push_back(new Yama());
 	yama_.back()->Initialize(yamaModel, &camera_, mapChipField_->GetChipPositionIndex(20, 19));
-
 	yama_.push_back(new Yama());
 	yama_.back()->Initialize(yamaModel, &camera_, mapChipField_->GetChipPositionIndex(70, 19));
 
-	
+	// 木の初期化
 	tree_.push_back(new Tree());
 	tree_.back()->Initialize(treeModel_, &camera_, mapChipField_->GetChipPositionIndex(5, 19));
 	tree_.push_back(new Tree());
 	tree_.back()->Initialize(treeModel_, &camera_, mapChipField_->GetChipPositionIndex(90, 19));
 
-
+	// spriteの初期化
 	TextSprite1_1 = Sprite::Create(textureHandle, {100.50});
 	poseSprite = Sprite::Create(textureHandlePhose_, {0.0});
 	yazirusiSprite = Sprite::Create(TextureHandleYazirusi_, {180, 190});
 	enterSprite_ = Sprite::Create(textureHandleEnter_, {0.0f, 0.0f}); // エンターキー用スプライトの作成
 	pauseTextSprite_ = Sprite::Create(textureHandlePauseText_, {0.0f, 0.0f}); // ポーズメニュー用スプライトの作成
-	// ゲームクリアテキストスプライトの作成
 	GameClearTextSprite_ = Sprite::Create(textureHandleGameClearText_, {0.0f, 0.0f}); // ゲームクリアテキスト用スプライトの作成
 	spriteCountdown_ = Sprite::Create(textureHandleCountdown3_, {0, 0});              // 初期スプライト（3）
+	Vector2 spritePos = {200.0f, 0.0f};
+	sprite1_1_ = Sprite::Create(textureHandle1_1_, spritePos);
+	sprite1_2_ = Sprite::Create(textureHandle1_2_, spritePos);
+	sprite1_3_ = Sprite::Create(textureHandle1_3_, spritePos);
 	// HPアイコンのテクスチャを読み込む
 	textureHandleHpIconNormal_ = TextureManager::Load("playerAikon.png");
 	textureHandleHpIconDamage_ = TextureManager::Load("playerAikonDamage.png");
@@ -178,15 +185,7 @@ void GameScene::Initialize() {
 		spriteHearts_.push_back(Sprite::Create(textureHandleHeart_, pos));
 	}
 
-	
-	
-
-
-	GameStateManager::GetInstance()->SetCurrentStageID(1); // ステージ1
-
-
-
-
+	GameStateManager::GetInstance()->SetCurrentStageID(currentStageID_); // ステージ1
 	
 	isSprite = true;
 	firstFrame = true;
@@ -212,7 +211,6 @@ void GameScene::Update() {
 	// ポーズ状態の切り替え
 	if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_P)&&!player_->IsDead()&&!isGameClear_) {
 		isPaused_ = !isPaused_;
-		consorlVoiceSelectHandle = KamataEngine::Audio::GetInstance()->PlayWave(consorlSelectHandle, false, 0.5f);
 	}
 
 	if (currentSelect_ == PauseSelect::kContinue) {
@@ -228,7 +226,6 @@ void GameScene::Update() {
 	if (isPaused_) {
 		// Wキーで上に移動
 		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_W)) {
-			consorlVoiceSelectHandle = KamataEngine::Audio::GetInstance()->PlayWave(consorlSelectHandle, false, 0.5f);
 			if (currentSelect_ == PauseSelect::kContinue) {
 				currentSelect_ = PauseSelect::kTitle;
 			} else if (currentSelect_ == PauseSelect::kStageSelect) {
@@ -239,7 +236,6 @@ void GameScene::Update() {
 		}
 		// Sキーで下に移動
 		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_S)) {
-			consorlVoiceSelectHandle = KamataEngine::Audio::GetInstance()->PlayWave(consorlSelectHandle, false, 0.5f);
 			if (currentSelect_ == PauseSelect::kContinue) {
 				currentSelect_ = PauseSelect::kStageSelect;
 			} else if (currentSelect_ == PauseSelect::kStageSelect) {
@@ -249,8 +245,8 @@ void GameScene::Update() {
 			}
 		}
 
-		// 決定（Enterキー）
-		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_RETURN)) {
+		// 決定（Spaceキー）
+		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 			if (currentSelect_ == PauseSelect::kContinue) {
 				isPaused_ = false; // ポーズを解除
 			} else if (currentSelect_ == PauseSelect::kStageSelect) {
@@ -270,7 +266,9 @@ void GameScene::Update() {
 		return;
 	}
 
-
+		for (auto& floor : breakableFloors_) {
+		floor->Update();
+	}
 
 	// ==============================
 	// フェーズごとの処理
@@ -355,13 +353,13 @@ void GameScene::Update() {
 	// プレイ中の処理
 	// ------------------------------
 	case Phase::kPlay:
-
+		particleManager_->Update();
 		player_->Update();
 		togeKabe_->Update();
 		for (Enemy* enemy : enemys_) {
 			enemy->Update();
 		}
-		//player_->CheckAndResolveTogeKabeCollision(togeKabe_);
+		player_->CheckAndResolveTogeKabeCollision(togeKabe_);
 		CheekAllcollision();
 		CController_->Update();
 
@@ -392,6 +390,17 @@ void GameScene::Update() {
 		}
 
 		skydome_->Update();
+
+
+			if (auto stepped = player_->CheckSteppedBreakable(mapChipField_)) {
+			for (auto& floor : breakableFloors_) {
+				if (floor->GetIndexX() == stepped->xIndex && floor->GetIndexY() == stepped->yIndex) {
+					floor->OnStepped(); // ← 踏んだその1枚だけ開始
+					break;              // 見つかったら終わり
+				}
+			}
+		}
+
 		break;
 
 	// ------------------------------
@@ -430,6 +439,15 @@ void GameScene::Update() {
 		}
 
 		skydome_->Update();
+		// 壊れる床の更新
+		for (auto it = breakableFloors_.begin(); it != breakableFloors_.end();) {
+			(*it)->Update();
+			if ((*it)->IsBroken()) {
+				it = breakableFloors_.erase(it); // 消滅したらリストから消す
+			} else {
+				++it;
+			}
+		}
 		break;
 
 	// ------------------------------
@@ -487,25 +505,36 @@ void GameScene::Draw() {
 					std::cout << "Grass at (" << x << ", " << y << ") is being processed.\n";
 				}
 
-				// 種類ごとに描画モデルを分岐
-				switch (type) {
+                switch (type) {
 				case MapChipType::kDirt_:
 					dirtModel_->Draw(*block, camera_);
 					break;
 				case MapChipType::kGrass_:
 					grassModel_->Draw(*block, camera_);
 					break;
-			case MapChipType::kGoal_:
+				case MapChipType::kGoal_:
 					goalModel_->Draw(*block, camera_);
 					break;
-			case MapChipType::kSpike_:
-				// トゲの壁は特別な処理を行う
-				togeModel_->Draw(*block, camera_);
-				break;
+				case MapChipType::kSpike_:
+					// トゲの壁は特別な処理を行う
+					togeModel_->Draw(*block, camera_);
+					break;
+				case MapChipType::kJumpPad_: 
+					kinokoModel_->Draw(*block, camera_);
+					break;
+				case MapChipType::kIceFloor_:
+					iceBlockModel_->Draw(*block, camera_);
 				}
+			
 			}
 		}
+
 	}
+
+		for (auto& floor : breakableFloors_) {
+		floor->Draw(breakableBlockModel_, &camera_); // 破壊可能な床の描画
+	}
+
 
 	togeKabe_->Draw(); // トゲ壁の描画
 
@@ -540,8 +569,39 @@ void GameScene::Draw() {
 		GameClearTextModel_->Draw(GameClearTextWorldTransform_, camera_);
 		Model::PostDraw();
 	}
-
+	Sprite::PreDraw(dxcommon->GetCommandList());
 	// 🌗 フェード描画
+
+	if (!player_->IsDead()) {
+		// もしプレイヤーが「無敵時間中」なら
+		if (player_->GetIsInvincible()) {
+			spriteHpIconDamage_->Draw(); // ダメージ時のアイコン
+		} else {
+			spriteHpIconNormal_->Draw(); // 通常時のアイコン
+		}
+	}
+
+	if (!player_->IsDead()) {
+		// プレイヤーの現在のHPを取得
+		int currentHp = player_->GetHp();
+		for (int i = 0; i < currentHp; i++) {
+
+			// ハートを描画する
+			spriteHearts_[i]->Draw();
+		}
+	}
+
+	switch (currentStageID_) {
+	case 1:
+		sprite1_1_->Draw();
+		break;
+	case 2:
+		sprite1_2_->Draw();
+		break;
+	case 3:
+		sprite1_3_->Draw();
+		break;
+	}
 	fade_->Draw(dxcommon->GetCommandList());
 	Model::PostDraw();
 
@@ -567,26 +627,11 @@ void GameScene::Draw() {
 
 	}
 
-	if (!player_->IsDead()) {
-		// もしプレイヤーが「無敵時間中」なら
-		if (player_->GetIsInvincible()) {
-			spriteHpIconDamage_->Draw(); // ダメージ時のアイコン
-		} else {
-			spriteHpIconNormal_->Draw(); // 通常時のアイコン
-		}
-	}
-
-	if (!player_->IsDead()) {
-		// プレイヤーの現在のHPを取得 
-		int currentHp = player_->GetHp();
-		for (int i = 0; i < currentHp; i++) {
-
-			// ハートを描画する
-			spriteHearts_[i]->Draw();
-		}
-	}
-
 	Sprite::PostDraw();
+
+	if (particleManager_) {
+		particleManager_->Draw(dxcommon->GetCommandList());
+	}
 }
 
 void GameScene::GenerrateBlock() {
@@ -602,8 +647,19 @@ void GameScene::GenerrateBlock() {
 		for (uint32_t x = 0; x < kNumBlockHorizontal; ++x) {
 			MapChipType type = mapChipField_->GetMapChipTypeByindex(x, y);
 
-			// 何らかの描画が必要なブロックのみWorldTransformを生成
-			if (type != MapChipType::kBlank_) {
+			if (type == MapChipType::kBlank_) {
+				continue; // 何もない
+			}
+
+			if (type == MapChipType::kBreakable_) {
+				// ★ BreakableFloor は専用クラスで扱う
+				auto floor = std::make_unique<BreakableFloor>();
+				floor->Initialize(mapChipField_->GetChipPositionIndex(x, y), x, y, mapChipField_);
+				breakableFloors_.push_back(std::move(floor));
+
+				worldTransformBlocks_[y][x] = nullptr; // ←必須じゃないけど明示
+			} else {
+				// 通常ブロックはここで生成
 				WorldTransform* worldTransform = new WorldTransform();
 				worldTransform->Initialize();
 				worldTransform->translation_ = mapChipField_->GetChipPositionIndex(x, y);
@@ -650,12 +706,14 @@ void GameScene::CheekAllcollision() {
 
 			// ここでは、踏んだかどうかの判定のみに集中する
 			if (aabb1.min.y >= aabb2.max.y - 4.0f && !player_->GetOnGround()) {
+
 				if (enemy->GetType() == Enemy::Type::kFlying) {
 					player_->SetVelocityY(0.8f); // 大ジャンプ
 				} else {
 					player_->SetVelocityY(0.3f); // 通常ジャンプ
-				}
 
+				}
+				enemy->TakeDamage(999);
 			} else {
 				player_->TakeDamage(1);
 			}
@@ -746,7 +804,6 @@ void GameScene::ChangePhase() {
 		}
 		break;
 	case Phase::kCountdown:
-		// Update()内のカウントダウンロジックでフェーズがkPlayに変わるため、ここでは何もしない
 		break;
 		
 	
@@ -780,21 +837,38 @@ void GameScene::ChangePhase() {
 		break;
 	case Phase::GameClear:
 
-
-	
-
 		
             // ステージクリア情報を保存
-		GameStateManager::GetInstance()->SetStageClear(1, true);
+		GameStateManager::GetInstance()->SetStageClear(currentStageID_, true);
 
-		// ★ 修正: ステージセレクト画面の1-1看板のマップチップ座標を指定
-	    signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
+		Vector3 returnPos = {};
+
+		switch (currentStageID_) {
+		case 1:
+			// ステージ1の看板の位置
+			returnPos = mapChipField_->GetChipPositionIndex(10, 17);
+			break;
+		case 2:
+			// ステージ2の看板の位置
+			returnPos = mapChipField_->GetChipPositionIndex(20, 17);
+			break;
+		case 3:
+			// ステージ3の看板の位置
+			returnPos = mapChipField_->GetChipPositionIndex(30, 17);
+			break;
+		default:
+			// デフォルト
+			returnPos = mapChipField_->GetChipPositionIndex(10, 17);
+			break;
+		}
+
+		// 計算した座標を次の初期位置としてセット
+		GameStateManager::GetInstance()->SetPlayerStartPosition(returnPos);
 
 		// 次のプレイヤー初期位置をGameStateManagerに保存
-		GameStateManager::GetInstance()->SetPlayerStartPosition(signboardPosition);
 		player_->UpdateVictoryAnimation(); // 勝利ポーズのアニメを更新
 		CController_->Update();
-		if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
+		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 			isTimerFinished_ = true;                   // スペースキーが押されたらタイマー終了フラグを立てる
 			isSprite = false;                          // スプライト表示
 			fade_->Start(Fade::Status::FadeOut, 3.0f); // フェードアウト開始
@@ -871,4 +945,57 @@ GameScene::~GameScene() {
 	}
 
 	worldTransformBlocks_.clear(); // ベクターをクリア
+}
+
+void GameScene::SpawnEnemies(int stageID) {
+	// リストをクリア（再読み込み時などのため）
+	enemys_.clear();
+
+	switch (stageID) {
+	// ----------------------------------------
+	// ステージ 1-1 の敵配置
+	// ----------------------------------------
+	case 1:
+		// 歩く敵
+		enemys_.push_back(new Enemy());
+		enemys_.back()->Initialize(enemy_model_Walk, &camera_, mapChipField_->GetChipPositionIndex(15, 15), Enemy::Type::kWalk);
+		enemys_.back()->SetPlayer(player_);
+		enemys_.back()->SetMapChipField(mapChipField_);
+
+		// もう1匹
+		enemys_.push_back(new Enemy());
+		enemys_.back()->Initialize(enemy_model_Walk, &camera_, mapChipField_->GetChipPositionIndex(52, 13), Enemy::Type::kWalk);
+		enemys_.back()->SetPlayer(player_);
+		enemys_.back()->SetMapChipField(mapChipField_);
+		break;
+
+	// ----------------------------------------
+	// ステージ 1-2 の敵配置
+	// ----------------------------------------
+	case 2:
+		// 撃ってくる敵
+		enemys_.push_back(new Enemy());
+		enemys_.back()->Initialize(enemy_model_Shooter, &camera_, mapChipField_->GetChipPositionIndex(22, 14), Enemy::Type::kShooter);
+		enemys_.back()->SetPlayer(player_);
+		enemys_.back()->SetMapChipField(mapChipField_);
+
+		// 自爆する敵
+		enemys_.push_back(new Enemy());
+		enemys_.back()->Initialize(enemy_model_Homing, &camera_, mapChipField_->GetChipPositionIndex(64, 13), Enemy::Type::kHoming);
+		enemys_.back()->SetPlayer(player_);
+		enemys_.back()->SetMapChipField(mapChipField_);
+		break;
+	case 3:
+		enemys_.push_back(new Enemy());
+		enemys_.back()->Initialize(enemy_model_Walk, &camera_, mapChipField_->GetChipPositionIndex(9, 12), Enemy::Type::kWalk);
+		enemys_.back()->SetPlayer(player_);
+		enemys_.back()->SetMapChipField(mapChipField_);
+
+		enemys_.push_back(new Enemy());
+		enemys_.back()->Initialize(enemy_model_Walk, &camera_, mapChipField_->GetChipPositionIndex(34, 16), Enemy::Type::kWalk);
+		enemys_.back()->SetPlayer(player_);
+		enemys_.back()->SetMapChipField(mapChipField_);
+		break;
+
+	}
 }

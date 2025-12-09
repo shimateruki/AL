@@ -50,12 +50,10 @@ void TitleScene::Initialize() {
 	startSprite_ = Sprite::Create(textureHandleStart_, {0.0f, 0.0f}); // スタートボタン用スプライトの作成
 	enterSprite_ = Sprite::Create(textureHandleEnter_, {0.0f, 0.0f}); // エンターキー用スプライトの作成
 
-	//音楽
-	bgmHandle_ = bgmAudio->GetInstance()->LoadWave("BGM/titleBGM.wav");
+
 
 	isMusic = false;
 
-  enterSeHandle = seAudio->GetInstance()->LoadWave("SE/confirm.wav");
 
 }
 
@@ -100,7 +98,7 @@ void TitleScene::Update() {
 		player_->UpdateTitleAnimation();
 
 		// Enterキーが押されたら演出開始
-		if (Input::GetInstance()->TriggerKey(DIK_RETURN)) { 
+		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) { 
 			phase_ = Phase::kfadeOut;                 
 
 			// スライムにカメラジャンプ開始を命令
@@ -108,7 +106,6 @@ void TitleScene::Update() {
 			//se再生
 
 			fade_->Start(Fade::Status::FadeOut, 1.8f);
-			enterVoice = seAudio->GetInstance()->PlayWave(enterSeHandle, false, 0.5f);
 		}
 		break;
 

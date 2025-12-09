@@ -58,7 +58,7 @@ void GameOver::Update()
 			}
 		}
 	    // 決定（Enterキー）
-	    if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_RETURN)) {
+	    if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 		    if (currentSelect_ == PauseSelect::kContinue) {
 			    nextScene_ = NextScene::kRetry; // リトライを選択
 			    finished_ = true;
@@ -70,7 +70,7 @@ void GameOver::Update()
 			    finished_ = true;
 		    }
 	    }
-	if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_RETURN)) {
+	if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 		isTimer = true; // エンターキーが押されたらタイマー終了フラグを立てる
 		fade_->Start(Fade::Status::FadeOut, 3.0f); // フェードアウト開始
 	}

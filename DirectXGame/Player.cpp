@@ -1,11 +1,11 @@
 #define NOMINMAX
 #include "Player.h"
 #include "CloudPlatform.h"
-#include "GameScene1_2.h"
 #include "MapChipField.h" // MapChipField クラスの定義が必要
 #include "cassert"
 #include <algorithm> // std::clamp, std::max, std::min のために必要
 #include <numbers>   // std::numbers::pi_v のために必要
+#include "imgui.h"
 
 using namespace KamataEngine;
 
@@ -177,6 +177,32 @@ void Player::Move() {
 
 		velosity_ += acceleration;
 		velosity_.x = std::clamp(velosity_.x, -kLimitRunSpeed, kLimitRunSpeed);
+		// 条件: 地面にいて、ある程度スピードが出ているとき
+		if (onGround_ && std::abs(velosity_.x) > 0.05f) {
+
+			// 毎回出すと多すぎるので、確率（例: 5フレームに1回くらい）で出す
+			if (rand() % 5 == 0) {
+				Vector3 pos = worldTransformPlayer_.translation_;
+				pos.y += 0.5f; // 足元の高さ（キャラのサイズに合わせて調整！）
+
+				// 進行方向と逆に飛ばす
+				float dustVelX = -velosity_.x * 0.5f;
+
+				if (particleManager_) {
+					particleManager_->Emit(
+					    pos,                      // 発生位置
+					    {dustVelX, 0.1f, 0.0f},   // 速度（後ろへ、少し上へ）
+					    {0.0f, 0.0f, 0.0f},       // 加速度
+					    0.5f,                     // 寿命
+					    2.3f, 2.0f,               // サイズ（0.3 -> 0.0）
+					    {1.0f, 1.0f, 1.0f, 1.0f}, // 開始色（白）
+					    {1.0f, 1.0f, 1.0f, 0.0f}  // 終了色（透明）
+					);
+
+
+				}
+			}
+		}
 	} else {
 		// ★入力がない時も、書き換えた摩擦係数で減速する
 		velosity_.x *= (1.0f - currentAttenuation);
@@ -185,6 +211,8 @@ void Player::Move() {
 // ジャンプ入力のチェック
 	// ※PushKeyだと押しっぱなしで連続ジャンプしてしまうため、
 	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) { 
+		
+
 
 		// ジャンプ回数が2回未満ならジャンプできる
 		if (jumpCount_ < 2) {
@@ -198,6 +226,7 @@ void Player::Move() {
 			jumpCount_++;                           // ジャンプ回数を1増やす
 		}
 	}
+
 
 	// 重力（接地していない場合に常に適用）
 	if (!onGround_) {
@@ -317,7 +346,32 @@ void Player::Update() {
 	}
 
 
+#ifdef _DEBUG
+	// ==========================================================
+	// 🛠️ ImGui デバッグ表示 (デバッグビルド時のみ有効)
+	// ==========================================================
+	if (mapchipField_) {
+		// 1. 現在のプレイヤー座標から、マップチップ番号(Index)を計算
+		MapChipField::IndexSet index = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_);
 
+		// 2. その場所にあるチップの種類も取得しておくと便利です
+		MapChipType type = mapchipField_->GetMapChipTypeByindex(index.xIndex, index.yIndex);
+
+		// 3. ImGuiウィンドウを表示
+		ImGui::Begin("Player Debug info"); // ウィンドウの名前
+
+		// 座標を表示 (少数第2位まで)
+		ImGui::Text("World Pos: %.2f, %.2f, %.2f", worldTransformPlayer_.translation_.x, worldTransformPlayer_.translation_.y, worldTransformPlayer_.translation_.z);
+
+		// マップチップ番号を表示
+		ImGui::Text("Map Index: X=%d, Y=%d", index.xIndex, index.yIndex);
+
+		// チップの種類を数字で表示 (0:空白, 1:土, 5:トゲ etc...)
+		ImGui::Text("Chip Type: %d", (int)type);
+
+		ImGui::End(); // 必ずEndで閉じる
+	}
+#endif
 	
 }
 
@@ -465,8 +519,9 @@ void Player::MapChipDown(CollisionMapInfo& info) {
 			isbreak = true;
 		}
 		if (mapchipType == MapChipType::kJumpPad_) {
-			velosity_.y += (kJumpAccleration / 60.0f) * 2.0f;
+			velosity_.y += (kJumpAccleration / 60.0f) * 2.5f;
 			onGround_ = false;
+			jumpCount_ = 1;
 			info.isMovement.y = 0.0f;
 			info.isHitBottom = false;
 			return; // ジャンプパッドだけは特別にここで処理を終える
@@ -584,8 +639,6 @@ void Player::MapChipRight(CollisionMapInfo& info) {
 }
 
 // 接地状態の切り替え処理 
-
-
 void Player::UpdateOnGround(const CollisionMapInfo& info) {
 	if (onGround_) {
 		// --- 空中に移行する瞬間の処理 ---
@@ -596,25 +649,51 @@ void Player::UpdateOnGround(const CollisionMapInfo& info) {
 		}
 
 		// --- 地面にいる間の継続的な処理 ---
+		// 足元（少し下）のオフセット
+		Vector3 footOffset = {0, -kGroundSearchHeight, 0};
 
-		// 1. 毎フレーム、足元の床の種類をチェックする
-		MapChipType currentFloor = GetFloorChipType();
+		// 左下と右下の角の座標を取得
+		Vector3 leftFoot = CarnerPosition(worldTransformPlayer_.translation_ + footOffset, kLeftBottom);
+		Vector3 rightFoot = CarnerPosition(worldTransformPlayer_.translation_ + footOffset, kRightBottom);
 
-		// 2. 床の種類に応じて isOnIce_ フラグを更新する
-		if (currentFloor == MapChipType::kIceFloor_) {
-			isOnIce_ = true;
-		} else {
-			isOnIce_ = false;
+		// マップチップのインデックスを取得
+		MapChipField::IndexSet indexLeft = mapchipField_->GetMapChipIndexSetByPosition(leftFoot);
+		MapChipField::IndexSet indexRight = mapchipField_->GetMapChipIndexSetByPosition(rightFoot);
+
+		// マップチップの種類を取得
+		MapChipType typeLeft = mapchipField_->GetMapChipTypeByindex(indexLeft.xIndex, indexLeft.yIndex);
+		MapChipType typeRight = mapchipField_->GetMapChipTypeByindex(indexRight.xIndex, indexRight.yIndex);
+
+		// 「固いブロック」かどうかの判定用（ラムダ式で共通化）
+		auto IsSolid = [](MapChipType t) { return t != MapChipType::kBlank_ && t != MapChipType::kSpike_; };
+
+		bool isSupported = false;
+		bool touchingIce = false;
+
+		// 左足か右足、どちらかが固いブロックに乗っていれば「接地中」
+		if (IsSolid(typeLeft)) {
+			isSupported = true;
+			if (typeLeft == MapChipType::kIceFloor_)
+				touchingIce = true;
+		}
+		if (IsSolid(typeRight)) {
+			isSupported = true;
+			if (typeRight == MapChipType::kIceFloor_)
+				touchingIce = true;
 		}
 
-		// 3. 落下判定（足元にブロックが無くなったら）
-		if (currentFloor == MapChipType::kBlank_ || currentFloor == MapChipType::kSpike_) {
-			// もし足元が空白かトゲなら、落下する
+		// 氷床フラグの更新 
+		isOnIce_ = touchingIce;
+
+		// 3. 落下判定
+		if (!isSupported) {
+			// 完全に足場がなくなったので落下
 			onGround_ = false;
 			isOnIce_ = false;
+			if (jumpCount_ == 0) {
+				jumpCount_ = 1;
+			}
 		}
-
-	
 
 	} else {
 		// --- 着地した瞬間の処理 ---
@@ -623,7 +702,7 @@ void Player::UpdateOnGround(const CollisionMapInfo& info) {
 			isOnIce_ = info.onIce; // 着地した場所が氷だったかを受け取る
 			isSquashing_ = true;   // ぽよんアニメ開始
 			squashTimer_ = 0.0f;   // タイマーリセット
-			jumpCount_ = 0;
+			jumpCount_ = 0;        // 着地したので0回に戻す
 			velosity_.x *= (1.0f - kAttenuationLanding);
 			velosity_.y = 0.0f;
 		}
@@ -1008,6 +1087,7 @@ void Player::UpdateCameraJump() {
 
 // 勝利ポーズの開始命令
 void Player::StartVictoryPose() {
+	titleGroundY_ = worldTransformPlayer_.translation_.y;
 	// タイトルジャンプ用の変数を流用して、その場でジャンプさせる
 	isTitleJumping_ = true;
 	titleJumpTimer_ = 0.0f;
