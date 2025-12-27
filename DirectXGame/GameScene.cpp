@@ -28,6 +28,7 @@ void GameScene::Initialize(int stageID) {
 	enemy_model_Shooter = Model::CreateFromOBJ("enemyShooter", true); // 敵モデルの読み込み
 	enemy_model_Homing = Model::CreateFromOBJ("enemyHoming", true);  // 敵モデルの読み込み
 	iceBlockModel_ = Model::CreateFromOBJ("iceBlock", true);
+	umbrellaModel_ = Model::CreateFromOBJ("parasol", true);
 	// パーティクル用のモデル読み込み
 	particleModel_ = Model::CreateFromOBJ("particle", true);
 
@@ -77,6 +78,7 @@ void GameScene::Initialize(int stageID) {
 	player_->SetMapChipField(mapChipField_);
 	player_->SetisMove(false);
 	player_->SetParticleManager(particleManager_);
+	player_->SetUmbrellaModel(umbrellaModel_);
 
 	//========================
 	// 💥 ヒットエフェクト設定
@@ -107,7 +109,7 @@ void GameScene::Initialize(int stageID) {
 	CController_->Initialize(&camera_);
 	CController_->SetTarget(player_);
 	CController_->Reset();
-	CameraController::Rect cameraArea = {12.0f, 100 - 12.0f, 6.0f, 6.0f};
+	CameraController::Rect cameraArea = {12.0f, 100 - 12.0f, 6.0f, 40.0f};
 	CController_->SetMovableSrea(cameraArea);
 
 	//========================
@@ -778,8 +780,7 @@ void GameScene::CheekAllcollision() {
 			// 当たり判定
 			if (math->IsCollision(aabb1, chipAABB)) {
 				if (type == MapChipType::kGoal_) {
-					// ゴール処理
-					clearbgmVoiceHandle_ = KamataEngine::Audio::GetInstance()->PlayWave(clearbgmHandle_, false, 0.5f);
+
 					isGameClear_ = true;
 					player_->StartVictoryPose(); // 勝利ポーズ開始
 					CController_->StartVictoryZoom(player_);

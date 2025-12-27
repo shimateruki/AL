@@ -61,4 +61,6 @@ private:
 
 	Audio* seAudio;
 
+
+	float blinkTimer_;
 };

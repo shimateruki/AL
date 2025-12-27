@@ -20,65 +20,46 @@ MapChipType MapChipField::GetMapChipTypeByindex(uint32_t xindex, uint32_t yindex
 /// -------------------------------------------
 void MapChipField::ResetMapChipData() {
 	mapChipData_.data.clear();
-	mapChipData_.data.resize(kNumBlockVirtical);
-	for (std::vector<MapChipType>& mapChipDataLine : mapChipData_.data) {
-		mapChipDataLine.resize(kNumBlockHorizonal);
-	}
 }
 
 /// -------------------------------------------
 /// CSVファイルからマップチップデータを読み込む
 /// -------------------------------------------
 void MapChipField::LoadMapChipCsv(const std::string& filePath) {
-	// マップチップデータのリセット
-	ResetMapChipData();
+	// データを一度クリア
+	mapChipData_.data.clear();
 
 	// ファイルを開く
 	std::ifstream file(filePath);
-#ifdef _DEBUG
-	assert(file.is_open());
-#endif
-
-	std::string line;
-	uint32_t yIndex = 0;
-
-	while (std::getline(file, line) && yIndex < kNumBlockVirtical) {
-		std::istringstream lineStream(line);
-		std::string word;
-		uint32_t xIndex = 0;
-
-		while (std::getline(lineStream, word, ',') && xIndex < kNumBlockHorizonal) {
-			// 前後の全角・半角空白、改行、BOMを削除
-			word.erase(0, word.find_first_not_of(" \t\r\n\xEF\xBB\xBF"));
-			word.erase(word.find_last_not_of(" \t\r\n\xEF\xBB\xBF") + 1);
-
-			// 数値として読み取る（全角数字や空白付きもOK）
-			int num = 0;
-			try {
-				num = std::stoi(word);
-			} catch (...) {
-				num = 0; // 読み取れない場合は空白扱い
-			}
-
-			// enum変換（CSVの数字とMapChipTypeの順番を一致させている前提）
-			if (num >= 0 && num <= static_cast<int>(MapChipType::kIceFloor_)) {
-					mapChipData_.data[yIndex][xIndex] = static_cast<MapChipType>(num);
-				} else {
-					mapChipData_.data[yIndex][xIndex] = MapChipType::kBlank_;
-				}
-
-			xIndex++;
-		}
-		yIndex++;
+	if (!file.is_open()) {
+		return;
 	}
 
-	file.close();
+	std::string line;
 
-	for (uint32_t i = 0; i < kNumBlockVirtical; ++i) {
-		for (uint32_t j = 0; j < kNumBlockHorizonal; ++j) {
-	
+	// ★ 読み込みながら、動的にデータを追加していく
+	while (std::getline(file, line)) {
+		std::stringstream line_stream(line);
+		std::string word;
+		std::vector<MapChipType> row;
+
+		while (std::getline(line_stream, word, ',')) {
+			MapChipType type = MapChipType::kBlank_;
+			if (mapChipTable.contains(word)) {
+				type = mapChipTable[word];
+			}
+			row.push_back(type);
 		}
-		std::cout << "\n";
+		// 1行分のデータを追加
+		mapChipData_.data.push_back(row);
+	}
+
+	// ★ 読み込んだデータのサイズに合わせて、変数を更新！
+	kNumBlockVirtical = static_cast<uint32_t>(mapChipData_.data.size());
+	if (kNumBlockVirtical > 0) {
+		kNumBlockHorizonal = static_cast<uint32_t>(mapChipData_.data[0].size());
+	} else {
+		kNumBlockHorizonal = 0;
 	}
 }
 /// -------------------------------------------

@@ -14,6 +14,7 @@ void StageSelectGameScene::Initialize() {
 	Textmodel1_1 = Model::CreateFromOBJ("Text1-1", true); // ゲームクリアテキストモデルの読み込み
 	Textmodel1_2 = Model::CreateFromOBJ("Text1-2", true);   // ゲームクリアテキストモデルの読み込み
 	Textmodel1_3 = Model::CreateFromOBJ("Text1-3", true); // ゲームクリアテキストモデルの読み込み
+	umbrellaModel_ = Model::CreateFromOBJ("parasol", true);
 	yamaModel = Model::CreateFromOBJ("yama", true);         // 山モデルの読み込み
 
 	textureHandel1_1 = TextureManager::Load("1-1.png"); // 数字表示用テクスチャの読み込み
@@ -51,6 +52,7 @@ void StageSelectGameScene::Initialize() {
 	player_->Initialize(playerModel_, &camera_, playerPosition);
 	player_->SetMapChipField(mapChipField_);
 	player_->SetisMove(true);
+	player_->SetUmbrellaModel(umbrellaModel_);
 
 
 	//========================

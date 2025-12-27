@@ -111,6 +111,9 @@ public:
 	void UpdateVictoryAnimation(); // 勝利ポーズ中のアニメーション更新
 
 	void SetParticleManager(ParticleManager* manager) { particleManager_ = manager; }
+
+	void SetUmbrellaModel(Model* model) { umbrellaModel_ = model; }
+
 private:
 	//----------------------------------------
 	// 移動処理
@@ -311,4 +314,13 @@ private:
 
 	ParticleManager* particleManager_ = nullptr;
 
+	//  パラソル関連
+	Model* umbrellaModel_ = nullptr;
+	WorldTransform worldTransformUmbrella_; // パラソル用のワールド変換データ
+	bool isGliding_ = false;                // 滑空しているかフラグ
+
+	// パラメータ調整用
+	const float kGlideFallSpeed = -0.05f; // 滑空中の落下速度（ゆっくり落ちる）
+	const float kGravity = -0.08f;        // 通常の重力（参考値）
 };
+

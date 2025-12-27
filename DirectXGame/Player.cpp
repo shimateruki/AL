@@ -24,6 +24,8 @@ void Player::Initialize(Model* model, Camera* camera, const Vector3& position) {
 	worldTransformAttack_.translation_ = worldTransformPlayer_.translation_;
 	worldTransformAttack_.rotation_ = worldTransformPlayer_.rotation_;
 
+	worldTransformUmbrella_.Initialize();
+
 	titleGroundY_ = worldTransformPlayer_.translation_.y;
 
 	// Mathクラスの初期化（注意：シングルトンや依存性注入を推奨）
@@ -135,13 +137,12 @@ void Player::UpdateTitleAnimation() {
 }
 
 
-// 移動処理
 void Player::Move() {
 
-		// --- 現在の摩擦係数を決定 ---
+	// --- 現在の摩擦係数を決定 ---
 	float currentAttenuation = kAtteunuation; // デフォルトは通常の摩擦
 	// 接地していて、かつ氷の上に乗っている場合
-	if (onGround_ &&  isOnIce_) {
+	if (onGround_ && isOnIce_) {
 		// 摩擦を氷用のもの（すごく小さい値）に変更
 		currentAttenuation = kIceAttenuation;
 	}
@@ -198,8 +199,6 @@ void Player::Move() {
 					    {1.0f, 1.0f, 1.0f, 1.0f}, // 開始色（白）
 					    {1.0f, 1.0f, 1.0f, 0.0f}  // 終了色（透明）
 					);
-
-
 				}
 			}
 		}
@@ -208,12 +207,8 @@ void Player::Move() {
 		velosity_.x *= (1.0f - currentAttenuation);
 	}
 
-// ジャンプ入力のチェック
-	// ※PushKeyだと押しっぱなしで連続ジャンプしてしまうため、
-	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) { 
-		
-
-
+	// ジャンプ入力のチェック
+	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 		// ジャンプ回数が2回未満ならジャンプできる
 		if (jumpCount_ < 2) {
 			velosity_.y = kJumpAccleration / 60.0f; // ジャンプの初速を与える
@@ -223,17 +218,29 @@ void Player::Move() {
 				isSpinning_ = true;
 				spinTimer_ = 0.0f; // タイマーをリセット
 			}
-			jumpCount_++;                           // ジャンプ回数を1増やす
+			jumpCount_++; // ジャンプ回数を1増やす
 		}
 	}
 
 
 	// 重力（接地していない場合に常に適用）
 	if (!onGround_) {
-		// 重力
-		velosity_.y += -kGgravityAcceleration / 60.0f;
-		velosity_.y = std::max(velosity_.y, -kLimitFallSpeed);
+		// 「落下中(速度がマイナス)」かつ「スペースキーを押している」ならパラソル滑空
+		if (velosity_.y < 0.0f && Input::GetInstance()->PushKey(DIK_SPACE)) {
+			// ふわふわ落ちる速度に固定（数値はお好みで調整）
+			velosity_.y = -0.05f;
+			isGliding_ = true; // 滑空フラグON
+		} else {
+			// 通常の重力
+			velosity_.y += -kGgravityAcceleration / 60.0f;
+			velosity_.y = std::max(velosity_.y, -kLimitFallSpeed);
+			isGliding_ = false; // 滑空フラグOFF
+		}
+	} else {
+		// 地面にいるときは滑空しない
+		isGliding_ = false;
 	}
+
 
 	// --- 微小速度の丸め ---
 	if (std::abs(velosity_.x) <= 0.0001f) {
@@ -318,12 +325,7 @@ void Player::Move() {
 		// 何もしていない時はタイマー0
 		chargeTimer_ = 0.0f;
 	}
-
-
-
-
 }
-
 
 
 void Player::Update() {
@@ -344,7 +346,16 @@ void Player::Update() {
 		worldTransformPlayer_.translation_ += onCloud_->GetDelta();
 		onGround_ = true; // 雲に乗っている場合は接地状態とみなす
 	}
+	if (isGliding_) { // 滑空中のみ追尾
+		// (1) プレイヤーの位置をコピー
+		worldTransformUmbrella_.translation_ = worldTransformPlayer_.translation_;
 
+		// (2) プレイヤーの向きに合わせる（回転コピー）
+		worldTransformUmbrella_.rotation_ = worldTransformPlayer_.rotation_;
+
+		// (3) パラソルの行列更新
+		math->worldTransFormUpdate(worldTransformUmbrella_);
+	}
 
 #ifdef _DEBUG
 	// ==========================================================
@@ -399,7 +410,9 @@ void Player::Draw() {
 	}
 	
 	model_->Draw(worldTransformPlayer_, *camera_);
-
+	if (isGliding_ && umbrellaModel_) {
+		umbrellaModel_->Draw(worldTransformUmbrella_, *camera_);
+	}
 	for (PlayerBullet* bullet : bullets_) {
 		bullet->Draw(*camera_);
 	}

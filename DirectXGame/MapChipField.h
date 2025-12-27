@@ -14,9 +14,9 @@ enum class MapChipType {
 	kGrass_=2, // 草ブロック
 	kGoal_=3,  // ゴール地点
 	kSpike_=5, // トゲ（当たると死亡）
-	kBreakable_=4, // ★ 追加: 壊れる床
+	kBreakable_=4, //  壊れる床
 	kJumpPad_= 6 ,  // ★ キノコジャンプ台
-	kIceFloor_ = 7 ,  // ★ 追加: 滑る床
+	kIceFloor_ = 7 ,  //  滑る床
 };
 
 /// ---------------------------
@@ -95,6 +95,6 @@ private:
 	static inline const float kBlockHeight = 1.0f;
 
 	/// マップチップの縦横サイズ（チップ数）
-	static inline const uint32_t kNumBlockVirtical = 20;
-	static inline const uint32_t kNumBlockHorizonal = 100;
+	uint32_t kNumBlockVirtical = 20;
+	uint32_t kNumBlockHorizonal = 100;
 };

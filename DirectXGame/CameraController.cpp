@@ -16,7 +16,7 @@ void CameraController::Initialize(KamataEngine::Camera* camera) {
 
 void CameraController::Update() {
 
-	// ★モードに応じて処理を切り替える
+	// モードに応じて処理を切り替える
 	switch (mode_) {
 
 	case Mode::kFollowPlayer: { // --- 通常の追従処理 ---
@@ -24,17 +24,28 @@ void CameraController::Update() {
 		const WorldTransform& targetWorldTransform = target_->GetWorldTransform();
 		// 追従対象の速度を取得
 		const Vector3& targetVelocity = target_->GetVelocity();
+
 		// 追従対象とオフセットからカメラの理想的な目標地点を計算
 		Vector3 idealDestination = targetWorldTransform.translation_ + targettooffset + targetVelocity;
 
-		// 目的地の移動範囲を制限
-		idealDestination.x = std::max(idealDestination.x, movebleArea_.left);
-		idealDestination.x = std::min(idealDestination.x, movebleArea_.right);
-		idealDestination.y = std::min(idealDestination.y, movebleArea_.bottom);
-		idealDestination.y = std::max(idealDestination.y, movebleArea_.top);
+		// ---------------------------------------------------------
+		// 移動範囲の制限 
+		// ---------------------------------------------------------
+
+		// X軸の制限 (左端 ～ 右端)
+		idealDestination.x = std::clamp(idealDestination.x, movebleArea_.left, movebleArea_.right);
+
+		// Y軸の制限 (下限 ～ 上限)
+		// movebleArea_.bottom = 地面の高さ（これ以上下がらない）
+		// movebleArea_.top    = 空の高さ（これ以上上がらない）
+		idealDestination.y = std::clamp(idealDestination.y, movebleArea_.bottom, movebleArea_.top);
+
+		// ---------------------------------------------------------
 
 		// 補間により、カメラの座標を目標地点へゆっくり移動させる
+
 		camera_->translation_ = math_->Lerp(camera_->translation_, idealDestination, kInterpolationRate);
+
 	} break;
 
 	case Mode::kVictoryZoom: { // --- ズーム演出の処理 ---

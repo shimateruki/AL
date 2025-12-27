@@ -39,7 +39,7 @@ void Enemy::Initialize(Model* model, Camera* camera, const Vector3& position, Ty
 	} else if (type_ == Type::kFlying) {
 		hp_ = 3;
 	} else if (type_ == Type::kHoming) {
-		hp_ = 4;
+		hp_ = 2;
 	}
 	if (type_ == Type::kSplit) {
 		worldTransformEnemy_.scale_ = {2.0f, 2.0f, 2.0f};

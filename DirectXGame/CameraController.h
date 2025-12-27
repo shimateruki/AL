@@ -50,4 +50,5 @@ private:
 	float kZoomDuration = 1.5f;                // ズームにかかる時間（秒）
 	KamataEngine::Vector3 zoomStartPos_ = {};  // ズーム開始時のカメラ位置
 	KamataEngine::Vector3 zoomTargetPos_ = {}; // ズーム目標のカメラ位置
+
 };

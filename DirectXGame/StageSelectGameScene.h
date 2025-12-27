@@ -53,6 +53,7 @@ private:
 	KamataEngine::Model* WModel = nullptr; // Wモデル
 	KamataEngine::Model* keyHeimenModel = nullptr; // キーモデル
 	KamataEngine::Model* yamaModel = nullptr;      // 山モデル
+	KamataEngine::Model* umbrellaModel_ = nullptr; // 傘モデル
 
 	KamataEngine::Sprite* Sprite1_1 = nullptr; // 数字表示用スプライト
 	KamataEngine::Sprite* Sprite1_2 = nullptr; // 数字表示用スプライト

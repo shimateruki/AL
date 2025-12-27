@@ -16,7 +16,7 @@ void TitleScene::Initialize() {
 
 
 	// 文字モデルのロードと初期化
-	titleTextModel_ = Model::CreateFromOBJ("title", true); // "title.obj" を指定
+	titleTextModel_ = Model::CreateFromOBJ("title", true); 
 	titleTextWorldTransform_.Initialize();
 	color_.Initialize();
 	color_.SetColor({0.5f, 1.0f, 1.0f, 1.0f});
@@ -54,7 +54,8 @@ void TitleScene::Initialize() {
 
 	isMusic = false;
 
-
+		// タイマー初期化
+	blinkTimer_ = 0.0f;
 }
 
 void TitleScene::Update() {
@@ -86,7 +87,8 @@ void TitleScene::Update() {
 		}
 		break;
 
-	case Phase::kMain:
+	case Phase::kMain: {
+
 		// --- メイン（入力待機）中 ---
 
 		// 文字の上下揺れ
@@ -96,17 +98,26 @@ void TitleScene::Update() {
 
 		// スライムのアイドリングアニメを更新
 		player_->UpdateTitleAnimation();
+		blinkTimer_ += 0.05f; // 点滅スピード（数値を大きくすると早くなる）
 
-		// Enterキーが押されたら演出開始
-		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) { 
-			phase_ = Phase::kfadeOut;                 
+		// サイン波の絶対値をとることで 0.0(透明) ～ 1.0(不透明) を繰り返す
+		float alpha = std::abs(std::sin(blinkTimer_));
 
+		// 色を設定
+		if (startSprite_) {
+			startSprite_->SetColor({1.0f, 1.0f, 1.0f, alpha});
+		}
+		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+			phase_ = Phase::kfadeOut;
+			if (startSprite_)
+				startSprite_->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
 			// スライムにカメラジャンプ開始を命令
 			player_->StartCameraJump();
-			//se再生
+			// se再生
 
 			fade_->Start(Fade::Status::FadeOut, 1.8f);
 		}
+	}
 		break;
 
 	case Phase::kfadeOut: 
