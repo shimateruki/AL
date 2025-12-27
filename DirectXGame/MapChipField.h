@@ -15,8 +15,10 @@ enum class MapChipType {
 	kGoal_=3,  // ゴール地点
 	kSpike_=5, // トゲ（当たると死亡）
 	kBreakable_=4, //  壊れる床
-	kJumpPad_= 6 ,  // ★ キノコジャンプ台
+	kJumpPad_= 6 ,  // キノコジャンプ台
 	kIceFloor_ = 7 ,  //  滑る床
+	kLadder_ = 8 ,    // はしご
+	kCloud_ = 9,     // 雲ブロック（乗ると落ちる）
 };
 
 /// ---------------------------
@@ -36,9 +38,11 @@ std::map<std::string, MapChipType> mapChipTable = {
     {"2", MapChipType::kGrass_},
     {"3", MapChipType::kGoal_ },
     {"5", MapChipType::kSpike_},
-	{"4", MapChipType::kBreakable_}, // ★ 追加: 壊れる床のマップチップ
+	{"4", MapChipType::kBreakable_}, //  壊れる床のマップチップ
     {"6", MapChipType::kJumpPad_} ,
-    {"7", MapChipType::kIceFloor_ }  // ★ 追加: 滑る床のマップチップ
+    {"7", MapChipType::kIceFloor_ },  //  滑る床のマップチップ
+    {"8", MapChipType::kLadder_   }, // はしごのマップチップ
+    {"9", MapChipType::kCloud_    }, // 雲ブロックのマップチップ
 };
 }
 

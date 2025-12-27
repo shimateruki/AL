@@ -98,6 +98,8 @@ private:
 	KamataEngine::Model* enemy_model_Homing = nullptr; // 敵のモデル(ホーミングして爆発する敵)
 	KamataEngine::Model* enemy_model_Fly = nullptr;//敵のモデル
 	KamataEngine::Model* umbrellaModel_ = nullptr;     // 傘モデル
+	KamataEngine::Model* hasigoModel_ = nullptr; // はしごモデル
+	KamataEngine::Model* kumoModel_ = nullptr;         // 雲モデル
 	Model* particleModel_ = nullptr; // パーティクル用の汎用モデル（球や板ポリ）
 	KamataEngine::Sprite* TextSprite1_1;
 	KamataEngine::Sprite* poseSprite = nullptr; // 数字表示用スプライト

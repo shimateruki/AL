@@ -23,6 +23,7 @@ struct CollisionMapInfo {
 	bool isHitBottom = false; // 地面ヒット
 	bool hitWall = false;     // 壁ヒット
 	bool onIce = false;
+	bool onLadder = false;
 };
 
 class Enemy;
@@ -79,6 +80,7 @@ public:
 	void SetisMove(bool move) { isMove_ = move; }
 	int GetHp() const { return hp_; }
 	const std::list<PlayerBullet*>& GetBullets() const { return bullets_; }
+
 	//----------------------------------------
 	// 衝突
 	//----------------------------------------
@@ -94,7 +96,7 @@ public:
 	MapChipType GetFloorChipType();
 
 	void TakeDamage(int damage);
-	void CheckAndResolveTogeKabeCollision(const KabeToge* togeKabe); // ★壁用の新しい衝突関数
+	void CheckAndResolveTogeKabeCollision(const KabeToge* togeKabe); // 壁用の新しい衝突関数
 	void UpdateSquashAnimation();
 	bool GetIsInvincible() const { return isInvincible_; }           // 無敵状態を外部から知るため
 
@@ -322,5 +324,8 @@ private:
 	// パラメータ調整用
 	const float kGlideFallSpeed = -0.05f; // 滑空中の落下速度（ゆっくり落ちる）
 	const float kGravity = -0.08f;        // 通常の重力（参考値）
+
+	bool isClimbing_ = false;             // 今、はしごを登っているか？
+	const float kClimbSpeed = 0.1f;       // 登るスピード
 };
 

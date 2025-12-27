@@ -28,7 +28,10 @@ void GameScene::Initialize(int stageID) {
 	enemy_model_Shooter = Model::CreateFromOBJ("enemyShooter", true); // 敵モデルの読み込み
 	enemy_model_Homing = Model::CreateFromOBJ("enemyHoming", true);  // 敵モデルの読み込み
 	iceBlockModel_ = Model::CreateFromOBJ("iceBlock", true);
-	umbrellaModel_ = Model::CreateFromOBJ("parasol", true);
+	umbrellaModel_ = Model::CreateFromOBJ("parasol", true); // 傘モデルの読み込み
+	hasigoModel_ = Model::CreateFromOBJ("hasigo", true); // 傘モデルの読み込み
+	kumoModel_ = Model::CreateFromOBJ("kumo", true);        // 雲モデルの読み込み
+
 	// パーティクル用のモデル読み込み
 	particleModel_ = Model::CreateFromOBJ("particle", true);
 
@@ -361,7 +364,7 @@ void GameScene::Update() {
 		for (Enemy* enemy : enemys_) {
 			enemy->Update();
 		}
-		player_->CheckAndResolveTogeKabeCollision(togeKabe_);
+		//player_->CheckAndResolveTogeKabeCollision(togeKabe_);
 		CheekAllcollision();
 		CController_->Update();
 
@@ -526,6 +529,13 @@ void GameScene::Draw() {
 					break;
 				case MapChipType::kIceFloor_:
 					iceBlockModel_->Draw(*block, camera_);
+					break;
+				case MapChipType::kLadder_:
+					hasigoModel_->Draw(*block, camera_);
+					break;
+				case MapChipType::kCloud_:
+					kumoModel_->Draw(*block, camera_);
+					break;
 				}
 			
 			}

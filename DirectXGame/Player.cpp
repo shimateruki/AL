@@ -7,6 +7,7 @@
 #include <numbers>   // std::numbers::pi_v のために必要
 #include "imgui.h"
 
+
 using namespace KamataEngine;
 
 void Player::Initialize(Model* model, Camera* camera, const Vector3& position) {
@@ -139,22 +140,24 @@ void Player::UpdateTitleAnimation() {
 
 void Player::Move() {
 
-	// --- 現在の摩擦係数を決定 ---
+	// ==========================================
+	// 1. 摩擦（滑りやすさ）の決定
+	// ==========================================
 	float currentAttenuation = kAtteunuation; // デフォルトは通常の摩擦
 	// 接地していて、かつ氷の上に乗っている場合
 	if (onGround_ && isOnIce_) {
-		// 摩擦を氷用のもの（すごく小さい値）に変更
 		currentAttenuation = kIceAttenuation;
 	}
 
-	// --- 左右移動（地上・空中で処理共通） ---
+	// ==========================================
+	// 2. 左右移動（地上・空中で処理共通）
+	// ==========================================
 	if (Input::GetInstance()->PushKey(DIK_D) || Input::GetInstance()->PushKey(DIK_A)) {
 		Vector3 acceleration = {};
 		float airControl = onGround_ ? 1.0f : 0.4f;
 
 		if (Input::GetInstance()->PushKey(DIK_D)) {
 			if (velosity_.x < 0.0f) {
-				// ★ここが書き換えた摩擦係数で処理される
 				velosity_.x *= (1.0f - currentAttenuation);
 			}
 			acceleration.x += (kAcceleration / 60.0f) * airControl;
@@ -165,7 +168,6 @@ void Player::Move() {
 			}
 		} else if (Input::GetInstance()->PushKey(DIK_A)) {
 			if (velosity_.x > 0.0f) {
-				// ★ここも書き換えた摩擦係数で処理される
 				velosity_.x *= (1.0f - currentAttenuation);
 			}
 			acceleration.x -= (kAcceleration / 60.0f) * airControl;
@@ -178,75 +180,135 @@ void Player::Move() {
 
 		velosity_ += acceleration;
 		velosity_.x = std::clamp(velosity_.x, -kLimitRunSpeed, kLimitRunSpeed);
-		// 条件: 地面にいて、ある程度スピードが出ているとき
-		if (onGround_ && std::abs(velosity_.x) > 0.05f) {
 
-			// 毎回出すと多すぎるので、確率（例: 5フレームに1回くらい）で出す
+		// 砂埃パーティクル（走っている時）
+		if (onGround_ && std::abs(velosity_.x) > 0.05f) {
 			if (rand() % 5 == 0) {
 				Vector3 pos = worldTransformPlayer_.translation_;
-				pos.y += 0.5f; // 足元の高さ（キャラのサイズに合わせて調整！）
-
-				// 進行方向と逆に飛ばす
+				pos.y += 0.5f;
 				float dustVelX = -velosity_.x * 0.5f;
-
 				if (particleManager_) {
-					particleManager_->Emit(
-					    pos,                      // 発生位置
-					    {dustVelX, 0.1f, 0.0f},   // 速度（後ろへ、少し上へ）
-					    {0.0f, 0.0f, 0.0f},       // 加速度
-					    0.5f,                     // 寿命
-					    2.3f, 2.0f,               // サイズ（0.3 -> 0.0）
-					    {1.0f, 1.0f, 1.0f, 1.0f}, // 開始色（白）
-					    {1.0f, 1.0f, 1.0f, 0.0f}  // 終了色（透明）
-					);
+					particleManager_->Emit(pos, {dustVelX, 0.1f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.5f, 2.3f, 2.0f, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 0.0f});
 				}
 			}
 		}
 	} else {
-		// ★入力がない時も、書き換えた摩擦係数で減速する
 		velosity_.x *= (1.0f - currentAttenuation);
 	}
 
-	// ジャンプ入力のチェック
+	// ==========================================
+	// 3. はしご判定と昇降モード切替
+	// ==========================================
+
+	// 現在の座標からマップチップ情報を取得
+	MapChipField::IndexSet indexSet = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_);
+	MapChipType chipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
+
+	// はしごチップ(kLadder_)か判定
+	bool isHitLadder = (chipType == MapChipType::kLadder_);
+
+	// 上下入力
+	bool pushUp = Input::GetInstance()->PushKey(DIK_W);
+	bool pushDown = Input::GetInstance()->PushKey(DIK_S);
+
+	if (isHitLadder) {
+		// はしごに触れていて上下キーを押したら「登りモード」へ
+		if (pushUp || pushDown) {
+			isClimbing_ = true;
+			onGround_ = false;
+			isGliding_ = false; // はしご中は滑空解除
+		}
+	} else {
+		// はしごから離れたら解除
+		isClimbing_ = false;
+	}
+
+	// ==========================================
+	// 4. ジャンプ入力
+	// ==========================================
 	if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
-		// ジャンプ回数が2回未満ならジャンプできる
-		if (jumpCount_ < 2) {
-			velosity_.y = kJumpAccleration / 60.0f; // ジャンプの初速を与える
-			onGround_ = false;                      // ジャンプした瞬間に空中状態へ
+
+		// はしご中なら、ジャンプではしごをキャンセルして飛び降りる
+		if (isClimbing_) {
+			isClimbing_ = false;
+			velosity_.y = kJumpAccleration / 60.0f;
+		}
+		// 通常ジャンプ
+		else if (jumpCount_ < 2) {
+			velosity_.y = kJumpAccleration / 60.0f;
+			onGround_ = false;
 
 			if (jumpCount_ == 1) {
 				isSpinning_ = true;
-				spinTimer_ = 0.0f; // タイマーをリセット
+				spinTimer_ = 0.0f;
 			}
-			jumpCount_++; // ジャンプ回数を1増やす
+			jumpCount_++;
 		}
 	}
 
+	// ==========================================
+	// 5. 垂直移動（はしご vs 雲降り vs 重力＆滑空）
+	// ==========================================
 
-	// 重力（接地していない場合に常に適用）
-	if (!onGround_) {
-		// 「落下中(速度がマイナス)」かつ「スペースキーを押している」ならパラソル滑空
-		if (velosity_.y < 0.0f && Input::GetInstance()->PushKey(DIK_SPACE)) {
-			// ふわふわ落ちる速度に固定（数値はお好みで調整）
-			velosity_.y = -0.05f;
-			isGliding_ = true; // 滑空フラグON
-		} else {
-			// 通常の重力
-			velosity_.y += -kGgravityAcceleration / 60.0f;
-			velosity_.y = std::max(velosity_.y, -kLimitFallSpeed);
-			isGliding_ = false; // 滑空フラグOFF
+	if (isClimbing_) {
+		// --- 【はしごモード】 ---
+		velosity_.y = 0.0f; // 重力を無効化
+
+		float climbSpeed = 0.1f; // 登る速度
+		if (pushUp) {
+			velosity_.y = climbSpeed;
+		} else if (pushDown) {
+			velosity_.y = -climbSpeed;
 		}
 	} else {
-		// 地面にいるときは滑空しない
-		isGliding_ = false;
-	}
+		// --- 【通常モード（重力あり）】 ---
 
+
+		// 地面にいて、かつ下キー（S）が押されている場合
+		if (onGround_ && (pushDown || Input::GetInstance()->PushKey(DIK_DOWN))) {
+
+			// 足元（少し下）の座標を調べる
+			Vector3 footCheckPos = worldTransformPlayer_.translation_;
+			footCheckPos.y -= (kHeight / 2.0f + 0.1f); // 足元よりわずかに下
+
+			// 足元のマップチップを取得
+			MapChipField::IndexSet idxDown = mapchipField_->GetMapChipIndexSetByPosition(footCheckPos);
+			MapChipType typeDown = mapchipField_->GetMapChipTypeByindex(idxDown.xIndex, idxDown.yIndex);
+
+			// もし足元にあるのが「雲」だったら
+			if (typeDown == MapChipType::kCloud_) {
+				// 強制的に位置を少し下にずらして、当たり判定から外す
+				worldTransformPlayer_.translation_.y -= 0.2f;
+				onGround_ = false;   // 接地解除
+				velosity_.y = 0.0f;
+			}
+		}
+
+
+		if (!onGround_) {
+			// パラソル滑空判定
+			if (velosity_.y < 0.0f && Input::GetInstance()->PushKey(DIK_SPACE)) {
+				velosity_.y = -0.05f;
+				isGliding_ = true;
+			} else {
+				// 通常重力
+				velosity_.y += -kGgravityAcceleration / 60.0f;
+				velosity_.y = std::max(velosity_.y, -kLimitFallSpeed);
+				isGliding_ = false;
+			}
+		} else {
+			isGliding_ = false;
+		}
+	}
 
 	// --- 微小速度の丸め ---
 	if (std::abs(velosity_.x) <= 0.0001f) {
 		velosity_.x = 0.0f;
 	}
 
+	// ==========================================
+	// 6. 弾の更新処理
+	// ==========================================
 	for (auto it = bullets_.begin(); it != bullets_.end();) {
 		(*it)->Update();
 		if ((*it)->IsDead()) {
@@ -257,7 +319,9 @@ void Player::Move() {
 		}
 	}
 
-	// --- 攻撃入力 (例: Fキー または 左クリック) ---
+	// ==========================================
+	// 7. 攻撃（チャージショット）処理
+	// ==========================================
 	if (attackCooldown_ > 0.0f) {
 		attackCooldown_ -= 1.0f / 60.0f;
 	}
@@ -268,28 +332,17 @@ void Player::Move() {
 
 		// チャージ演出
 		if (chargeTimer_ >= kMaxChargeTime) {
-			// フルチャージ完了！
-			// ブルブル震えさせて「溜まった感」を出す
 			float shake = std::sin(chargeTimer_ * 50.0f) * 0.05f;
 			worldTransformPlayer_.scale_ = {originalScaleY_ + shake, originalScaleY_ - shake, originalScaleY_ + shake};
-
-			// もしチャージ完了音を1回だけ鳴らしたいならフラグ管理が必要ですが
-			// 今回は振動だけで表現します
 		} else {
-			// チャージ中... 少しずつ縮ませる（力を溜める感じ）
 			float squeeze = (chargeTimer_ / kMaxChargeTime) * 0.2f;
 			worldTransformPlayer_.scale_.y = originalScaleY_ - squeeze;
 			worldTransformPlayer_.scale_.x = originalScaleY_ + (squeeze * 0.5f);
 		}
-	}
-	// 2. ボタンを離した瞬間：発射！
-	else if (isCharging_) { // さっきまで押していた(=離した瞬間)
+	} else if (isCharging_) {
+		isCharging_ = false;
 
-		isCharging_ = false; // チャージ終了
-
-		// 弾を生成
 		PlayerBullet* newBullet = new PlayerBullet();
-
 		Vector3 velocity = {0, 0, 0};
 		float speed = 0.4f;
 		if (lrDirection_ == LRDirection::kRight)
@@ -299,30 +352,18 @@ void Player::Move() {
 
 		Vector3 spawnPos = worldTransformPlayer_.translation_;
 
-		// ★チャージ時間によって弾の性能を変える
 		if (chargeTimer_ >= kMaxChargeTime) {
-			// --- フルチャージ弾（強力！） ---
-			// サイズ: 0.8倍 (通常は0.4)
-			// ダメージ: 3 (通常は1)
+			// フルチャージ弾
 			newBullet->Initialize(model_, spawnPos, velocity, mapchipField_, 0.8f, 3);
-			// 強そうなSEを鳴らす
-			// Audio::GetInstance()->PlayWave(seChargeShotHandle_);
 		} else {
-			// --- 通常弾 ---
-			// サイズ: 0.4倍
-			// ダメージ: 1
+			// 通常弾
 			newBullet->Initialize(model_, spawnPos, velocity, mapchipField_, 0.4f, 1);
-			// 普通のSE
-			// Audio::GetInstance()->PlayWave(seShotHandle_);
 		}
-
 		bullets_.push_back(newBullet);
 
-		// タイマーリセット & 体のスケールを元に戻す
 		chargeTimer_ = 0.0f;
 		worldTransformPlayer_.scale_ = {originalScaleY_, originalScaleY_, originalScaleY_};
 	} else {
-		// 何もしていない時はタイマー0
 		chargeTimer_ = 0.0f;
 	}
 }
@@ -475,7 +516,7 @@ void Player::MapChipUp(CollisionMapInfo& info) {
 
 
 void Player::MapChipDown(CollisionMapInfo& info) {
-	// 下降なし？
+	// 下降なし（上昇中、または停止中）なら処理しない
 	if (info.isMovement.y >= 0) {
 		return;
 	}
@@ -485,62 +526,106 @@ void Player::MapChipDown(CollisionMapInfo& info) {
 		positionsNew[i] = CarnerPosition(worldTransformPlayer_.translation_ + info.isMovement, static_cast<Corner>(i));
 	}
 
-	MapChipType mapchipType;
+	MapChipType mapchipType = MapChipType::kBlank_;
 	bool hit = false;
-	MapChipField::IndexSet indexSet;
+	MapChipField::IndexSet indexSet = {};
 
-	// 左下点の判定
-	indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kLeftBottom]);
-	mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
-	if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_ ||
-	    mapchipType == MapChipType::kIceFloor_) {
+	// ---------------------------------------------------
+	// 判定を共通化するためのラムダ関数
+	// ---------------------------------------------------
+	auto CheckHit = [&](const Vector3& pos) -> bool {
+		MapChipField::IndexSet idx = mapchipField_->GetMapChipIndexSetByPosition(pos);
+		MapChipType type = mapchipField_->GetMapChipTypeByindex(idx.xIndex, idx.yIndex);
+
+		// 1. 通常の固いブロック判定
+		if (type == MapChipType::kDirt_ || type == MapChipType::kGrass_ || type == MapChipType::kBreakable_ || type == MapChipType::kJumpPad_ || type == MapChipType::kIceFloor_) {
+
+			indexSet = idx;
+			mapchipType = type;
+			return true;
+		}
+
+		// 2. 雲（すり抜け床）判定
+		if (type == MapChipType::kCloud_) {
+
+			// Sキー または 下矢印キー を押している間は、当たり判定を無効化（false）する
+			if (Input::GetInstance()->PushKey(DIK_S) || Input::GetInstance()->PushKey(DIK_DOWN)) {
+				return false;
+			}
+
+			// 雲の上面座標を取得
+			MapChipField::Rect rect = mapchipField_->GetRectByIndex(idx.xIndex, idx.yIndex);
+
+			// プレイヤーの足元の座標（移動前）
+			float footY = worldTransformPlayer_.translation_.y - kHeight / 2.0f;
+
+			// 「今の足の位置」が「雲の上面」より高い（＝上から乗ってきた）場合のみヒットにする
+			if (footY >= rect.top - 0.2f) {
+				indexSet = idx;
+				mapchipType = type;
+				return true;
+			}
+		}
+
+		return false;
+	};
+
+	// --- 左下点の判定 ---
+	if (CheckHit(positionsNew[kLeftBottom])) {
 		hit = true;
 	}
 
-	// 右下点の判定
+	// --- 右下点の判定 ---
 	if (!hit) {
-		indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kRightBottom]);
-		mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
-		if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_ ||
-		    mapchipType == MapChipType::kIceFloor_) {
+		if (CheckHit(positionsNew[kRightBottom])) {
 			hit = true;
 		}
 	}
 
+	// --- ヒット時の処理（位置補正など） ---
 	if (hit) {
 
-		// もし接触したブロックが氷なら、「報告書」にフラグを立てる
+		// 氷床フラグの報告
 		if (mapchipType == MapChipType::kIceFloor_) {
 			info.onIce = true;
 		}
 
-		// ---- この後の着地処理は、氷ブロックでも通常通り実行される ----
-		indexSet = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ + info.isMovement + Vector3(0, -kHeight / 2.0f, 0));
+		// 現在位置（Yのみ）のインデックスを取得
 		MapChipField::IndexSet indexSetNow;
 		indexSetNow = mapchipField_->GetMapChipIndexSetByPosition(worldTransformPlayer_.translation_ + Vector3(0, -kHeight / 2.0f, 0));
 
-		if (indexSetNow.yIndex != indexSet.yIndex) {
+		// 「別のブロックに移動しようとした」 または 「雲の上に乗った」 場合に位置補正を行う
+		if (indexSetNow.yIndex != indexSet.yIndex || mapchipType == MapChipType::kCloud_) {
+
 			MapChipField::Rect rect = mapchipField_->GetRectByIndex(indexSet.xIndex, indexSet.yIndex);
+
+			// めり込みを排除してブロックの上にピタッと合わせる
 			info.isMovement.y = std::min(0.0f, rect.top - (worldTransformPlayer_.translation_.y - kHeight / 2.0f) + kBlank);
 			info.isHitBottom = true;
+
 		} else {
+			// 同じブロック内部での落下停止（主に通常の地面用）
 			info.isMovement.y = 0.0f;
 			info.isHitBottom = true;
 		}
 
+		// 壊れる床の処理
 		if (mapchipType == MapChipType::kBreakable_) {
 			isbreak = true;
 		}
+
+		// ジャンプパッドの処理（特別処理：強制ジャンプしてここで終了）
 		if (mapchipType == MapChipType::kJumpPad_) {
 			velosity_.y += (kJumpAccleration / 60.0f) * 2.5f;
 			onGround_ = false;
 			jumpCount_ = 1;
 			info.isMovement.y = 0.0f;
 			info.isHitBottom = false;
-			return; // ジャンプパッドだけは特別にここで処理を終える
+			return;
 		}
 	}
 }
+
 
 void Player::MapChipLeft(CollisionMapInfo& info) {
 	// 左移動なし？
@@ -721,6 +806,7 @@ void Player::UpdateOnGround(const CollisionMapInfo& info) {
 		}
 	}
 }
+
 // 壁接触時の処理
 void Player::UpdateOnWall(const CollisionMapInfo& info) {
 	if (info.hitWall) {
