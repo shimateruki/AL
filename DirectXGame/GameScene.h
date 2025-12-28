@@ -100,7 +100,8 @@ private:
 	KamataEngine::Model* umbrellaModel_ = nullptr;     // 傘モデル
 	KamataEngine::Model* hasigoModel_ = nullptr; // はしごモデル
 	KamataEngine::Model* kumoModel_ = nullptr;         // 雲モデル
-	KamataEngine::Model* iwaModel_ = nullptr;    
+	KamataEngine::Model* iwaModel_ = nullptr;    // 岩モデル
+	Model* starCoinModel_ = nullptr;
 	Model* particleModel_ = nullptr; // パーティクル用の汎用モデル（球や板ポリ）
 	KamataEngine::Sprite* TextSprite1_1;
 	KamataEngine::Sprite* poseSprite = nullptr; // 数字表示用スプライト
@@ -138,6 +139,7 @@ private:
 	std::vector<Enemy*> enemys_;
 	std::vector<Yama*> yama_;                // 山リスト
 	std::vector<Tree*> tree_;                // 木リスト
+	std::list<std::unique_ptr<WorldTransform>> starCoins_; // 配置されたコインのリスト
 	
 		ParticleManager* particleManager_ = nullptr;
 
@@ -223,4 +225,6 @@ private:
 
 	// 現在のステージ番号を覚えておく
 	int currentStageID_ = 1;
+	// 現在のプレイで取った枚数
+	int currentPlayCoinCount_ = 0;
 };

@@ -124,4 +124,13 @@ private:
 	 
 		bool isSprite;
 
+	    KamataEngine::Model* starCoinModel_ = nullptr; // コインのモデル
+
+	    // コインを表示するためのリスト（場所などのデータ）
+	    std::list<std::unique_ptr<KamataEngine::WorldTransform>> uiDisplayCoins_;
+
+	    // 看板のリストを見てコインを配置する関数
+	    void SetupDisplayCoins();
+	    bool isCoinsSetup_ = false;
+
 };

@@ -2,13 +2,13 @@
 #include "KamataEngine.h"
 #include "math.h"
 #include <algorithm>
-#include <numbers> // ★ EaseInOutSine で使うため
+#include <numbers> // EaseInOutSine で使うため
 
 class Player;
 
 class CameraController {
 public:
-	// ★ カメラの状態を定義
+	//  カメラの状態を定義
 	enum class Mode {
 		kFollowPlayer, // 通常の追従
 		kVictoryZoom   // 勝利ズーム演出

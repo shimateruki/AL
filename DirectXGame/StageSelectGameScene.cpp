@@ -16,6 +16,7 @@ void StageSelectGameScene::Initialize() {
 	Textmodel1_3 = Model::CreateFromOBJ("Text1-3", true); // ゲームクリアテキストモデルの読み込み
 	umbrellaModel_ = Model::CreateFromOBJ("parasol", true);
 	yamaModel = Model::CreateFromOBJ("yama", true);         // 山モデルの読み込み
+	starCoinModel_ = Model::CreateFromOBJ("kinoko", true);
 
 	textureHandel1_1 = TextureManager::Load("1-1.png"); // 数字表示用テクスチャの読み込み
 	textureHandel1_2 = TextureManager::Load("1-2.png"); // 数字表示用テクスチャの読み込み
@@ -68,7 +69,7 @@ void StageSelectGameScene::Initialize() {
 	CController_->Initialize(&camera_);
 	CController_->SetTarget(player_);
 	CController_->Reset();
-	CameraController::Rect cameraArea = {12.0f, 100 - 12.0f, 6.0f, 6.0f};
+	CameraController::Rect cameraArea = {12.0f, 100 - 12.0f, 6.0f, 40.0f};
 	CController_->SetMovableSrea(cameraArea);
 	//========================
 	// 🧱 ブロック生成
@@ -165,9 +166,8 @@ void StageSelectGameScene::Initialize() {
 
 
 
-
 	firstFrame = true; // 初回フレームフラグを設定
-
+	isCoinsSetup_ = false;
 	isSprite = true;
 
 }
@@ -214,6 +214,7 @@ void StageSelectGameScene::Update() {
 	for (Tree * tree:tree_){
 		tree->Update();
 	}
+
 	#ifdef _DEBUG
 	ImGui::Begin("StageSelectGameScene Debug Info"); // ImGuiのデバッグウィンドウ開始
 	ImGui::Text("player %f", player_->GetWorldTransform().translation_.x);
@@ -317,6 +318,62 @@ void StageSelectGameScene::Update() {
 		break;
 
 	}
+#ifdef _DEBUG
+	// 既存のデバッグ表示があればその続きに...
+
+	ImGui::Begin("Coin Display Debug");
+
+	// 1. セーブデータの確認
+	if (ImGui::TreeNode("1. Save Data (Manager)")) {
+		for (int i = 1; i <= 3; i++) { // ステージ1～3を確認
+			int count = GameStateManager::GetInstance()->GetStarCoinRecord(i);
+			ImGui::Text("Stage %d: %d Coins", i, count);
+		}
+		ImGui::TreePop();
+	}
+
+	// 2. 看板の座標確認
+	if (ImGui::TreeNode("2. Signboard Positions")) {
+		for (size_t i = 0; i < signboards_.size(); ++i) {
+			// 看板の座標を取得
+			Vector3 pos = signboards_[i]->GetWorldPosition();
+			int id = signboards_[i]->GetStageID();
+			ImGui::Text("Sign[%d] (Stage%d): (%.1f, %.1f, %.1f)", (int)i, id, pos.x, pos.y, pos.z);
+
+			// もし全部 (0.0, 0.0, 0.0) なら、Initializeのタイミング問題確定です
+			if (pos.x == 0 && pos.y == 0) {
+				ImGui::TextColored(ImVec4(1, 0, 0, 1), "WARNING: Position is Zero!");
+			}
+		}
+		ImGui::TreePop();
+	}
+
+	// 3. 現在表示されているコインの確認
+	ImGui::Separator();
+	ImGui::Text("Display Coins Total: %d", (int)uiDisplayCoins_.size());
+
+	if (ImGui::TreeNode("3. Coin List")) {
+		int index = 0;
+		for (auto& coin : uiDisplayCoins_) {
+			Vector3 pos = coin->translation_;
+			ImGui::Text("[%d] Pos: (%.1f, %.1f, %.1f) Scale: %.1f", index, pos.x, pos.y, pos.z, coin->scale_.x);
+			index++;
+		}
+		ImGui::TreePop();
+	}
+
+
+	ImGui::Separator();
+	if (ImGui::Button("Manual Reload (SetupDisplayCoins)")) {
+		SetupDisplayCoins();
+	}
+
+	ImGui::End();
+#endif
+	if (!isCoinsSetup_) {
+		SetupDisplayCoins();
+		isCoinsSetup_ = true; // もう呼ばないようにする
+	}
 }
 
 void StageSelectGameScene::Draw() {
@@ -343,7 +400,12 @@ void StageSelectGameScene::Draw() {
 			}
 		}
 	}
-
+	for (auto& coinWt : uiDisplayCoins_) {
+		// 常にクルクル回す
+		coinWt->rotation_.y += 0.05f;
+		math->worldTransFormUpdate(*coinWt.get());
+		starCoinModel_->Draw(*coinWt, camera_);
+	}
 	// 🌌 スカイドーム描画
 	skydome_->Draw();
 
@@ -494,3 +556,54 @@ StageSelectGameScene::~StageSelectGameScene() {
 
 }
 
+void StageSelectGameScene::SetupDisplayCoins() {
+	// リストをクリア
+	uiDisplayCoins_.clear();
+
+	// デバッグ用：看板の数を確認
+	// printf("Total Signboards: %d\n", (int)signboards_.size());
+
+	for (Signboard* signboard : signboards_) {
+		int stageID = signboard->GetStageID();
+		int savedCount = GameStateManager::GetInstance()->GetStarCoinRecord(stageID);
+
+		// デバッグ用：ステージIDと保存枚数、看板の座標を確認
+		Vector3 pos = signboard->GetWorldPosition();
+		printf("Stage: %d, Saved: %d, Pos: (%f, %f, %f)\n", stageID, savedCount, pos.x, pos.y, pos.z);
+
+		if (savedCount <= 0)
+			continue;
+
+		// ★ 修正点1：座標取得が (0,0,0) になっていた場合の保険
+		// 看板の座標がまだ計算されていない場合があるので、もし(0,0,0)なら
+		// 仕方ないので看板のInitializeと同じ計算式で場所を推定する（応急処置）
+		/* if (pos.x == 0.0f && pos.y == 0.0f) {
+		    // 看板の配置場所を直接指定しているなら、ここも手動計算が必要かもしれません
+		    // 例: pos = mapChipField_->GetChipPositionIndex(..., ...);
+		}
+		*/
+
+		// コイン生成
+		for (int i = 0; i < savedCount; ++i) {
+			auto coinWt = std::make_unique<WorldTransform>();
+			coinWt->Initialize();
+
+			// 位置計算
+			float offsetX = (i - (savedCount - 1) / 2.0f) * 1.5f; // 少し間隔を広げました(1.0f -> 1.5f)
+
+			coinWt->translation_.x = pos.x + offsetX;
+			coinWt->translation_.y = pos.y + 4.0f;
+
+			// ★ 修正点2：Z座標を「手前」にずらす！
+			// カメラが手前（マイナス方向）にある場合、コインも少し手前に置かないと埋もれます
+			coinWt->translation_.z = pos.z - 2.0f;
+
+			coinWt->scale_ = {0.5f, 0.5f, 0.5f};
+
+			// 行列更新
+			math->worldTransFormUpdate(*coinWt.get()); // ※ユーザーの関数の書き方に合わせる
+
+			uiDisplayCoins_.push_back(std::move(coinWt));
+		}
+	}
+}

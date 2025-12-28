@@ -32,6 +32,7 @@ void GameScene::Initialize(int stageID) {
 	hasigoModel_ = Model::CreateFromOBJ("hasigo", true); // 傘モデルの読み込み
 	kumoModel_ = Model::CreateFromOBJ("kumo", true);        // 雲モデルの読み込み
 	iwaModel_ = Model::CreateFromOBJ("iwa", true);       // 岩モデルの読み込み
+	starCoinModel_ = Model::CreateFromOBJ("kinoko", true);
 
 	// パーティクル用のモデル読み込み
 	particleModel_ = Model::CreateFromOBJ("particle", true);
@@ -97,6 +98,7 @@ void GameScene::Initialize(int stageID) {
 	CController_->Reset();
 	CameraController::Rect cameraArea = {12.0f, 100 - 12.0f, 6.0f, 40.0f};
 	CController_->SetMovableSrea(cameraArea);
+
 
 	//========================
 	// 💥 ヒットエフェクト設定
@@ -198,6 +200,8 @@ void GameScene::Initialize(int stageID) {
 	
 	isSprite = true;
 	firstFrame = true;
+	currentPlayCoinCount_ = 0;
+	starCoins_.clear();
 	currentSelectIndex_ = 0; // 初期選択インデックス
 	
 
@@ -485,12 +489,42 @@ void GameScene::Update() {
 		return false;
 	});
 
-	// 死亡した敵の削除
+#ifdef _DEBUG
+	// ==========================================
+	//  デバッグ表示: スターコイン確認用
+	// ==========================================
+	ImGui::Begin("Star Coin Debug");
+
+	// 1. 今プレイ中の取得数
+	ImGui::Text("Current Stage: %d", currentStageID_);
+	ImGui::Text("Now Coins (In Game): %d", currentPlayCoinCount_);
+
+	// 2. マネージャーに保存されている「過去の最高記録」
+	int savedRecord = GameStateManager::GetInstance()->GetStarCoinRecord(currentStageID_);
+	ImGui::Text("Saved Record (DB): %d", savedRecord);
+
+	ImGui::Separator();
+
+	// 3. 全ステージの保存状況確認
+	if (ImGui::TreeNode("All Stage Records")) {
+		for (int i = 1; i <= 5; i++) {
+			int count = GameStateManager::GetInstance()->GetStarCoinRecord(i);
+			ImGui::Text("Stage %d: %d", i, count);
+		}
+		ImGui::TreePop();
+	}
+
+	ImGui::End();
+#endif
 
 }
 void GameScene::Draw() {
 	DirectXCommon* dxcommon = DirectXCommon::GetInstance();
 	Model::PreDraw(dxcommon->GetCommandList());
+
+	// コインのアニメーション用に時間を進める
+	static float globalTime = 0.0f;
+	globalTime += 1.0f / 60.0f;
 
 	// 👾 敵の描画
 	for (Enemy* enemy : enemys_) {
@@ -499,9 +533,7 @@ void GameScene::Draw() {
 		enemy->Draw();
 	}
 
-
-
-	  // 🧱 ブロック描画（草・土でモデル切替）
+	// 🧱 ブロック描画（草・土でモデル切替）
 	for (uint32_t y = 0; y < worldTransformBlocks_.size(); ++y) {
 		for (uint32_t x = 0; x < worldTransformBlocks_[y].size(); ++x) {
 			WorldTransform* block = worldTransformBlocks_[y][x];
@@ -511,10 +543,10 @@ void GameScene::Draw() {
 
 				// デバッグ用出力
 				if (type == MapChipType::kGrass_) {
-					std::cout << "Grass at (" << x << ", " << y << ") is being processed.\n";
+					// std::cout << "Grass at (" << x << ", " << y << ") is being processed.\n";
 				}
 
-                switch (type) {
+				switch (type) {
 				case MapChipType::kDirt_:
 					dirtModel_->Draw(*block, camera_);
 					break;
@@ -528,7 +560,7 @@ void GameScene::Draw() {
 					// トゲの壁は特別な処理を行う
 					togeModel_->Draw(*block, camera_);
 					break;
-				case MapChipType::kJumpPad_: 
+				case MapChipType::kJumpPad_:
 					kinokoModel_->Draw(*block, camera_);
 					break;
 				case MapChipType::kIceFloor_:
@@ -543,28 +575,36 @@ void GameScene::Draw() {
 				case MapChipType::kWallBreak_:
 					iwaModel_->Draw(*block, camera_);
 					break;
-				}
 
-			
+				// ==========================================
+				// スターコインのアニメーション
+				// ==========================================
+				case MapChipType::kStarCoin_:
+					// 1. くるくる回す (Y軸回転)
+					block->rotation_.y += 0.05f;
+					{ 
+						Vector3 originPos = mapChipField_->GetChipPositionIndex(x, y);
+						block->translation_.y = originPos.y + std::sin(globalTime * 3.0f) * 0.5f;
+					}
+
+
+					starCoinModel_->Draw(*block, camera_);
+					break;
+				}
 			}
 		}
-
 	}
 
-		for (auto& floor : breakableFloors_) {
+	for (auto& floor : breakableFloors_) {
 		floor->Draw(breakableBlockModel_, &camera_); // 破壊可能な床の描画
 	}
 
-
 	togeKabe_->Draw(); // トゲ壁の描画
-
-
 
 	// 🌌 スカイドーム描画
 	skydome_->Draw();
 
-	
-		// 🧍 プレイヤー描画
+	// 🧍 プレイヤー描画
 	if (!player_->IsDead())
 		player_->Draw();
 
@@ -578,10 +618,8 @@ void GameScene::Draw() {
 		tree->Draw();
 	}
 
-	
 	// 🌪️ パーティクル描画
 	deatparticles_->Draw();
-
 
 	// 🎉 ゲームクリア表示
 	if (isGameClear_) {
@@ -629,7 +667,7 @@ void GameScene::Draw() {
 	if (countdownState_ == CountdownState::kCounting) {
 		spriteCountdown_->Draw();
 	}
-	if (isSprite&&!isGameClear_&&!isPaused_) {
+	if (isSprite && !isGameClear_ && !isPaused_) {
 		TextSprite1_1->Draw();
 		pauseTextSprite_->Draw(); // ポーズスプライトの描画
 	}
@@ -641,10 +679,9 @@ void GameScene::Draw() {
 	}
 
 	// ゲームクリアテキストスプライトの描画
-	if (isGameClear_&&isSprite) {
+	if (isGameClear_ && isSprite) {
 		GameClearTextSprite_->Draw();
 		enterSprite_->Draw(); // エンターキー用スプライトの描画
-
 	}
 
 	Sprite::PostDraw();
@@ -821,7 +858,7 @@ void GameScene::CheekAllcollision() {
 			MapChipType type = mapChipField_->GetMapChipTypeByindex(x, y);
 
 			// ゴール or 棘 以外は無視
-			if (type != MapChipType::kGoal_ && type != MapChipType::kSpike_) {
+			if (type != MapChipType::kGoal_ && type != MapChipType::kSpike_ && type != MapChipType::kStarCoin_) {
 				continue;
 			}
 
@@ -842,6 +879,16 @@ void GameScene::CheekAllcollision() {
 				} else if (type == MapChipType::kSpike_) {
 					// 棘のダメージ処理
 					player_->TakeDamage(1);
+				} else if (type == MapChipType::kStarCoin_) {
+					// 1. カウントを増やす
+					currentPlayCoinCount_++;
+
+					// 2. マップデータを「空白(0)」に書き換える（これで消える＆次から当たらない）
+					mapChipField_->SetMapChipType(x, y, MapChipType::kBlank_);
+
+					// 3. SEを鳴らす（あれば）
+					// Audio::GetInstance()->PlayWave(soundHandleCoin_);
+
 				}
 			}
 		}
@@ -895,7 +942,7 @@ void GameScene::ChangePhase() {
 		
             // ステージクリア情報を保存
 		GameStateManager::GetInstance()->SetStageClear(currentStageID_, true);
-
+		    GameStateManager::GetInstance()->SaveStarCoinRecord(currentStageID_, currentPlayCoinCount_);
 		Vector3 returnPos = {};
 
 		switch (currentStageID_) {
