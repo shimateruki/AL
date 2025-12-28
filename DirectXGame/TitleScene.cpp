@@ -7,6 +7,10 @@ void TitleScene::Initialize() {
 	playerModel_ = Model::CreateFromOBJ("player", true);
 	textureHandleStart_ = TextureManager::Load("sutart.png"); // スタートボタン用テクスチャの読み込み
 	textureHandleEnter_ = TextureManager::Load("enter.png"); // エンターキー用テクスチャの読み込み
+	textureHandleTutorial_ = TextureManager::Load("enter.png");
+	textureHandleArrow_ = TextureManager::Load("yazirusi.png"); 
+
+
 	camera_.translation_.z = -10.0f; // カメラのZ位置を調整
 
 	// player_ メンバ変数を new でインスタンス化
@@ -49,13 +53,16 @@ void TitleScene::Initialize() {
 
 	startSprite_ = Sprite::Create(textureHandleStart_, {0.0f, 0.0f}); // スタートボタン用スプライトの作成
 	enterSprite_ = Sprite::Create(textureHandleEnter_, {0.0f, 0.0f}); // エンターキー用スプライトの作成
-
-
+	tutorialSprite_ = Sprite::Create(textureHandleTutorial_, {450.0f, 600.0f});
+	arrowSprite_ = Sprite::Create(textureHandleArrow_, {400.0f, 500.0f});
 
 	isMusic = false;
 
 		// タイマー初期化
 	blinkTimer_ = 0.0f;
+
+	currentSelection_ = 0;
+	nextScene_ = NextScene::kGame;
 }
 
 void TitleScene::Update() {
@@ -64,11 +71,13 @@ void TitleScene::Update() {
 	skydome_->Update();
 	camera_.UpdateMatrix();
 	camera_.TransferMatrix();
-	//if (!isMusic) {
+
+	// BGM関連（元のコードにあったコメントアウト部分）
+	// if (!isMusic) {
 	//	bgmVoiceHandle_ = bgmAudio->GetInstance()->PlayWave(bgmHandle_, true, 0.5f); // trueでループ再生
 	//	isMusic = true;
 	//}
-	
+
 	// ★フェーズごとの処理
 	switch (phase_) {
 	case Phase::kFadeIn:
@@ -83,12 +92,11 @@ void TitleScene::Update() {
 		player_->UpdateTitleAnimation();
 
 		if (fade_->isFinished()) {
-			phase_ = Phase::kMain; 
+			phase_ = Phase::kMain;
 		}
 		break;
 
 	case Phase::kMain: {
-
 		// --- メイン（入力待機）中 ---
 
 		// 文字の上下揺れ
@@ -98,29 +106,86 @@ void TitleScene::Update() {
 
 		// スライムのアイドリングアニメを更新
 		player_->UpdateTitleAnimation();
-		blinkTimer_ += 0.05f; // 点滅スピード（数値を大きくすると早くなる）
 
-		// サイン波の絶対値をとることで 0.0(透明) ～ 1.0(不透明) を繰り返す
-		float alpha = std::abs(std::sin(blinkTimer_));
-
-		// 色を設定
-		if (startSprite_) {
-			startSprite_->SetColor({1.0f, 1.0f, 1.0f, alpha});
+		// ---------------------------------------------------------
+		// ★ 選択操作 (W/S または 矢印キー上下)
+		// ---------------------------------------------------------
+		if (Input::GetInstance()->TriggerKey(DIK_W) || Input::GetInstance()->TriggerKey(DIK_UP)) {
+			currentSelection_--;
 		}
-		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
-			phase_ = Phase::kfadeOut;
+		if (Input::GetInstance()->TriggerKey(DIK_S) || Input::GetInstance()->TriggerKey(DIK_DOWN)) {
+			currentSelection_++;
+		}
+
+		// 選択範囲のループ処理 (0: Start, 1: Tutorial)
+		if (currentSelection_ < 0)
+			currentSelection_ = 1;
+		if (currentSelection_ > 1)
+			currentSelection_ = 0;
+
+		// ---------------------------------------------------------
+		// 矢印の位置更新と点滅処理
+		// ---------------------------------------------------------
+
+		blinkTimer_ += 0.05f;                          // 点滅スピード
+		float alpha = std::abs(std::sin(blinkTimer_)); // 0.0 ～ 1.0
+
+		if (currentSelection_ == 0) {
+			// --- 「START」選択中 ---
+
+			// 矢印をStartの横に移動 (座標は調整してください)
+			if (arrowSprite_)
+				arrowSprite_->SetPosition({400.0f, 510.0f});
+
+			// Startを点滅
+			if (startSprite_)
+				startSprite_->SetColor({1.0f, 1.0f, 1.0f, alpha});
+			// Tutorialは通常表示
+			if (tutorialSprite_)
+				tutorialSprite_->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
+		} else {
+			// --- 「TUTORIAL」選択中 ---
+
+			// 矢印をTutorialの横に移動 (座標は調整してください)
+			if (arrowSprite_)
+				arrowSprite_->SetPosition({400.0f, 610.0f});
+
+			// Tutorialを点滅
+			if (tutorialSprite_)
+				tutorialSprite_->SetColor({1.0f, 1.0f, 1.0f, alpha});
+			// Startは通常表示
 			if (startSprite_)
 				startSprite_->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
+		}
+
+		// ---------------------------------------------------------
+		// ★ 決定処理 (スペースキー)
+		// ---------------------------------------------------------
+		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+			phase_ = Phase::kfadeOut;
+
+			// 決定時は点滅をやめて不透明に戻す
+			if (startSprite_)
+				startSprite_->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
+			if (tutorialSprite_)
+				tutorialSprite_->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
+
+			// 選択に応じて次のシーンをセット
+			if (currentSelection_ == 0) {
+				nextScene_ = NextScene::kGame; // 通常ゲームへ
+			} else {
+				nextScene_ = NextScene::kTutorial; // チュートリアルへ
+			}
+
 			// スライムにカメラジャンプ開始を命令
 			player_->StartCameraJump();
-			// se再生
+			// ここで決定SE再生などを入れるとGood
 
 			fade_->Start(Fade::Status::FadeOut, 1.8f);
 		}
-	}
-		break;
+	} break;
 
-	case Phase::kfadeOut: 
+	case Phase::kfadeOut:
 		// --- 演出中 ---
 
 		// スライムのカメラジャンプアニメを毎フレーム更新
@@ -151,6 +216,10 @@ void TitleScene::Draw() {
 	// スプライトの描画
 	startSprite_->Draw(); // スタートボタン用スプライトの描画
 	enterSprite_->Draw(); // エンターキー用スプライトの描画
+	if (tutorialSprite_)
+		tutorialSprite_->Draw();
+	if (arrowSprite_)
+		arrowSprite_->Draw();
 	Sprite::PostDraw();
 	// Fadeの描画
 	fade_->Draw(commandList); // commandList を引数に渡す
@@ -163,5 +232,7 @@ TitleScene::~TitleScene() {
 	delete playerModel_;
 	delete titleTextModel_;
 	delete fade_;
+	delete tutorialSprite_; 
+	delete arrowSprite_;
 	
 }

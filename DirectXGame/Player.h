@@ -29,6 +29,7 @@ struct CollisionMapInfo {
 class Enemy;
 class KabeToge;      // トゲ壁クラスの前方宣言
 class CloudPlatform; // 前方宣言
+class CameraController;
 
 //------------------------------
 // プレイヤークラス定義
@@ -80,7 +81,7 @@ public:
 	void SetisMove(bool move) { isMove_ = move; }
 	int GetHp() const { return hp_; }
 	const std::list<PlayerBullet*>& GetBullets() const { return bullets_; }
-
+	void SetCameraController(CameraController* cameraController) { cameraController_ = cameraController; }
 	//----------------------------------------
 	// 衝突
 	//----------------------------------------
@@ -183,6 +184,7 @@ private:
 	Model* model_ = nullptr;   // モデル
 	Camera* camera_ = nullptr; // カメラ
 	Math* math = nullptr;      // 数学ユーティリティ
+	CameraController* cameraController_ = nullptr; // カメラコントローラー
 
 	//----------------------------------------
 	// 移動関連
@@ -327,5 +329,8 @@ private:
 
 	bool isClimbing_ = false;             // 今、はしごを登っているか？
 	const float kClimbSpeed = 0.1f;       // 登るスピード
+
+
+
 };
 

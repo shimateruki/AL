@@ -14,11 +14,16 @@ public:
 		kfadeOut
 
 	};
+	enum class NextScene {
+		kGame,    // 通常のゲーム本編へ
+		kTutorial // チュートリアルへ
+	};
 	void Initialize();
 	void Update();
 	void Draw();
 	 ~TitleScene();
 	bool isfinished() const { return finished_; }
+	 NextScene GetNextScene() const { return nextScene_; }
 
 private:
 	KamataEngine::Model* playerModel_ = nullptr;
@@ -63,4 +68,11 @@ private:
 
 
 	float blinkTimer_;
+	KamataEngine::Sprite* tutorialSprite_ = nullptr;
+	KamataEngine::Sprite* arrowSprite_ = nullptr;
+	uint32_t textureHandleTutorial_ = 0;
+	uint32_t textureHandleArrow_ = 0;
+
+	int currentSelection_ = 0;               // 0: Start, 1: Tutorial
+	NextScene nextScene_ = NextScene::kGame; // デフォルトはゲーム
 };

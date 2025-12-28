@@ -1,12 +1,10 @@
-#include "GameScene.h" 
-#include <iostream>
+#include"TutorialScene.h"
 #include "GameStateManager.h"
+#include <iostream>
 
-using namespace KamataEngine; 
+using namespace KamataEngine;
 
-// GameSceneの初期化処理
-void GameScene::Initialize(int stageID) {
-	currentStageID_ = stageID;
+void TutorialScene::Initialize() {
 	//========================
 	// 📦 リソースの読み込み
 	//========================
@@ -22,16 +20,16 @@ void GameScene::Initialize(int stageID) {
 	GameClearTextModel_ = Model::CreateFromOBJ("GameClear", true);
 	togeKabeModel_ = Model::CreateFromOBJ("kabeToge", true);
 	togeModel_ = Model::CreateFromOBJ("toge", true);
-	yamaModel = Model::CreateFromOBJ("yama", true); // 山モデルの読み込み
-	kinokoModel_ = Model::CreateFromOBJ("kinoko", true); // キノコモデルの読み込み
-	enemy_model_Walk = Model::CreateFromOBJ("enemy", true);  // 敵モデルの読み込み
+	yamaModel = Model::CreateFromOBJ("yama", true);                   // 山モデルの読み込み
+	kinokoModel_ = Model::CreateFromOBJ("kinoko", true);              // キノコモデルの読み込み
+	enemy_model_Walk = Model::CreateFromOBJ("enemy", true);           // 敵モデルの読み込み
 	enemy_model_Shooter = Model::CreateFromOBJ("enemyShooter", true); // 敵モデルの読み込み
-	enemy_model_Homing = Model::CreateFromOBJ("enemyHoming", true);  // 敵モデルの読み込み
+	enemy_model_Homing = Model::CreateFromOBJ("enemyHoming", true);   // 敵モデルの読み込み
 	iceBlockModel_ = Model::CreateFromOBJ("iceBlock", true);
 	umbrellaModel_ = Model::CreateFromOBJ("parasol", true); // 傘モデルの読み込み
-	hasigoModel_ = Model::CreateFromOBJ("hasigo", true); // 傘モデルの読み込み
+	hasigoModel_ = Model::CreateFromOBJ("hasigo", true);    // 傘モデルの読み込み
 	kumoModel_ = Model::CreateFromOBJ("kumo", true);        // 雲モデルの読み込み
-	iwaModel_ = Model::CreateFromOBJ("iwa", true);       // 岩モデルの読み込み
+	iwaModel_ = Model::CreateFromOBJ("iwa", true);          // 岩モデルの読み込み
 
 	// パーティクル用のモデル読み込み
 	particleModel_ = Model::CreateFromOBJ("particle", true);
@@ -39,7 +37,7 @@ void GameScene::Initialize(int stageID) {
 	// 数字表示用テクスチャの読み込み
 	textureHandlePhose_ = TextureManager::Load("Phose.png");
 	TextureHandleYazirusi_ = TextureManager::Load("yazirusi.png");
-	textureHandleEnter_ = TextureManager::Load("enter.png"); // エンターキー用テクスチャの読み込み
+	textureHandleEnter_ = TextureManager::Load("enter.png");                       // エンターキー用テクスチャの読み込み
 	textureHandleGameClearText_ = TextureManager::Load("TextSpriteGameClear.png"); // ゲームクリアテキスト用テクスチャの読み込み
 	textureHandlePauseText_ = TextureManager::Load("phoseText.png");               // ポーズテキスト用テクスチャの読み込み
 	treeModel_ = Model::CreateFromOBJ("tree", true);                               // 木モデルの読み込
@@ -48,15 +46,10 @@ void GameScene::Initialize(int stageID) {
 	textureHandle1_3_ = TextureManager::Load("1-3.png");
 
 
-	textureHandleCountdown3_ = TextureManager::Load("3.png");                   // 3の画像
-	textureHandleCountdown2_ = TextureManager::Load("2.png");                   // 2の画像
-	textureHandleCountdown1_ = TextureManager::Load("1.png");                   // 1の画像
-	textureHandleCountdownGo_ = TextureManager::Load("go.png");                 // GOの画像
-
-	//パーティクルの初期化
+	// パーティクルの初期化
 	particleManager_ = new ParticleManager();
 	particleManager_->Initialize(particleModel_, &camera_);
-	
+
 	//========================
 	// 🎥 カメラの設定
 	//========================
@@ -68,13 +61,10 @@ void GameScene::Initialize(int stageID) {
 	//========================
 	// 🗺️ マップ読み込み
 	//========================
-	std::stringstream ss;
-	ss << "Resources/map/1-" << stageID << ".csv";
 	mapChipField_ = new MapChipField();
-	mapChipField_->LoadMapChipCsv(ss.str()); 
+	mapChipField_->LoadMapChipCsv("Resources/map/heimen.csv");
 
-
-		CController_ = new CameraController();
+	CController_ = new CameraController();
 	CController_->Initialize(&camera_);
 	//========================
 	// 🧍 プレイヤーの初期化
@@ -83,7 +73,7 @@ void GameScene::Initialize(int stageID) {
 	Vector3 playerPosition = mapChipField_->GetChipPositionIndex(3, 16);
 	player_->Initialize(playerModel_, &camera_, playerPosition);
 	player_->SetMapChipField(mapChipField_);
-	player_->SetisMove(false);
+	player_->SetisMove(true);
 	player_->SetParticleManager(particleManager_);
 	player_->SetUmbrellaModel(umbrellaModel_);
 	player_->SetCameraController(CController_);
@@ -91,7 +81,6 @@ void GameScene::Initialize(int stageID) {
 	//========================
 	// 🎮 カメラコントローラー
 	//========================
-
 
 	CController_->SetTarget(player_);
 	CController_->Reset();
@@ -116,8 +105,6 @@ void GameScene::Initialize(int stageID) {
 	//========================
 	skydome_ = new Skydome();
 	skydome_->Initialize(modelSkydome_, &camera_);
-
-
 
 	//========================
 	// 🧱 ブロック生成
@@ -147,7 +134,7 @@ void GameScene::Initialize(int stageID) {
 	togeKabe_->Initialize(togeKabeModel_, &camera_, mapChipField_->GetChipPositionIndex(0, 18));
 	togeKabe_->SetIsmove(false);
 
-	//山の初期化
+	// 山の初期化
 	yama_.push_back(new Yama());
 	yama_.back()->Initialize(yamaModel, &camera_, mapChipField_->GetChipPositionIndex(20, 19));
 	yama_.push_back(new Yama());
@@ -163,14 +150,38 @@ void GameScene::Initialize(int stageID) {
 	TextSprite1_1 = Sprite::Create(textureHandle, {100.50});
 	poseSprite = Sprite::Create(textureHandlePhose_, {0.0});
 	yazirusiSprite = Sprite::Create(TextureHandleYazirusi_, {180, 190});
-	enterSprite_ = Sprite::Create(textureHandleEnter_, {0.0f, 0.0f}); // エンターキー用スプライトの作成
-	pauseTextSprite_ = Sprite::Create(textureHandlePauseText_, {0.0f, 0.0f}); // ポーズメニュー用スプライトの作成
+	enterSprite_ = Sprite::Create(textureHandleEnter_, {0.0f, 0.0f});                 // エンターキー用スプライトの作成
+	pauseTextSprite_ = Sprite::Create(textureHandlePauseText_, {0.0f, 0.0f});         // ポーズメニュー用スプライトの作成
 	GameClearTextSprite_ = Sprite::Create(textureHandleGameClearText_, {0.0f, 0.0f}); // ゲームクリアテキスト用スプライトの作成
 	spriteCountdown_ = Sprite::Create(textureHandleCountdown3_, {0, 0});              // 初期スプライト（3）
 	Vector2 spritePos = {200.0f, 0.0f};
 	sprite1_1_ = Sprite::Create(textureHandle1_1_, spritePos);
 	sprite1_2_ = Sprite::Create(textureHandle1_2_, spritePos);
 	sprite1_3_ = Sprite::Create(textureHandle1_3_, spritePos);
+
+	float uiX = 1280.0f / 2.0f - 100.0f; // 画面中央あたり
+	float uiY = 100.0f;                  // 上の方
+
+	// 1. 移動 (白)
+	uiMove_ = Sprite::Create(textureHandel_, {uiX, uiY});
+	uiMove_->SetColor({1, 1, 1, 1}); // 白
+
+	// 2. ジャンプ (赤)
+	uiJump_ = Sprite::Create(textureHandel_, {uiX, uiY});
+	uiJump_->SetColor({1, 0.5f, 0.5f, 1}); // 赤っぽい色
+
+	// 3. 滑空 (青)
+	uiGlide_ = Sprite::Create(textureHandel_, {uiX, uiY});
+	uiGlide_->SetColor({0.5f, 0.5f, 1, 1}); // 青っぽい色
+
+	// 4. 攻撃 (黄色)
+	uiAttack_ = Sprite::Create(textureHandel_, {uiX, uiY});
+	uiAttack_->SetColor({1, 1, 0.5f, 1}); // 黄色っぽい色
+
+	// 5. 終了 (緑)
+	uiFinish_ = Sprite::Create(textureHandel_, {uiX, uiY});
+	uiFinish_->SetColor({0.5f, 1, 0.5f, 1}); // 緑っぽい色
+
 	// HPアイコンのテクスチャを読み込む
 	textureHandleHpIconNormal_ = TextureManager::Load("playerAikon.png");
 	textureHandleHpIconDamage_ = TextureManager::Load("playerAikonDamage.png");
@@ -183,7 +194,7 @@ void GameScene::Initialize(int stageID) {
 	textureHandleHeart_ = TextureManager::Load("playerHp.png");
 
 	Vector2 heartBasePos = {100.0f, 650.0f}; // 1個目のハートの座標
-	float heartSpacing = 64.0f;            // ハートとハートの間隔（画像の横幅+隙間）
+	float heartSpacing = 64.0f;              // ハートとハートの間隔（画像の横幅+隙間）
 
 	// HPの最大値(3回)ループして、ハートのスプライトを生成
 	for (int i = 0; i < kMaxPlayerHp; i++) {
@@ -195,18 +206,16 @@ void GameScene::Initialize(int stageID) {
 	}
 
 	GameStateManager::GetInstance()->SetCurrentStageID(currentStageID_); // ステージ1
-	
+
 	isSprite = true;
 	firstFrame = true;
 	currentSelectIndex_ = 0; // 初期選択インデックス
-	
-
 }
 
 // ==============================
 // 更新処理
 // ==============================
-void GameScene::Update() {
+void TutorialScene::Update() {
 	// フェードの更新 & フェーズ管理
 	fade_->Update();
 	LimitPlayerPosition();
@@ -218,7 +227,7 @@ void GameScene::Update() {
 	}
 	ChangePhase();
 	// ポーズ状態の切り替え
-	if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_P)&&!player_->IsDead()&&!isGameClear_) {
+	if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_P) && !player_->IsDead() && !isGameClear_) {
 		isPaused_ = !isPaused_;
 	}
 
@@ -226,11 +235,10 @@ void GameScene::Update() {
 		yazirusiSprite->SetPosition({180, 190});
 	} else if (currentSelect_ == PauseSelect::kStageSelect) {
 		yazirusiSprite->SetPosition({190, 320});
-	}
-	else if (currentSelect_ == PauseSelect::kTitle) {
+	} else if (currentSelect_ == PauseSelect::kTitle) {
 		yazirusiSprite->SetPosition({190, 460});
 	}
-	
+
 	// ポーズ中の処理
 	if (isPaused_) {
 		// Wキーで上に移動
@@ -275,7 +283,7 @@ void GameScene::Update() {
 		return;
 	}
 
-		for (auto& floor : breakableFloors_) {
+	for (auto& floor : breakableFloors_) {
 		floor->Update();
 	}
 
@@ -289,8 +297,8 @@ void GameScene::Update() {
 	// ------------------------------
 	case Phase::kFadeIn:
 		player_->Update(); // プレイヤーの更新
-	
-		togeKabe_->Update();	
+
+		togeKabe_->Update();
 		// 敵の更新
 		for (Enemy* enemy : enemys_) {
 			enemy->Update();
@@ -334,30 +342,7 @@ void GameScene::Update() {
 		// スカイドーム更新
 		skydome_->Update();
 		break;
-	case Phase::kCountdown:
-		// このフェーズでカウントダウンの更新処理を行う
-		countdownTimer_ += 1.0f / 60.0f; // タイマーを減らす
 
-		// カウントダウンのスプライト切り替え
-		if (countdownTimer_ >=0.0f&&countdownTimer_<1.0f) {
-
-			spriteCountdown_ = Sprite::Create(textureHandleCountdown3_, {-250, -100}); // 初期スプライト（3）
-		} else if (countdownTimer_ >= 1.0f && countdownTimer_ < 2.0f) {
-			spriteCountdown_ = Sprite::Create(textureHandleCountdown2_, {-250, -100}); // 初期スプライト（3）
-		} else if (countdownTimer_ >= 2.0f && countdownTimer_ < 3.0f) {
-			spriteCountdown_ = Sprite::Create(textureHandleCountdown1_, {-250, -100}); // 初期スプライト（3）
-		} else {
-			spriteCountdown_ = Sprite::Create(textureHandleCountdownGo_, {-250, -100}); // 初期スプライト（3）
-			if (countdownTimer_ >= 3.5f) { // GO!表示後
-				countdownState_ = CountdownState::kFinished;  
-				phase_ = Phase::kPlay;      // プレイフェーズへ移行
-				player_->SetisMove(true); // プレイヤーの移動を許可
-				togeKabe_->SetIsmove(true);
-		             // カウントダウン完了
-			}
-		}
-		// カウントダウン中はゲームの進行を停止するため、ここではプレイヤー等の更新処理は書かない
-		break;
 	// ------------------------------
 	// プレイ中の処理
 	// ------------------------------
@@ -368,10 +353,10 @@ void GameScene::Update() {
 		for (Enemy* enemy : enemys_) {
 			enemy->Update();
 		}
-		//player_->CheckAndResolveTogeKabeCollision(togeKabe_);
+		// player_->CheckAndResolveTogeKabeCollision(togeKabe_);
 		CheekAllcollision();
 		CController_->Update();
-
+		UpdateTutorialLogic();
 		// ブロックの行列更新 & 転送
 		for (std::vector<WorldTransform*>& blockLine : worldTransformBlocks_) {
 			for (WorldTransform* block : blockLine) {
@@ -400,8 +385,7 @@ void GameScene::Update() {
 
 		skydome_->Update();
 
-
-			if (auto stepped = player_->CheckSteppedBreakable(mapChipField_)) {
+		if (auto stepped = player_->CheckSteppedBreakable(mapChipField_)) {
 			for (auto& floor : breakableFloors_) {
 				if (floor->GetIndexX() == stepped->xIndex && floor->GetIndexY() == stepped->yIndex) {
 					floor->OnStepped(); // ← 踏んだその1枚だけ開始
@@ -485,10 +469,41 @@ void GameScene::Update() {
 		return false;
 	});
 
-	// 死亡した敵の削除
+#ifdef _DEBUG
+	ImGui::Begin("Tutorial Debug");
+	ImGui::Text("Phase: %d", (int)phase_);
 
+	// 現在のステップを文字で表示
+	const char* stepName = "Unknown";
+	switch (tutorialStep_) {
+	case TutorialStep::kWelcome:
+		stepName = "Welcome (Wait)";
+		break;
+	case TutorialStep::kMove:
+		stepName = "Move (Press A/D)";
+		break;
+	case TutorialStep::kJump:
+		stepName = "Jump (Press Space)";
+		break;
+	case TutorialStep::kGlide:
+		stepName = "Glide (Hold Space)";
+		break;
+	case TutorialStep::kAttack:
+		stepName = "Attack (Shoot Bullet)";
+		break;
+	case TutorialStep::kFinish:
+		stepName = "Finish (Wait)";
+		break;
+	}
+	ImGui::Text("Step: %s", stepName);
+
+	// タイマー等の確認
+	ImGui::Text("Timer: %d", stepTimer_);
+	ImGui::Text("ActionCount: %d", actionCount_);
+	ImGui::End();
+#endif
 }
-void GameScene::Draw() {
+void TutorialScene::Draw() {
 	DirectXCommon* dxcommon = DirectXCommon::GetInstance();
 	Model::PreDraw(dxcommon->GetCommandList());
 
@@ -499,9 +514,7 @@ void GameScene::Draw() {
 		enemy->Draw();
 	}
 
-
-
-	  // 🧱 ブロック描画（草・土でモデル切替）
+	// 🧱 ブロック描画（草・土でモデル切替）
 	for (uint32_t y = 0; y < worldTransformBlocks_.size(); ++y) {
 		for (uint32_t x = 0; x < worldTransformBlocks_[y].size(); ++x) {
 			WorldTransform* block = worldTransformBlocks_[y][x];
@@ -514,7 +527,7 @@ void GameScene::Draw() {
 					std::cout << "Grass at (" << x << ", " << y << ") is being processed.\n";
 				}
 
-                switch (type) {
+				switch (type) {
 				case MapChipType::kDirt_:
 					dirtModel_->Draw(*block, camera_);
 					break;
@@ -528,7 +541,7 @@ void GameScene::Draw() {
 					// トゲの壁は特別な処理を行う
 					togeModel_->Draw(*block, camera_);
 					break;
-				case MapChipType::kJumpPad_: 
+				case MapChipType::kJumpPad_:
 					kinokoModel_->Draw(*block, camera_);
 					break;
 				case MapChipType::kIceFloor_:
@@ -544,27 +557,20 @@ void GameScene::Draw() {
 					iwaModel_->Draw(*block, camera_);
 					break;
 				}
-
-			
 			}
 		}
-
 	}
 
-		for (auto& floor : breakableFloors_) {
+	for (auto& floor : breakableFloors_) {
 		floor->Draw(breakableBlockModel_, &camera_); // 破壊可能な床の描画
 	}
 
-
 	togeKabe_->Draw(); // トゲ壁の描画
-
-
 
 	// 🌌 スカイドーム描画
 	skydome_->Draw();
 
-	
-		// 🧍 プレイヤー描画
+	// 🧍 プレイヤー描画
 	if (!player_->IsDead())
 		player_->Draw();
 
@@ -578,10 +584,8 @@ void GameScene::Draw() {
 		tree->Draw();
 	}
 
-	
 	// 🌪️ パーティクル描画
 	deatparticles_->Draw();
-
 
 	// 🎉 ゲームクリア表示
 	if (isGameClear_) {
@@ -611,17 +615,7 @@ void GameScene::Draw() {
 		}
 	}
 
-	switch (currentStageID_) {
-	case 1:
-		sprite1_1_->Draw();
-		break;
-	case 2:
-		sprite1_2_->Draw();
-		break;
-	case 3:
-		sprite1_3_->Draw();
-		break;
-	}
+
 	fade_->Draw(dxcommon->GetCommandList());
 	Model::PostDraw();
 
@@ -629,7 +623,7 @@ void GameScene::Draw() {
 	if (countdownState_ == CountdownState::kCounting) {
 		spriteCountdown_->Draw();
 	}
-	if (isSprite&&!isGameClear_&&!isPaused_) {
+	if (isSprite && !isGameClear_ && !isPaused_) {
 		TextSprite1_1->Draw();
 		pauseTextSprite_->Draw(); // ポーズスプライトの描画
 	}
@@ -641,12 +635,32 @@ void GameScene::Draw() {
 	}
 
 	// ゲームクリアテキストスプライトの描画
-	if (isGameClear_&&isSprite) {
+	if (isGameClear_ && isSprite) {
 		GameClearTextSprite_->Draw();
 		enterSprite_->Draw(); // エンターキー用スプライトの描画
-
 	}
-
+	switch (tutorialStep_) {
+	case TutorialStep::kMove:
+		if (uiMove_)
+			uiMove_->Draw();
+		break;
+	case TutorialStep::kJump:
+		if (uiJump_)
+			uiJump_->Draw();
+		break;
+	case TutorialStep::kGlide:
+		if (uiGlide_)
+			uiGlide_->Draw();
+		break;
+	case TutorialStep::kAttack:
+		if (uiAttack_)
+			uiAttack_->Draw();
+		break;
+	case TutorialStep::kFinish:
+		if (uiFinish_)
+			uiFinish_->Draw();
+		break;
+	}
 	Sprite::PostDraw();
 
 	if (particleManager_) {
@@ -654,7 +668,7 @@ void GameScene::Draw() {
 	}
 }
 
-void GameScene::GenerrateBlock() {
+void TutorialScene::GenerrateBlock() {
 	const uint32_t kNumBlockVirtal = mapChipField_->GetNumBlockVirtcal();
 	const uint32_t kNumBlockHorizontal = mapChipField_->GetNumBlockHorizonal();
 
@@ -666,66 +680,30 @@ void GameScene::GenerrateBlock() {
 	for (uint32_t y = 0; y < kNumBlockVirtal; ++y) {
 		for (uint32_t x = 0; x < kNumBlockHorizontal; ++x) {
 			MapChipType type = mapChipField_->GetMapChipTypeByindex(x, y);
-			Vector3 pos = mapChipField_->GetChipPositionIndex(x, y);
 
-			// 1. 何もない場所はスキップ
 			if (type == MapChipType::kBlank_) {
-				continue;
+				continue; // 何もない
 			}
 
-			// ==========================================
-			//  2. 敵の生成処理 (
-			// ==========================================
-			if (type == MapChipType::kEnemyWalk_ || type == MapChipType::kEnemyShooter_ || type == MapChipType::kEnemyHoming_) {
-
-				Enemy* newEnemy = new Enemy();
-
-				// タイプ別に初期化
-				if (type == MapChipType::kEnemyWalk_) {
-					newEnemy->Initialize(enemy_model_Walk, &camera_, pos, Enemy::Type::kWalk);
-				} else if (type == MapChipType::kEnemyShooter_) {
-					newEnemy->Initialize(enemy_model_Shooter, &camera_, pos, Enemy::Type::kShooter);
-				} else if (type == MapChipType::kEnemyHoming_) {
-
-					newEnemy->Initialize(enemy_model_Homing, &camera_, pos, Enemy::Type::kHoming);
-				}
-
-				newEnemy->SetPlayer(player_);
-				newEnemy->SetMapChipField(mapChipField_);
-
-				// リストに追加
-				enemys_.push_back(newEnemy);
-
-	
-				mapChipField_->SetMapChipType(x, y, MapChipType::kBlank_);
-
-				continue; // 次のループへ（ブロック生成はしない）
-			}
-
-			// ==========================================
-			// 3. 壊れる床
-			// ==========================================
 			if (type == MapChipType::kBreakable_) {
+				// ★ BreakableFloor は専用クラスで扱う
 				auto floor = std::make_unique<BreakableFloor>();
-				floor->Initialize(pos, x, y, mapChipField_);
+				floor->Initialize(mapChipField_->GetChipPositionIndex(x, y), x, y, mapChipField_);
 				breakableFloors_.push_back(std::move(floor));
 
-				worldTransformBlocks_[y][x] = nullptr;
-			}
-			// ==========================================
-			// 4. 通常ブロック (それ以外)
-			// ==========================================
-			else {
+				worldTransformBlocks_[y][x] = nullptr; // ←必須じゃないけど明示
+			} else {
+				// 通常ブロックはここで生成
 				WorldTransform* worldTransform = new WorldTransform();
 				worldTransform->Initialize();
-				worldTransform->translation_ = pos;
+				worldTransform->translation_ = mapChipField_->GetChipPositionIndex(x, y);
 				worldTransformBlocks_[y][x] = worldTransform;
 			}
 		}
 	}
 }
 
-void GameScene::CheekAllcollision() {
+void TutorialScene::CheekAllcollision() {
 	// プレイヤーAABB
 	AABB aabb1 = player_->GetAABB();
 	const auto& pBullets = player_->GetBullets(); // プレイヤーの弾リスト
@@ -744,7 +722,7 @@ void GameScene::CheekAllcollision() {
 				player_->TakeDamage(2);
 
 				// 2. 派手なSEを鳴らす（ダメージ音や爆発音）
-		/*		Audio::GetInstance()->PlayWave(seDamageHandle_, false, 1.0f);*/
+				/*		Audio::GetInstance()->PlayWave(seDamageHandle_, false, 1.0f);*/
 
 				// 3. 敵は自爆して消滅
 				enemy->SetDead(true);
@@ -757,9 +735,6 @@ void GameScene::CheekAllcollision() {
 				continue;
 			}
 
-
-
-
 			// ここでは、踏んだかどうかの判定のみに集中する
 			if (aabb1.min.y >= aabb2.max.y - 4.0f && !player_->GetOnGround()) {
 
@@ -767,7 +742,6 @@ void GameScene::CheekAllcollision() {
 					player_->SetVelocityY(0.8f); // 大ジャンプ
 				} else {
 					player_->SetVelocityY(0.3f); // 通常ジャンプ
-
 				}
 				enemy->TakeDamage(999);
 			} else {
@@ -801,16 +775,12 @@ void GameScene::CheekAllcollision() {
 				// 弾が当たった！
 				bullet->OnCollision();
 
-				
 				enemy->TakeDamage(bullet->GetDamage());
 
 				CreateHitEffect(enemy->GetWorldPosition());
 			}
 		}
 	}
-
-	
-
 
 	// ==== マップチップとの当たり判定 ====
 	const uint32_t kNumBlockVertical = mapChipField_->GetNumBlockVirtcal();
@@ -846,22 +816,21 @@ void GameScene::CheekAllcollision() {
 			}
 		}
 	}
-
 }
 
-
-void GameScene::ChangePhase() {
+void TutorialScene::ChangePhase() {
 	switch (phase_) {
 	case Phase::kFadeIn:
 		if (fade_->isFinished()) {
 			countdownState_ = CountdownState::kCounting;
-			phase_ = Phase::kCountdown; // フェードインが完了したらカウントダウンフェーズへ
+			phase_ = Phase::kPlay; // フェードインが完了したらカウントダウンフェーズへ
+			tutorialStep_ = TutorialStep::kWelcome;
+			stepTimer_ = 0;
+			isEnemySpawned_ = false;
 		}
 		break;
-	case Phase::kCountdown:
-		break;
-		
-	
+
+
 	case Phase::kPlay:
 		if (player_->IsDead()) {
 			// 死亡演出フェーズに切り替え
@@ -871,54 +840,15 @@ void GameScene::ChangePhase() {
 			deatparticles_->Initialize(deatparticlesModel_, &camera_, player_, deatParticlesPosition);
 
 			fade_->Start(Fade::Status::FadeOut, 3.0f); // フェードアウト開始
-			nextScene_ = NextScene::kGameOver; 
+			nextScene_ = NextScene::kGameOver;
 		}
 		if (isGameClear_) {
 			phase_ = Phase::GameClear; // ゲームクリアフェーズに切り替え
 		}
 
 		break;
-	case Phase::kDeath:
-		finishedTimer++;
-		deatparticles_->Update();
-				// ★ 修正: ステージセレクト画面の1-1看板のマップチップ座標を指定
-		Vector3 signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
 
-		// 次のプレイヤー初期位置をGameStateManagerに保存
-		GameStateManager::GetInstance()->SetPlayerStartPosition(signboardPosition);
-		if (finishedTimer >= 180) {
-			finished_ = true;
-		}
-		break;
 	case Phase::GameClear:
-
-		
-            // ステージクリア情報を保存
-		GameStateManager::GetInstance()->SetStageClear(currentStageID_, true);
-
-		Vector3 returnPos = {};
-
-		switch (currentStageID_) {
-		case 1:
-			// ステージ1の看板の位置
-			returnPos = mapChipField_->GetChipPositionIndex(10, 17);
-			break;
-		case 2:
-			// ステージ2の看板の位置
-			returnPos = mapChipField_->GetChipPositionIndex(20, 17);
-			break;
-		case 3:
-			// ステージ3の看板の位置
-			returnPos = mapChipField_->GetChipPositionIndex(30, 17);
-			break;
-		default:
-			// デフォルト
-			returnPos = mapChipField_->GetChipPositionIndex(10, 17);
-			break;
-		}
-
-		// 計算した座標を次の初期位置としてセット
-		GameStateManager::GetInstance()->SetPlayerStartPosition(returnPos);
 
 		// 次のプレイヤー初期位置をGameStateManagerに保存
 		player_->UpdateVictoryAnimation(); // 勝利ポーズのアニメを更新
@@ -938,14 +868,13 @@ void GameScene::ChangePhase() {
 	}
 }
 
-void GameScene::CreateHitEffect(const KamataEngine::Vector3& position) {
-	//HitEffect* newHitEffect = HitEffect::create(position); // 新しいヒットエフェクトを生成
-	//hitEffects_.push_back(newHitEffect);                   // ヒットエフェクトをリストに追加)
+void TutorialScene::CreateHitEffect(const KamataEngine::Vector3& position) {
+	// HitEffect* newHitEffect = HitEffect::create(position); // 新しいヒットエフェクトを生成
+	// hitEffects_.push_back(newHitEffect);                   // ヒットエフェクトをリストに追加)
 	position;
 }
 
-void GameScene::LimitPlayerPosition() 
-{
+void TutorialScene::LimitPlayerPosition() {
 	if (firstFrame) {
 		firstFrame = false;
 		return;
@@ -971,12 +900,10 @@ void GameScene::LimitPlayerPosition()
 	player_->SetWorldPosition(pos);
 }
 
-
-
 // デストラクタ
-GameScene::~GameScene() {
+TutorialScene::~TutorialScene() {
 	// 生成したインスタンスの解放
-	delete dirtModel_;    // ブロックモデルの解放
+	delete dirtModel_;     // ブロックモデルの解放
 	delete debaucamera_;   // デバッグカメラの解放
 	delete modelSkydome_;  // スカイドームモデルの解放
 	delete player_;        // プレイヤーの解放
@@ -1002,3 +929,74 @@ GameScene::~GameScene() {
 	worldTransformBlocks_.clear(); // ベクターをクリア
 }
 
+void TutorialScene::UpdateTutorialLogic() {
+	using namespace KamataEngine; // Inputを使うため
+
+	switch (tutorialStep_) {
+	case TutorialStep::kWelcome:
+		// 少し待ってから開始
+		stepTimer_++;
+		if (stepTimer_ > 60) {
+			tutorialStep_ = TutorialStep::kMove;
+			stepTimer_ = 0;
+		}
+		break;
+
+	case TutorialStep::kMove:
+		// 移動入力チェック
+		if (Input::GetInstance()->PushKey(DIK_D) || Input::GetInstance()->PushKey(DIK_A)) {
+			stepTimer_++;
+			if (stepTimer_ > 60) {
+				tutorialStep_ = TutorialStep::kJump;
+				stepTimer_ = 0;
+				actionCount_ = 0;
+			}
+		}
+		break;
+
+	case TutorialStep::kJump:
+		// ジャンプ入力チェック
+		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
+			actionCount_++;
+		}
+		if (actionCount_ >= 2) {
+			tutorialStep_ = TutorialStep::kGlide;
+			stepTimer_ = 0;
+		}
+		break;
+
+	case TutorialStep::kGlide:
+		// 滑空チェック（空中でスペース長押し）
+		if (Input::GetInstance()->PushKey(DIK_SPACE)) {
+			stepTimer_++;
+			if (stepTimer_ > 30) {
+				tutorialStep_ = TutorialStep::kAttack;
+				stepTimer_ = 0;
+			}
+		}
+		break;
+
+
+	case TutorialStep::kAttack:
+
+		if (!player_->GetBullets().empty()) {
+
+			stepTimer_++;
+			if (stepTimer_ > 30) {
+				tutorialStep_ = TutorialStep::kFinish;
+				stepTimer_ = 0;
+			}
+		}
+		break;
+
+	case TutorialStep::kFinish:
+		stepTimer_++;
+		if (stepTimer_ > 120) {
+			// フェードアウトさせてタイトルへ
+			fade_->Start(Fade::Status::FadeOut, 2.0f);
+			phase_ = Phase::kFadeOut;
+			finished_ = true;
+		}
+		break;
+	}
+}

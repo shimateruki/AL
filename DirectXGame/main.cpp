@@ -1,11 +1,12 @@
+#include "GameOver.h"
 #include "GameScene.h"
+#include "GameStateManager.h"
 #include "KamataEngine.h"
 #include "StageSelectGameScene.h"
 #include "TitleScene.h"
 #include <Windows.h>
-// ★不要なヘッダーを削除（GameScene1_2.hなどはもう要りません）
-#include "GameOver.h"
-#include "GameStateManager.h"
+// ★ 追加: チュートリアルシーンのヘッダー
+#include "TutorialScene.h"
 
 using namespace KamataEngine;
 
@@ -13,8 +14,9 @@ enum class Scene {
 	kUnknown = 0,
 	kTitle,
 	kStageSelect,
-	kGame, 
-	kGaameOver
+	kGame,
+	kGaameOver,
+	kTutorial 
 };
 
 // Windowsアプリでのエントリーポイント(main関数)
@@ -29,8 +31,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	GameScene* gameScene = nullptr;
 	TitleScene* titleScene = nullptr;
 	StageSelectGameScene* stageSelectScene = nullptr;
-	// ★個別のシーンポインタ (gameScene1_2等) は削除
 	GameOver* gameOver = nullptr;
+	// ★ 追加: チュートリアル用のポインタ
+	TutorialScene* tutorialScene = nullptr;
 
 	// 現在のシーンの状態
 	Scene currentSceneEnum = Scene::kTitle;
@@ -42,13 +45,16 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	titleScene = new TitleScene();
 	titleScene->Initialize();
 
-	// メインループ
+
 	while (true) {
+
 		inguiManager->Begin();
 
 		if (Update()) {
+
 			break;
 		}
+
 
 		Scene nextSceneEnum = currentSceneEnum;
 
@@ -58,9 +64,16 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		switch (currentSceneEnum) {
 		case Scene::kTitle:
 			if (titleScene != nullptr && titleScene->isfinished()) {
-				nextSceneEnum = Scene::kStageSelect;
-				Vector3 newDefaultPos = {3.0f, 5.0f, 0.0f};
-				GameStateManager::GetInstance()->SetPlayerStartPosition(newDefaultPos);
+
+				// ★ タイトルで「チュートリアル」が選ばれたか確認
+				if (titleScene->GetNextScene() == TitleScene::NextScene::kTutorial) {
+					nextSceneEnum = Scene::kTutorial;
+				} else {
+					// 通常スタート（ステージセレクトへ）
+					nextSceneEnum = Scene::kStageSelect;
+					Vector3 newDefaultPos = {3.0f, 5.0f, 0.0f};
+					GameStateManager::GetInstance()->SetPlayerStartPosition(newDefaultPos);
+				}
 			}
 			break;
 
@@ -85,7 +98,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 				if (gameScene->currentSelectIndex() == 1) { // ポーズからタイトルへ
 					nextSceneEnum = Scene::kTitle;
 				}
-				// ★GetNextScene()の判定は、GameScene側で共通化されている前提
+				// ★GetNextScene()の判定
 				else if (gameScene->GetNextScene() == GameScene::NextScene::kGameOver) {
 					nextSceneEnum = Scene::kGaameOver;
 				} else {
@@ -107,13 +120,21 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 				}
 			}
 			break;
+
+		//  チュートリアルの終了判定
+		case Scene::kTutorial:
+			if (tutorialScene != nullptr && tutorialScene->isFinished()) {
+				// チュートリアルが終わったらタイトルに戻る
+				nextSceneEnum = Scene::kTitle;
+			}
+			break;
 		}
 
 		// ==========================================
 		// シーン切り替え処理
 		// ==========================================
 		if (nextSceneEnum != currentSceneEnum) {
-			// 現在のシーンを解放
+			// 1. 現在のシーンを解放
 			switch (currentSceneEnum) {
 			case Scene::kTitle:
 				delete titleScene;
@@ -131,9 +152,13 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 				delete gameOver;
 				gameOver = nullptr;
 				break;
+			case Scene::kTutorial: 
+				delete tutorialScene;
+				tutorialScene = nullptr;
+				break;
 			}
 
-			// 次のシーンを初期化
+			// 2. 次のシーンを初期化
 			currentSceneEnum = nextSceneEnum;
 			switch (currentSceneEnum) {
 			case Scene::kTitle:
@@ -146,12 +171,15 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 				break;
 			case Scene::kGame:
 				gameScene = new GameScene();
-				// ★ここで引数としてステージIDを渡す！
 				gameScene->Initialize(currentStageID);
 				break;
 			case Scene::kGaameOver:
 				gameOver = new GameOver();
 				gameOver->Initialize();
+				break;
+			case Scene::kTutorial: 
+				tutorialScene = new TutorialScene();
+				tutorialScene->Initialize();
 				break;
 			}
 		}
@@ -175,6 +203,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		case Scene::kGaameOver:
 			if (gameOver)
 				gameOver->Update();
+			break;
+		case Scene::kTutorial:
+			if (tutorialScene)
+				tutorialScene->Update();
 			break;
 		}
 
@@ -202,6 +234,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			if (gameOver)
 				gameOver->Draw();
 			break;
+		case Scene::kTutorial: 
+			if (tutorialScene)
+				tutorialScene->Draw();
+			break;
 		}
 
 		inguiManager->Draw();
@@ -213,8 +249,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	delete stageSelectScene;
 	delete gameScene;
 	delete gameOver;
+	delete tutorialScene; 
 
 	// エンジン終了処理
-	FilePathSet();
+	 FilePathSet(); 
 	return 0;
 }

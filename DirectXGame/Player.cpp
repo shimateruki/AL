@@ -6,7 +6,7 @@
 #include <algorithm> // std::clamp, std::max, std::min のために必要
 #include <numbers>   // std::numbers::pi_v のために必要
 #include "imgui.h"
-
+#include "CameraController.h"
 
 using namespace KamataEngine;
 
@@ -477,7 +477,8 @@ void Player::MapChipUp(CollisionMapInfo& info) {
 	// 左上点の判定
 	indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kLeftTop]);
 	mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
-	if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_||mapchipType == MapChipType::kIceFloor_) {
+	if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_ ||
+	    mapchipType == MapChipType::kIceFloor_ || mapchipType == MapChipType::kWallBreak_) {
 		hit = true;
 	}
 
@@ -486,7 +487,7 @@ void Player::MapChipUp(CollisionMapInfo& info) {
 		indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kRightTop]);
 		mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
 		if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_ ||
-		    mapchipType == MapChipType::kIceFloor_) {
+		    mapchipType == MapChipType::kIceFloor_ || mapchipType == MapChipType::kWallBreak_) {
 
 			hit = true;
 		}
@@ -538,7 +539,8 @@ void Player::MapChipDown(CollisionMapInfo& info) {
 		MapChipType type = mapchipField_->GetMapChipTypeByindex(idx.xIndex, idx.yIndex);
 
 		// 1. 通常の固いブロック判定
-		if (type == MapChipType::kDirt_ || type == MapChipType::kGrass_ || type == MapChipType::kBreakable_ || type == MapChipType::kJumpPad_ || type == MapChipType::kIceFloor_) {
+		if (type == MapChipType::kDirt_ || type == MapChipType::kGrass_ || type == MapChipType::kBreakable_ || type == MapChipType::kJumpPad_ || type == MapChipType::kIceFloor_ ||
+		    type == MapChipType::kWallBreak_) {
 
 			indexSet = idx;
 			mapchipType = type;
@@ -646,7 +648,7 @@ void Player::MapChipLeft(CollisionMapInfo& info) {
 	indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kLeftTop]);
 	mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
 	if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_ ||
-	    mapchipType == MapChipType::kIceFloor_) {
+	    mapchipType == MapChipType::kIceFloor_ || mapchipType == MapChipType::kWallBreak_) {
 		hit = true;
 	}
 
@@ -655,7 +657,7 @@ void Player::MapChipLeft(CollisionMapInfo& info) {
 		indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kLeftBottom]);
 		mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
 		if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_ ||
-		    mapchipType == MapChipType::kIceFloor_) {
+		    mapchipType == MapChipType::kIceFloor_ || mapchipType == MapChipType::kWallBreak_) {
 			hit = true;
 		}
 	}
@@ -700,7 +702,7 @@ void Player::MapChipRight(CollisionMapInfo& info) {
 	indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kRightTop]);
 	mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
 	if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_ ||
-	    mapchipType == MapChipType::kIceFloor_) {
+	    mapchipType == MapChipType::kIceFloor_ || mapchipType == MapChipType::kWallBreak_) {
 		hit = true;
 	}
 
@@ -709,7 +711,7 @@ void Player::MapChipRight(CollisionMapInfo& info) {
 		indexSet = mapchipField_->GetMapChipIndexSetByPosition(positionsNew[kRightBottom]);
 		mapchipType = mapchipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
 		if (mapchipType == MapChipType::kDirt_ || mapchipType == MapChipType::kGrass_ || mapchipType == MapChipType::kBreakable_ || mapchipType == MapChipType::kJumpPad_ ||
-		    mapchipType == MapChipType::kIceFloor_) {
+		    mapchipType == MapChipType::kIceFloor_ || mapchipType == MapChipType::kWallBreak_) {
 			hit = true;
 		}
 	}
@@ -1017,7 +1019,9 @@ void Player::TakeDamage(int damage) {
 	if (isInvincible_) {
 		return;
 	}
-
+	if (cameraController_) {
+		cameraController_->StartShake();
+	}
 	hp_ -= damage;
 	if (hp_ <= 0) {
 		hp_ = 0;

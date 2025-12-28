@@ -19,6 +19,11 @@ enum class MapChipType {
 	kIceFloor_ = 7 ,  //  滑る床
 	kLadder_ = 8 ,    // はしご
 	kCloud_ = 9,     // 雲ブロック（乗ると落ちる）
+	kWallBreak_ = 10, // 壁を壊せるブロック
+
+	kEnemyWalk_ = 20,    // 歩く敵
+	kEnemyShooter_ = 21, // 撃つ敵
+	kEnemyHoming_ = 22   // ホーミング敵
 };
 
 /// ---------------------------
@@ -43,6 +48,10 @@ std::map<std::string, MapChipType> mapChipTable = {
     {"7", MapChipType::kIceFloor_ },  //  滑る床のマップチップ
     {"8", MapChipType::kLadder_   }, // はしごのマップチップ
     {"9", MapChipType::kCloud_    }, // 雲ブロックのマップチップ
+    {"10", MapChipType::kWallBreak_}, // 壁を壊せるブロックのマップチップ
+    {"20", MapChipType::kEnemyWalk_   },
+    {"21", MapChipType::kEnemyShooter_},
+    {"22", MapChipType::kEnemyHoming_ },
 };
 }
 

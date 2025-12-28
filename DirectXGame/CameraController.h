@@ -28,11 +28,12 @@ public:
 
 	// 勝利ズーム演出を開始する命令
 	void StartVictoryZoom(Player* target);
+	void StartShake();
+
 private:
-	// ▼▼▼ 以下を追記 ▼▼▼
-	// ズーム演出の更新処理
+
 	void UpdateVictoryZoom();
-	// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
 
 	KamataEngine::Camera* camera_;
 	Player* target_ = nullptr;
@@ -51,4 +52,7 @@ private:
 	KamataEngine::Vector3 zoomStartPos_ = {};  // ズーム開始時のカメラ位置
 	KamataEngine::Vector3 zoomTargetPos_ = {}; // ズーム目標のカメラ位置
 
+	float shakeTimer_ = 0.0f;          // シェイク残り時間
+	const float kShakeDuration = 0.5f; // シェイク時間
+	const float kShakePower = 0.5f;    // 揺れの強さ
 };

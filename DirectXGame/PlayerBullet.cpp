@@ -34,6 +34,14 @@ void PlayerBullet::Update() {
 	if (mapChipField_) {
 		MapChipField::IndexSet index = mapChipField_->GetMapChipIndexSetByPosition(worldTransform_.translation_);
 		MapChipType type = mapChipField_->GetMapChipTypeByindex(index.xIndex, index.yIndex);
+		if (type == MapChipType::kWallBreak_) {
+			// その場所を「空気（kBlank_）」に書き換える ＝ 壁が消える
+			mapChipField_->SetMapChipType(index.xIndex, index.yIndex, MapChipType::kBlank_);
+
+			// 弾も消滅させる
+			isDead_ = true;
+
+		}
 		if (type != MapChipType::kBlank_ && type != MapChipType::kGoal_ && type != MapChipType::kSpike_) {
 			isDead_ = true; // 壁に当たったら消える
 		}

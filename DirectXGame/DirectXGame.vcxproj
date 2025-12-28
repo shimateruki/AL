@@ -135,6 +135,7 @@
     <ClCompile Include="TitleScene.cpp" />
     <ClCompile Include="Toge.cpp" />
     <ClCompile Include="tree.cpp" />
+    <ClCompile Include="TutorialScene.cpp" />
     <ClCompile Include="yama.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -242,6 +243,7 @@
     <ClInclude Include="TitleScene.h" />
     <ClInclude Include="Toge.h" />
     <ClInclude Include="tree.h" />
+    <ClInclude Include="TutorialScene.h" />
     <ClInclude Include="Vector2.h" />
     <ClInclude Include="yama.h" />
   </ItemGroup>
