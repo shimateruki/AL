@@ -23,6 +23,8 @@ public:
 		kFlying,  // 飛行タイプ
 		kHoming,  // ホーミングタイプ(爆発)
 		kSplit,   // 分裂タイプ
+		kSlime,   // スライムタイプ
+		kFlee,    // 逃げるタイプ
 	};
 	// 飛行パターンを表す列挙型
 	enum class FlightPattern {
@@ -73,6 +75,9 @@ public:
 	  bool IsReadyToExplode() const { return isReadyToExplode_; }
 	  void SetVelocity(const Vector3& velocity) { velocity_ = velocity; }
 	  void TakeDamage(int damage);
+	  bool GetIsSplit() const { return isSplit_; }
+	  // 分裂フラグの設定
+	  void SetIsSplit(bool flag) { isSplit_ = flag; }
   private:
 	// 敵のワールド変換 
 	WorldTransform worldTransformEnemy_;
@@ -108,6 +113,8 @@ public:
 
 	// 状態フラグ
 	bool onGround_ = false; // 接地しているか
+
+
 
 	// 定数（幅と高さ）
 	const float kWidth = 1.0f;
@@ -182,4 +189,6 @@ public:
 
 	int hp_ = 0; // 敵の体力
 	float damageBlinkTimer_ = 0.0f; // ダメージ点滅用タイマー
+	bool isSplit_ = false;
+	float jumpWaitTimer_ = 0.0f;
 };

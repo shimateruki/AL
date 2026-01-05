@@ -5,10 +5,10 @@ void TitleScene::Initialize() {
 	modelSkydome_ = Model::CreateFromOBJ("skydome", true);
 	camera_.Initialize();
 	playerModel_ = Model::CreateFromOBJ("player", true);
-	textureHandleStart_ = TextureManager::Load("sutart.png"); // スタートボタン用テクスチャの読み込み
-	textureHandleEnter_ = TextureManager::Load("enter.png"); // エンターキー用テクスチャの読み込み
-	textureHandleTutorial_ = TextureManager::Load("enter.png");
-	textureHandleArrow_ = TextureManager::Load("yazirusi.png"); 
+	textureHandleStart_ = TextureManager::Load("gameStartText.png"); // スタートボタン用テクスチャの読み込み
+	textureHandleEnter_ = TextureManager::Load("spaceText.png"); // エンターキー用テクスチャの読み込み
+	textureHandleArrow_ = TextureManager::Load("yazirusi.png");
+	textureHandleTutorial_ = TextureManager::Load("tutorialText.png");
 
 
 	camera_.translation_.z = -10.0f; // カメラのZ位置を調整
@@ -51,10 +51,10 @@ void TitleScene::Initialize() {
 	phase_ = Phase::kFadeIn; // フェーズをフェードインに設定
 	finished_ = false;       // シーンはまだ終了していない
 
-	startSprite_ = Sprite::Create(textureHandleStart_, {0.0f, 0.0f}); // スタートボタン用スプライトの作成
-	enterSprite_ = Sprite::Create(textureHandleEnter_, {0.0f, 0.0f}); // エンターキー用スプライトの作成
+	startSprite_ = Sprite::Create(textureHandleStart_, {450.0f, 500.0f}); // スタートボタン用スプライトの作成
+	spaceSprite_ = Sprite::Create(textureHandleEnter_, {600.0f, 450.0f}); // エンターキー用スプライトの作成
 	tutorialSprite_ = Sprite::Create(textureHandleTutorial_, {450.0f, 600.0f});
-	arrowSprite_ = Sprite::Create(textureHandleArrow_, {400.0f, 500.0f});
+	arrowSprite_ = Sprite::Create(textureHandleArrow_, {350.0f, 500.0f});
 
 	isMusic = false;
 
@@ -133,9 +133,9 @@ void TitleScene::Update() {
 		if (currentSelection_ == 0) {
 			// --- 「START」選択中 ---
 
-			// 矢印をStartの横に移動 (座標は調整してください)
+			// 矢印をStartの横に移動 
 			if (arrowSprite_)
-				arrowSprite_->SetPosition({400.0f, 510.0f});
+				arrowSprite_->SetPosition({350.0f, 510.0f});
 
 			// Startを点滅
 			if (startSprite_)
@@ -146,9 +146,9 @@ void TitleScene::Update() {
 		} else {
 			// --- 「TUTORIAL」選択中 ---
 
-			// 矢印をTutorialの横に移動 (座標は調整してください)
+			// 矢印をTutorialの横に移動
 			if (arrowSprite_)
-				arrowSprite_->SetPosition({400.0f, 610.0f});
+				arrowSprite_->SetPosition({350.0f, 610.0f});
 
 			// Tutorialを点滅
 			if (tutorialSprite_)
@@ -159,7 +159,7 @@ void TitleScene::Update() {
 		}
 
 		// ---------------------------------------------------------
-		// ★ 決定処理 (スペースキー)
+		// 決定処理 (スペースキー)
 		// ---------------------------------------------------------
 		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 			phase_ = Phase::kfadeOut;
@@ -215,7 +215,7 @@ void TitleScene::Draw() {
 	Sprite::PreDraw(commandList);
 	// スプライトの描画
 	startSprite_->Draw(); // スタートボタン用スプライトの描画
-	enterSprite_->Draw(); // エンターキー用スプライトの描画
+	spaceSprite_->Draw(); // エンターキー用スプライトの描画
 	if (tutorialSprite_)
 		tutorialSprite_->Draw();
 	if (arrowSprite_)

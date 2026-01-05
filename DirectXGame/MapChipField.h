@@ -25,6 +25,12 @@ enum class MapChipType {
 	kEnemyWalk_ = 20,    // 歩く敵
 	kEnemyShooter_ = 21, // 撃つ敵
 	kEnemyHoming_ = 22,  // ホーミング敵
+	kEnemySplit_ = 23,   // 分裂する敵
+	kSlime = 24,         // スライム敵
+	kFlee = 25,          // 逃げる敵
+
+
+	kPlayerStart_ = 90, // プレイヤースタート地点
 	kStarCoin_ = 99
 };
 
@@ -54,6 +60,10 @@ std::map<std::string, MapChipType> mapChipTable = {
     {"20", MapChipType::kEnemyWalk_   },
     {"21", MapChipType::kEnemyShooter_},
     {"22", MapChipType::kEnemyHoming_ },
+    {"23", MapChipType::kEnemySplit_  },
+    {"24", MapChipType::kSlime        },
+    {"25", MapChipType::kFlee         },
+    {"90", MapChipType::kPlayerStart_ },
     {"99", MapChipType::kStarCoin_    },
 };
 }

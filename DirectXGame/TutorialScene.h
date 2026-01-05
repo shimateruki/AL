@@ -116,10 +116,6 @@ private:
 	KamataEngine::Sprite* enterSprite_ = nullptr;         // エンターキー用スプライト
 	KamataEngine::Sprite* GameClearTextSprite_ = nullptr; // ゲームクリアテキスト用スプライト
 	KamataEngine::Sprite* pauseTextSprite_ = nullptr;
-	// 各ステージ画像のスプライト
-	KamataEngine::Sprite* sprite1_1_ = nullptr;
-	KamataEngine::Sprite* sprite1_2_ = nullptr;
-	KamataEngine::Sprite* sprite1_3_ = nullptr;
 
 	KamataEngine::Sprite* uiMove_ = nullptr;   // "移動してみよう"
 	KamataEngine::Sprite* uiJump_ = nullptr;   // "ジャンプしてみよう"
@@ -184,6 +180,12 @@ private:
 	uint32_t textureHandleEnter_ = 0;         // テクスチャハンドル
 	uint32_t textureHandleGameClearText_ = 0; // ゲームクリアテキスト用テクスチャハンドル
 	uint32_t textureHandlePauseText_ = 0;     // ポーズテキスト用テクスチャハンドル
+
+	uint32_t uiMoveHandle_ ;   // "移動してみよう"
+	uint32_t uiJumpHandle_;   // "ジャンプしてみよう"
+	uint32_t uiGlideHandle_;  // "滑空してみよう"
+	uint32_t uiAttackHandle_; // "攻撃してみよう"
+	uint32_t uiFinishHandle_; // "おつかれさま！"
 
 	NextScene nextScene_ = NextScene::kNone;
 	bool isSprite;

@@ -3,14 +3,14 @@
 //------------------------------
 // 必要なヘッダー
 //------------------------------
+#include "KabeToge.h"
 #include "MapChipField.h" // マップチップフィールド
 #include "Math.h"         // 数学ユーティリティ
-#include <array>          // std::array 用
-#include <numbers>        // 円周率など
-#include "PlayerBullet.h"
-#include <list>
 #include "ParticleManager.h"
-#include"KabeToge.h"
+#include "PlayerBullet.h"
+#include <array> // std::array 用
+#include <list>
+#include <numbers> // 円周率など
 
 using namespace KamataEngine;
 
@@ -99,23 +99,24 @@ public:
 	void TakeDamage(int damage);
 	void CheckAndResolveTogeKabeCollision(const KabeToge* togeKabe); // 壁用の新しい衝突関数
 	void UpdateSquashAnimation();
-	bool GetIsInvincible() const { return isInvincible_; }           // 無敵状態を外部から知るため
+	bool GetIsInvincible() const { return isInvincible_; } // 無敵状態を外部から知るため
 
 	//----------------------------------------
 	// 行動切り替え
 	//----------------------------------------
 	void BehaviorRootInitialize(); // 通常行動初期化
 
-	//アニメーション関数
+	// アニメーション関数
 	void UpdateTitleAnimation();
-	void StartCameraJump();  // カメラジャンプを開始する
-	void UpdateCameraJump(); // カメラジャンプ中のアニメーション更新
-	void StartVictoryPose(); // 勝利ポーズを開始する
+	void StartCameraJump();        // カメラジャンプを開始する
+	void UpdateCameraJump();       // カメラジャンプ中のアニメーション更新
+	void StartVictoryPose();       // 勝利ポーズを開始する
 	void UpdateVictoryAnimation(); // 勝利ポーズ中のアニメーション更新
 
 	void SetParticleManager(ParticleManager* manager) { particleManager_ = manager; }
 
 	void SetUmbrellaModel(Model* model) { umbrellaModel_ = model; }
+	bool GetIsSpinning() const { return isSpinning_; }
 
 private:
 	//----------------------------------------
@@ -181,9 +182,9 @@ private:
 	//----------------------------------------
 	// コンポーネント
 	//----------------------------------------
-	Model* model_ = nullptr;   // モデル
-	Camera* camera_ = nullptr; // カメラ
-	Math* math = nullptr;      // 数学ユーティリティ
+	Model* model_ = nullptr;                       // モデル
+	Camera* camera_ = nullptr;                     // カメラ
+	Math* math = nullptr;                          // 数学ユーティリティ
 	CameraController* cameraController_ = nullptr; // カメラコントローラー
 
 	//----------------------------------------
@@ -195,14 +196,14 @@ private:
 	//----------------------------------------
 	// 定数（移動物理）
 	//----------------------------------------
-	const float kAcceleration = 0.5f;//加速度
-	const float kIceAttenuation = 0.05f;//アイス版摩擦
-	const float kAtteunuation = 0.3f;//通常摩擦
-	const float kAttenuationLanding = 0.8f;//減衰着地
-	const float kAttenuationWall = 0.8f;//減衰壁
-	const float kLimitRunSpeed = 0.2f;//リミット実行速度
-	const float kJumpAccleration = 15.0f;//ジャンプ加速
-	const float kGgravityAcceleration = 0.8f;//重力加速度
+	const float kAcceleration = 0.5f;         // 加速度
+	const float kIceAttenuation = 0.05f;      // アイス版摩擦
+	const float kAtteunuation = 0.3f;         // 通常摩擦
+	const float kAttenuationLanding = 0.8f;   // 減衰着地
+	const float kAttenuationWall = 0.8f;      // 減衰壁
+	const float kLimitRunSpeed = 0.2f;        // リミット実行速度
+	const float kJumpAccleration = 15.0f;     // ジャンプ加速
+	const float kGgravityAcceleration = 0.8f; // 重力加速度
 	const float kLimitFallSpeed = 0.5f;
 
 	const float kBlank = 0.1f;              // めり込み防止
@@ -279,7 +280,7 @@ private:
 	bool isInvincible_ = false;             // 無敵中か
 	float invincibleTimer_ = 0.0f;          // 無敵時間タイマー
 	const float kInvincibleDuration = 1.0f; // 無敵時間（1秒）
-	 //----------------------------------------
+	                                        //----------------------------------------
 	// アニメーション関連
 	//----------------------------------------
 	float animationTimer_ = 0.0f; // アニメーション周期用のタイマー
@@ -327,10 +328,13 @@ private:
 	const float kGlideFallSpeed = -0.05f; // 滑空中の落下速度（ゆっくり落ちる）
 	const float kGravity = -0.08f;        // 通常の重力（参考値）
 
-	bool isClimbing_ = false;             // 今、はしごを登っているか？
-	const float kClimbSpeed = 0.1f;       // 登るスピード
+	bool isClimbing_ = false;       // 今、はしごを登っているか？
+	const float kClimbSpeed = 0.1f; // 登るスピード
 
-
-
+	const float kSpinTime = 30.0f; // スピン持続時間（フレーム数。0.5秒くらい）
+	                               // 滑空中の揺れアニメーション用タイマー
+	float glideSwayTimer_ = 0.0f;
+	float attackRecoilTimer_ = 0.0f;
+	// 歩行アニメーション用
+	float walkTimer_ = 0.0f;
 };
-

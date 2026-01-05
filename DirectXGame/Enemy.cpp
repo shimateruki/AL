@@ -32,6 +32,11 @@ void Enemy::Initialize(Model* model, Camera* camera, const Vector3& position, Ty
 	shotTimer_ = 0.0f;
 	startPosition_ = position; // 初期位置を記憶
 	flightTimer_ = 0.0f;
+	if (type_ == Type::kSplit) {
+		isSplit_ = true;
+	} else {
+		isSplit_ = false;
+	}
 	if (type_ == Type::kWalk) {
 		hp_ = 2;
 	} else if (type_ == Type::kShooter) {
@@ -40,6 +45,10 @@ void Enemy::Initialize(Model* model, Camera* camera, const Vector3& position, Ty
 		hp_ = 3;
 	} else if (type_ == Type::kHoming) {
 		hp_ = 2;
+	} else if (type_ == Type::kSlime) {
+		hp_ = 3; // スライムはちょっとタフ？
+		jumpWaitTimer_ = 0.0f;
+		velocity_ = {0, 0, 0}; // 最初は止まっている
 	}
 	if (type_ == Type::kSplit) {
 		worldTransformEnemy_.scale_ = {2.0f, 2.0f, 2.0f};
@@ -126,11 +135,38 @@ void Enemy::Update() {
 			// ★撃つ敵のロジック
 			velocity_.x = 0.0f;
 
-			float breathe = std::sin(shotTimer_ * 5.0f) * 0.1f;
-			worldTransformEnemy_.scale_.y = 1.0f + breathe;
-			worldTransformEnemy_.scale_.x = 1.0f - breathe;
+			// タイマーを進める
+			shotTimer_ += 1.0f / 60.0f;
+
+			// 発射までの残り時間
+			float timeToShoot = kShotInterval - shotTimer_;
+			const float kTelegraphTime = 0.5f; // 発射0.5秒前から予兆
+
+			// ▼▼▼ 予兆アニメーション処理 ▼▼▼
+			if (timeToShoot <= kTelegraphTime && timeToShoot > 0.0f) {
+				// 発射直前！
+				float t = 1.0f - (timeToShoot / kTelegraphTime);
+
+				// 1. ムギュッと潰れる
+				float squashY = 1.0f - (t * 0.4f);
+				float stretchXZ = 1.0f + (t * 0.3f);
+				worldTransformEnemy_.scale_ = {stretchXZ, squashY, stretchXZ};
+
+				// 2. プルプル震える
+				float shakeAmount = t * 0.05f;
+				float offsetX = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * shakeAmount;
+				worldTransformEnemy_.translation_.x = startPosition_.x + offsetX;
+
+			} else {
+				// 通常時
+				float breathe = std::sin(shotTimer_ * 5.0f) * 0.05f;
+				worldTransformEnemy_.scale_ = {1.0f - breathe, 1.0f + breathe, 1.0f - breathe};
+				worldTransformEnemy_.translation_.x = startPosition_.x;
+			}
+		
 
 			if (player_) {
+				// ※ここでの diff 計算などは、震えた後の translation_ を使って問題ありません
 				Vector3 myPos = worldTransformEnemy_.translation_;
 				Vector3 targetPos = player_->GetWorldPosition();
 				Vector3 diff = targetPos - myPos;
@@ -143,7 +179,7 @@ void Enemy::Update() {
 				float dist = std::sqrt(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
 				const float kAttackRange = 15.0f;
 				if (dist <= kAttackRange) {
-					shotTimer_ += 1.0f / 60.0f;
+					// shotTimer_ は上で加算済み
 					if (shotTimer_ >= kShotInterval) {
 						shotTimer_ = 0.0f;
 						if (dist > 0.0f) {
@@ -153,13 +189,21 @@ void Enemy::Update() {
 							velocity.y /= dist;
 							velocity.z /= dist;
 							velocity *= 0.2f;
+
+							// 弾の発射位置
 							newBullet->Initialize(model_, myPos, velocity, mapChipField_);
 							bullets_.push_back(newBullet);
+
+							// ★【修正点3】反動で戻すときもX軸だけ戻すか、何もしない
+							worldTransformEnemy_.scale_ = {1.0f, 1.0f, 1.0f};
+							// worldTransformEnemy_.translation_ = startPosition_; // ←これ消すか、Xだけにする
+							worldTransformEnemy_.translation_.x = startPosition_.x;
 						}
 					}
 				} else {
 					shotTimer_ += 1.0f / 60.0f;
 				}
+			
 			}
 		} else if (type_ == Type::kFlying) {
 			// ★飛行する敵
@@ -198,7 +242,6 @@ void Enemy::Update() {
 				velocity_.y = 0.0f;
 			}
 
-			// ... (追尾ロジック省略。以前のコードのまま) ...
 			if (player_) {
 				// ... (プレイヤー追尾、振動演出など) ...
 				Vector3 myPos = worldTransformEnemy_.translation_;
@@ -252,11 +295,85 @@ void Enemy::Update() {
 			// ここで return することで、下の「共通移動処理」が二重にかかるのを防ぐ
 			math->worldTransFormUpdate(worldTransformEnemy_);
 			return;
+
+		}
+		// ==========================================
+		// スライムのロジック (Homingの外に出した)
+		// ==========================================
+		else if (type_ == Type::kSlime) {
+			if (onGround_) {
+				// 1. 地面にいるときは摩擦で止まる
+				velocity_.x = 0.0f;
+
+				// 2. タイマーを進める
+				jumpWaitTimer_ += 1.0f;
+
+				// 3. 一定時間（60フレーム＝約1秒）経ったらジャンプ！
+				const float kJumpInterval = 60.0f;
+				if (jumpWaitTimer_ >= kJumpInterval) {
+
+					// 上に跳ねる
+					velocity_.y = 0.6f; // ジャンプ力
+					onGround_ = false;  // 接地フラグを切る
+
+					// プレイヤーの方向に跳ぶ
+					float moveSpeed = 0.15f; // 横の移動速度
+					if (player_) {
+						// プレイヤーが自分より右にいるか左にいるか判定
+						if (player_->GetWorldPosition().x > worldTransformEnemy_.translation_.x) {
+							velocity_.x = moveSpeed; // 右へ
+						} else {
+							velocity_.x = -moveSpeed; // 左へ
+						}
+					} else {
+						velocity_.x = -moveSpeed; // プレイヤーがいなければ左へ
+					}
+
+					// タイマーリセット (ランダム性を持たせても面白いです)
+					jumpWaitTimer_ = 0.0f;
+				}
+			} else {
+				// 空中にいる間は横速度を維持（特に何もしなくてOK）
+			}
+		} else if (type_ == Type::kFlee) {
+			// 1. プレイヤーから逃げる方向を決める
+			float runSpeed = 0.15f; // 歩く敵より少し速くすると面白い
+			if (player_) {
+				if (worldTransformEnemy_.translation_.x > player_->GetWorldPosition().x) {
+					// 自分が右にいるなら、右へ逃げる
+					velocity_.x = runSpeed;
+				} else {
+					// 自分が左にいるなら、左へ逃げる
+					velocity_.x = -runSpeed;
+				}
+			}
+
+			// 2. 崖の判定（落ちないように端で止まる）
+			if (onGround_) {
+				Vector3 pos = GetWorldPosition();
+				// 進んでいる方向の足元を確認
+				Vector3 checkPos = pos + Vector3(velocity_.x > 0 ? kWidth / 2.0f : -kWidth / 2.0f, -kGroundSearchHeight, 0);
+
+				MapChipField::IndexSet indexSet = mapChipField_->GetMapChipIndexSetByPosition(checkPos);
+				MapChipType type = mapChipField_->GetMapChipTypeByindex(indexSet.xIndex, indexSet.yIndex);
+
+				// もし足元が「歩けない場所（空白など）」なら
+				if (!IsWalkable(type)) {
+					velocity_.x = 0.0f; // 震えて止まる（追い詰められた！）
+				}
+			}
+
+			// アニメーション（進行方向を向く）
+			if (velocity_.x != 0.0f) {
+				walkTimer += 1.0f / 60.0f;
+				worldTransformEnemy_.rotation_.y = (velocity_.x > 0) ? std::numbers::pi_v<float> / 2.0f : std::numbers::pi_v<float> * 3.0f / 2.0f;
+				worldTransformEnemy_.rotation_.x = std::sin(std::numbers::pi_v<float> * 4.0f * walkTimer); // 焦って速く動く
+			}
 		}
 
-		// ▼▼▼ ここが消えていた部分です！復活させます ▼▼▼
+
 		// ==========================================
-		// 共通: マップチップ衝突判定 (Walk, Split, Shooter用)
+		// 共通: マップチップ衝突判定 (Walk, Split, Shooter, Slime用)
 		// ==========================================
 
 		// 1. 移動情報を準備
@@ -282,8 +399,6 @@ void Enemy::Update() {
 
 		// 5. 接地判定
 		UpdateOnGround(collisionInfo);
-
-	
 
 		break;
 	}
@@ -371,7 +486,7 @@ void Enemy::OnStomped(const Player* player) {
 //-----------------------------------------------------------------------------
 // ユーティリティ
 //-----------------------------------------------------------------------------
-bool Enemy::IsWalkable(MapChipType type) { return (type == MapChipType::kDirt_ || type == MapChipType::kGrass_ || type == MapChipType::kJumpPad_ || type == MapChipType::kBreakable_); }
+bool Enemy::IsWalkable(MapChipType type) { return (type == MapChipType::kDirt_ || type == MapChipType::kGrass_ || type == MapChipType::kJumpPad_ || type == MapChipType::kBreakable_ ||type ==MapChipType::kCloud_||type==MapChipType::kWallBreak_); }
 
 // プレイヤーのCarnerPositionと同様の処理
 Vector3 Enemy::CarnerPosition(const Vector3& center, Corner cornter) {

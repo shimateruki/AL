@@ -180,7 +180,15 @@ private:
 
 		CountdownState countdownState_ = CountdownState::kOff;
 	float countdownTimer_ = 0.0f;
+	    // スターコイン関連のメンバ変数
+	    uint32_t texHandleCoinEmpty_ = 0; // 未取得
+	    uint32_t texHandleCoinGet_ = 0;   // 取得済み
 
+	    // コインのUIスプライト（3枚分）
+	    KamataEngine::Sprite* uiStarCoins_[3] = {nullptr};
+
+	    // 現在の獲得枚数
+	    int currentStarCoinCount_ = 0;
 
 
 	// カウントダウン表示用のスプライトハンドル

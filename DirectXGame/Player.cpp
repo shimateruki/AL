@@ -137,7 +137,6 @@ void Player::UpdateTitleAnimation() {
 
 }
 
-
 void Player::Move() {
 
 	// ==========================================
@@ -216,7 +215,12 @@ void Player::Move() {
 		if (pushUp || pushDown) {
 			isClimbing_ = true;
 			onGround_ = false;
-			isGliding_ = false; // はしご中は滑空解除
+
+			// はしご中は滑空・アニメーション関連をリセット
+			isGliding_ = false;
+			glideSwayTimer_ = 0.0f;
+			worldTransformPlayer_.rotation_.z = 0.0f;
+			walkTimer_ = 0.0f; // 歩行アニメもリセット
 		}
 	} else {
 		// はしごから離れたら解除
@@ -231,6 +235,7 @@ void Player::Move() {
 		// はしご中なら、ジャンプではしごをキャンセルして飛び降りる
 		if (isClimbing_) {
 			isClimbing_ = false;
+			// 飛び降り時は上向きの力を加える（即座に滑空しないように）
 			velosity_.y = kJumpAccleration / 60.0f;
 		}
 		// 通常ジャンプ
@@ -253,6 +258,7 @@ void Player::Move() {
 	if (isClimbing_) {
 		// --- 【はしごモード】 ---
 		velosity_.y = 0.0f; // 重力を無効化
+		isGliding_ = false; // 絶対に滑空させない
 
 		float climbSpeed = 0.1f; // 登る速度
 		if (pushUp) {
@@ -263,41 +269,53 @@ void Player::Move() {
 	} else {
 		// --- 【通常モード（重力あり）】 ---
 
-
-		// 地面にいて、かつ下キー（S）が押されている場合
+		// 地面にいて、かつ下キー（S）が押されている場合（雲降り処理）
 		if (onGround_ && (pushDown || Input::GetInstance()->PushKey(DIK_DOWN))) {
-
-			// 足元（少し下）の座標を調べる
 			Vector3 footCheckPos = worldTransformPlayer_.translation_;
-			footCheckPos.y -= (kHeight / 2.0f + 0.1f); // 足元よりわずかに下
-
-			// 足元のマップチップを取得
+			footCheckPos.y -= (kHeight / 2.0f + 0.1f);
 			MapChipField::IndexSet idxDown = mapchipField_->GetMapChipIndexSetByPosition(footCheckPos);
 			MapChipType typeDown = mapchipField_->GetMapChipTypeByindex(idxDown.xIndex, idxDown.yIndex);
 
-			// もし足元にあるのが「雲」だったら
 			if (typeDown == MapChipType::kCloud_) {
-				// 強制的に位置を少し下にずらして、当たり判定から外す
 				worldTransformPlayer_.translation_.y -= 0.2f;
-				onGround_ = false;   // 接地解除
+				onGround_ = false;
 				velosity_.y = 0.0f;
 			}
 		}
 
-
 		if (!onGround_) {
 			// パラソル滑空判定
+			// 「落下中」かつ「スペースキー押しっぱなし」
 			if (velosity_.y < 0.0f && Input::GetInstance()->PushKey(DIK_SPACE)) {
-				velosity_.y = -0.05f;
+				velosity_.y = -0.05f; // 滑空中の落下速度
 				isGliding_ = true;
+
+				// 1. 横移動を半分に制限（便利すぎ対策）
+				velosity_.x = std::clamp(velosity_.x, -kLimitRunSpeed * 0.5f, kLimitRunSpeed * 0.5f);
+
+				// 2. 正面（手前）を向く
+				worldTransformPlayer_.rotation_.y = std::numbers::pi_v<float>;
+
+				// 3. ゆらゆらアニメーション (Z軸回転)
+				glideSwayTimer_ += 1.0f / 60.0f;
+				float swayAngle = std::sin(glideSwayTimer_ * 5.0f) * 0.15f;
+				worldTransformPlayer_.rotation_.z = swayAngle;
+
 			} else {
 				// 通常重力
 				velosity_.y += -kGgravityAcceleration / 60.0f;
 				velosity_.y = std::max(velosity_.y, -kLimitFallSpeed);
+
+				// 滑空解除処理（リセット）
 				isGliding_ = false;
+				glideSwayTimer_ = 0.0f;
+				worldTransformPlayer_.rotation_.z = 0.0f; // 傾きを戻す
 			}
 		} else {
+			// 接地中
 			isGliding_ = false;
+			glideSwayTimer_ = 0.0f;
+			worldTransformPlayer_.rotation_.z = 0.0f;
 		}
 	}
 
@@ -326,48 +344,112 @@ void Player::Move() {
 		attackCooldown_ -= 1.0f / 60.0f;
 	}
 
-	if (Input::GetInstance()->PushKey(DIK_F)) {
-		isCharging_ = true;
-		chargeTimer_ += 1.0f / 60.0f;
-
-		// チャージ演出
-		if (chargeTimer_ >= kMaxChargeTime) {
-			float shake = std::sin(chargeTimer_ * 50.0f) * 0.05f;
-			worldTransformPlayer_.scale_ = {originalScaleY_ + shake, originalScaleY_ - shake, originalScaleY_ + shake};
-		} else {
-			float squeeze = (chargeTimer_ / kMaxChargeTime) * 0.2f;
-			worldTransformPlayer_.scale_.y = originalScaleY_ - squeeze;
-			worldTransformPlayer_.scale_.x = originalScaleY_ + (squeeze * 0.5f);
-		}
-	} else if (isCharging_) {
+	// ★空中なら強制的にチャージ解除＆処理しない
+	if (!onGround_) {
 		isCharging_ = false;
+		chargeTimer_ = 0.0f;
 
-		PlayerBullet* newBullet = new PlayerBullet();
-		Vector3 velocity = {0, 0, 0};
-		float speed = 0.4f;
-		if (lrDirection_ == LRDirection::kRight)
-			velocity.x = speed;
-		else
-			velocity.x = -speed;
-
-		Vector3 spawnPos = worldTransformPlayer_.translation_;
-
-		if (chargeTimer_ >= kMaxChargeTime) {
-			// フルチャージ弾
-			newBullet->Initialize(model_, spawnPos, velocity, mapchipField_, 0.8f, 3);
-		} else {
-			// 通常弾
-			newBullet->Initialize(model_, spawnPos, velocity, mapchipField_, 0.4f, 1);
+		// 反動アニメ中でなければスケールを戻す（歩行アニメなどは後でリセットされるのでOK）
+		if (attackRecoilTimer_ <= 0.0f && !isSquashing_ && !isSpinning_) {
+			worldTransformPlayer_.scale_ = {originalScaleY_, originalScaleY_, originalScaleY_};
 		}
-		bullets_.push_back(newBullet);
-
-		chargeTimer_ = 0.0f;
-		worldTransformPlayer_.scale_ = {originalScaleY_, originalScaleY_, originalScaleY_};
 	} else {
-		chargeTimer_ = 0.0f;
+		// --- 地上にいるときだけ攻撃操作可能 ---
+
+		if (Input::GetInstance()->PushKey(DIK_F)) {
+			isCharging_ = true;
+			chargeTimer_ += 1.0f / 60.0f;
+
+			// チャージ中のプルプル演出
+			if (chargeTimer_ >= kMaxChargeTime) {
+				// フルチャージ完了：激しく震える
+				float shake = std::sin(chargeTimer_ * 50.0f) * 0.05f;
+				worldTransformPlayer_.scale_ = {originalScaleY_ + shake, originalScaleY_ - shake, originalScaleY_ + shake};
+			} else {
+				// チャージ中：徐々に潰れる
+				float squeeze = (chargeTimer_ / kMaxChargeTime) * 0.2f;
+				worldTransformPlayer_.scale_.y = originalScaleY_ - squeeze;
+				worldTransformPlayer_.scale_.x = originalScaleY_ + (squeeze * 0.5f);
+			}
+		} else if (isCharging_) {
+			// キーを離した瞬間（発射！）
+			isCharging_ = false;
+
+			PlayerBullet* newBullet = new PlayerBullet();
+			Vector3 velocity = {0, 0, 0};
+			float speed = 0.4f;
+			if (lrDirection_ == LRDirection::kRight)
+				velocity.x = speed;
+			else
+				velocity.x = -speed;
+
+			Vector3 spawnPos = worldTransformPlayer_.translation_;
+
+			if (chargeTimer_ >= kMaxChargeTime) {
+				// フルチャージ弾
+				newBullet->Initialize(model_, spawnPos, velocity, mapchipField_, 0.8f, 3);
+			} else {
+				// 通常弾
+				newBullet->Initialize(model_, spawnPos, velocity, mapchipField_, 0.4f, 1);
+			}
+			bullets_.push_back(newBullet);
+
+			// ★発射！反動アニメーション開始
+			attackRecoilTimer_ = 0.2f;
+
+			// チャージタイマーリセット
+			chargeTimer_ = 0.0f;
+		} else {
+			chargeTimer_ = 0.0f;
+		}
+	}
+
+	// ==========================================
+	// 8. アニメーション優先順位処理（スケール変形の最終決定）
+	// ==========================================
+
+	// 優先度1: チャージ中（最優先・変形済みなので何もしない）
+	if (isCharging_) {
+		// パス
+	}
+	// 優先度2: 攻撃後の反動（ボンッ！）
+	else if (attackRecoilTimer_ > 0.0f) {
+		attackRecoilTimer_ -= 1.0f / 60.0f;
+
+		float ratio = attackRecoilTimer_ / 0.2f;
+		float recoil = std::sin(ratio * std::numbers::pi_v<float>) * 0.3f;
+
+		worldTransformPlayer_.scale_.y = originalScaleY_ - (recoil * 0.5f);
+		worldTransformPlayer_.scale_.x = originalScaleY_ + recoil;
+		worldTransformPlayer_.scale_.z = originalScaleY_ + recoil;
+	}
+	// 優先度3: ジャンプ回転・着地潰れ
+	else if (isSpinning_ || isSquashing_) {
+		// これらも独自の処理があるのでパス
+		walkTimer_ = 0.0f; // 歩行タイマーはリセット
+	}
+	// 優先度4: 歩行アニメーション
+	else if (onGround_ && std::abs(velosity_.x) > 0.1f) {
+		// 地面にいて、かつ動いている時
+		walkTimer_ += 1.0f / 60.0f;
+
+		// 弾むようなリズム（20.0f で速さを調整）
+		float walkCycle = std::sin(walkTimer_ * 20.0f);
+		float bounce = walkCycle * 0.1f;
+
+		// Yが伸びる時は XZが縮む
+		worldTransformPlayer_.scale_.y = originalScaleY_ + bounce;
+		worldTransformPlayer_.scale_.x = originalScaleY_ - (bounce * 0.5f);
+		worldTransformPlayer_.scale_.z = originalScaleY_ - (bounce * 0.5f);
+
+	}
+	// 優先度5: 待機状態
+	else {
+		// スケールを元に戻す
+		worldTransformPlayer_.scale_ = {originalScaleY_, originalScaleY_, originalScaleY_};
+		walkTimer_ = 0.0f;
 	}
 }
-
 
 void Player::Update() {
 	// 1. フラグ初期化

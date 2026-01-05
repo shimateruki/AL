@@ -32,7 +32,7 @@ void GameScene::Initialize(int stageID) {
 	hasigoModel_ = Model::CreateFromOBJ("hasigo", true); // 傘モデルの読み込み
 	kumoModel_ = Model::CreateFromOBJ("kumo", true);        // 雲モデルの読み込み
 	iwaModel_ = Model::CreateFromOBJ("iwa", true);       // 岩モデルの読み込み
-	starCoinModel_ = Model::CreateFromOBJ("kinoko", true);
+	starCoinModel_ = Model::CreateFromOBJ("koin", true);  // スターコインモデルの読み込み
 
 	// パーティクル用のモデル読み込み
 	particleModel_ = Model::CreateFromOBJ("particle", true);
@@ -73,21 +73,39 @@ void GameScene::Initialize(int stageID) {
 	ss << "Resources/map/1-" << stageID << ".csv";
 	mapChipField_ = new MapChipField();
 	mapChipField_->LoadMapChipCsv(ss.str()); 
-
-
-		CController_ = new CameraController();
+	CController_ = new CameraController();
 	CController_->Initialize(&camera_);
 	//========================
 	// 🧍 プレイヤーの初期化
 	//========================
+	// 1. まずデフォルトの位置を決めておく（万が一90番が見つからなかった時の保険）
+	Vector3 playerPosition = mapChipField_->GetChipPositionIndex(3, 2);
+
+	// 2. マップ全体を調べて「kPlayerStart_ (90)」を探す
+	for (uint32_t y = 0; y < mapChipField_->GetNumBlockVirtcal(); ++y) {
+		for (uint32_t x = 0; x < mapChipField_->GetNumBlockHorizonal(); ++x) {
+
+			// もし「プレイヤーのスタート地点(90)」なら
+			if (mapChipField_->GetMapChipTypeByindex(x, y) == MapChipType::kPlayerStart_) {
+				// その座標を取得して playerPosition を上書き！
+				playerPosition = mapChipField_->GetChipPositionIndex(x, y);
+
+				// ：見つけた後は、その場所を「空白(0)」に戻しておく
+				mapChipField_->SetMapChipType(x, y, MapChipType::kBlank_);
+			}
+		}
+	}
+
+	// 3. 決定した座標を使って初期化
 	player_ = new Player();
-	Vector3 playerPosition = mapChipField_->GetChipPositionIndex(3, 16);
-	player_->Initialize(playerModel_, &camera_, playerPosition);
+	player_->Initialize(playerModel_, &camera_, playerPosition); // <--- ここに見つけた座標が入る
+
 	player_->SetMapChipField(mapChipField_);
 	player_->SetisMove(false);
 	player_->SetParticleManager(particleManager_);
 	player_->SetUmbrellaModel(umbrellaModel_);
 	player_->SetCameraController(CController_);
+
 
 	//========================
 	// 🎮 カメラコントローラー
@@ -189,11 +207,34 @@ void GameScene::Initialize(int stageID) {
 
 	// HPの最大値(3回)ループして、ハートのスプライトを生成
 	for (int i = 0; i < kMaxPlayerHp; i++) {
-		// 表示座標を計算 (例: 20.0, 70.0, 120.0)
+		// 表示座標を計算 
 		Vector2 pos = {heartBasePos.x + (i * heartSpacing), heartBasePos.y};
 
 		// 満タンハートのスプライトをvectorに追加
 		spriteHearts_.push_back(Sprite::Create(textureHandleHeart_, pos));
+	}
+
+	texHandleCoinEmpty_ = TextureManager::Load("noKoinUi.png");
+	texHandleCoinGet_ = TextureManager::Load("koinUi.png");
+
+	// 1. セーブデータから、このステージのコイン取得数を取得
+	currentStarCoinCount_ = GameStateManager::GetInstance()->GetStarCoinRecord(currentStageID_);
+
+	// 2. もし変な値（3以上とか）が入ってたら困るので、一応制限をかけておく
+	if (currentStarCoinCount_ > 3) {
+		currentStarCoinCount_ = 3;
+	}
+
+	// 3. スプライトの生成と配置
+	for (int i = 0; i < 3; i++) {
+		// 基本は「Empty(未取得)」で作る
+		uiStarCoins_[i] = Sprite::Create(texHandleCoinEmpty_, {0, 0});
+		uiStarCoins_[i]->SetPosition({30.0f + (i * 50.0f), 30.0f});
+
+		// もし既に持っている枚数分なら、最初から「Get(取得済み)」の画像にする
+		if (i < currentStarCoinCount_) {
+			uiStarCoins_[i]->SetTextureHandle(texHandleCoinGet_);
+		}
 	}
 
 	GameStateManager::GetInstance()->SetCurrentStageID(currentStageID_); // ステージ1
@@ -263,7 +304,7 @@ void GameScene::Update() {
 			if (currentSelect_ == PauseSelect::kContinue) {
 				isPaused_ = false; // ポーズを解除
 			} else if (currentSelect_ == PauseSelect::kStageSelect) {
-				// ★ 修正: ステージセレクト画面の1-1看板のマップチップ座標を指定
+				//  ステージセレクト画面の1-1看板のマップチップ座標を指定
 				Vector3 signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
 
 				// 次のプレイヤー初期位置をGameStateManagerに保存
@@ -413,7 +454,7 @@ void GameScene::Update() {
 				}
 			}
 		}
-
+		   
 		break;
 
 	// ------------------------------
@@ -478,6 +519,72 @@ void GameScene::Update() {
 	// ヒットエフェクト更新
 	for (HitEffect* hitEffect : hitEffects_) {
 		hitEffect->Update();
+	}
+	// 1. 生まれた子供を一時的に保存するリスト
+	std::list<Enemy*> newEnemies;
+
+	// 2. ベクター用の削除ループ
+	auto it = enemys_.begin();
+	while (it != enemys_.end()) {
+		Enemy* enemy = *it;
+
+		// 敵が死んでいるかチェック
+		if (enemy->isDead()) {
+
+			if (enemy->GetType() == Enemy::Type::kFlee) {
+				// 1. 敵の座標を取得
+				Vector3 pos = enemy->GetWorldPosition();
+
+				// 2. その座標に対応するマップチップのインデックスを取得
+				// (MapChipField.h にあるこの関数を使います)
+				MapChipField::IndexSet index = mapChipField_->GetMapChipIndexSetByPosition(pos);
+
+				// 3. その場所を「スターコイン(99)」に書き換える！
+				mapChipField_->SetMapChipType(index.xIndex, index.yIndex, MapChipType::kStarCoin_);
+			}
+
+
+
+
+			// 「分裂フラグ」が立っているなら子供を産む
+			if (enemy->GetIsSplit()) {
+				for (int i = 0; i < 2; i++) {
+					// 子供を生成
+					Enemy* newEnemy = new Enemy();
+					Vector3 pos = enemy->GetWorldPosition();
+
+					newEnemy->Initialize(enemy_model_Walk, &camera_, pos, Enemy::Type::kWalk);
+
+					// 必要な情報をセット
+					newEnemy->SetMapChipField(mapChipField_);
+					newEnemy->SetPlayer(player_);
+
+					// 子供はもう分裂しないようにする
+					newEnemy->SetIsSplit(false);
+
+					// 左右に飛び跳ねさせる
+					Vector3 velocity = (i == 0) ? Vector3(-0.1f, 0.5f, 0.0f) : Vector3(0.1f, 0.5f, 0.0f);
+					newEnemy->SetVelocity(velocity);
+
+					// 一時リストに追加
+					newEnemies.push_back(newEnemy);
+				}
+			}
+
+			// 親をメモリから削除
+			delete enemy;
+
+			// リストから削除し、イテレータを次に進める
+			it = enemys_.erase(it);
+		} else {
+			// 死んでいないなら、次の敵へ
+			++it;
+		}
+	}
+
+	// 3. 生まれた子供たちを本物のリストに合流させる
+	for (Enemy* newEnemy : newEnemies) {
+		enemys_.push_back(newEnemy);
 	}
 
 	// 死亡したヒットエフェクトの削除
@@ -684,6 +791,12 @@ void GameScene::Draw() {
 		enterSprite_->Draw(); // エンターキー用スプライトの描画
 	}
 
+	for (int i = 0; i < 3; i++) {
+		if (uiStarCoins_[i] != nullptr) {
+			uiStarCoins_[i]->Draw();
+		}
+	}
+
 	Sprite::PostDraw();
 
 	if (particleManager_) {
@@ -711,9 +824,10 @@ void GameScene::GenerrateBlock() {
 			}
 
 			// ==========================================
-			//  2. 敵の生成処理 (
+			//  2. 敵の生成処理 
 			// ==========================================
-			if (type == MapChipType::kEnemyWalk_ || type == MapChipType::kEnemyShooter_ || type == MapChipType::kEnemyHoming_) {
+			if (type == MapChipType::kEnemyWalk_ || type == MapChipType::kEnemyShooter_ || type == MapChipType::kEnemyHoming_ || type == MapChipType::kEnemySplit_ || type == MapChipType::kSlime ||
+			    type == MapChipType::kFlee) {
 
 				Enemy* newEnemy = new Enemy();
 
@@ -725,6 +839,12 @@ void GameScene::GenerrateBlock() {
 				} else if (type == MapChipType::kEnemyHoming_) {
 
 					newEnemy->Initialize(enemy_model_Homing, &camera_, pos, Enemy::Type::kHoming);
+				} else if (type == MapChipType::kEnemySplit_) {
+					newEnemy->Initialize(enemy_model_Walk, &camera_, pos, Enemy::Type::kSplit);
+				} else if (type == MapChipType::kSlime) {
+					newEnemy->Initialize(enemy_model_Walk, &camera_, pos, Enemy::Type::kSlime);
+				} else if (type ==MapChipType::kFlee) {
+					newEnemy->Initialize(enemy_model_Walk, &camera_, pos, Enemy::Type::kFlee);
 				}
 
 				newEnemy->SetPlayer(player_);
@@ -810,6 +930,7 @@ void GameScene::CheekAllcollision() {
 			} else {
 				player_->TakeDamage(1);
 			}
+
 		}
 
 		for (EnemyBullet* bullet : enemy->GetBullets()) {
@@ -880,6 +1001,9 @@ void GameScene::CheekAllcollision() {
 					// 棘のダメージ処理
 					player_->TakeDamage(1);
 				} else if (type == MapChipType::kStarCoin_) {
+					if (currentPlayCoinCount_ < 3) {
+						uiStarCoins_[currentPlayCoinCount_]->SetTextureHandle(texHandleCoinGet_);
+					}
 					// 1. カウントを増やす
 					currentPlayCoinCount_++;
 
@@ -928,7 +1052,7 @@ void GameScene::ChangePhase() {
 	case Phase::kDeath:
 		finishedTimer++;
 		deatparticles_->Update();
-				// ★ 修正: ステージセレクト画面の1-1看板のマップチップ座標を指定
+	//  ステージセレクト画面の1-1看板のマップチップ座標を指定
 		Vector3 signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
 
 		// 次のプレイヤー初期位置をGameStateManagerに保存
@@ -952,11 +1076,15 @@ void GameScene::ChangePhase() {
 			break;
 		case 2:
 			// ステージ2の看板の位置
-			returnPos = mapChipField_->GetChipPositionIndex(20, 17);
+			returnPos = mapChipField_->GetChipPositionIndex(21, 9);
 			break;
 		case 3:
 			// ステージ3の看板の位置
-			returnPos = mapChipField_->GetChipPositionIndex(30, 17);
+			returnPos = mapChipField_->GetChipPositionIndex(36, 9);
+			break;
+		case 4:
+			// ステージ4の看板の位置
+			returnPos = mapChipField_->GetChipPositionIndex(57, 17);
 			break;
 		default:
 			// デフォルト

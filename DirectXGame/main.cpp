@@ -5,7 +5,6 @@
 #include "StageSelectGameScene.h"
 #include "TitleScene.h"
 #include <Windows.h>
-// ★ 追加: チュートリアルシーンのヘッダー
 #include "TutorialScene.h"
 
 using namespace KamataEngine;
@@ -32,13 +31,13 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	TitleScene* titleScene = nullptr;
 	StageSelectGameScene* stageSelectScene = nullptr;
 	GameOver* gameOver = nullptr;
-	// ★ 追加: チュートリアル用のポインタ
+	//  チュートリアル用のポインタ
 	TutorialScene* tutorialScene = nullptr;
 
 	// 現在のシーンの状態
 	Scene currentSceneEnum = Scene::kTitle;
 
-	// ★現在プレイするステージIDを保持する変数
+	// 現在プレイするステージIDを保持する変数
 	int currentStageID = 1;
 
 	// 初期シーンの設定

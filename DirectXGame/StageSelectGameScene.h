@@ -45,10 +45,16 @@ private:
 	KamataEngine::Model* modelSkydome_ = nullptr;       // スカイドームモデル
 	KamataEngine::Model* signboardModel_ = nullptr;     // 看板モデル
 	KamataEngine::Model* treeModel_ = nullptr;          // 木モデル
+	KamataEngine::Model* hasigoModel_ = nullptr;        // はしごモデル
+	KamataEngine::Model* kumoModel_ = nullptr;          // 雲モデル
+	KamataEngine::Model* iwaModel_ = nullptr;           // 岩モデル
+	KamataEngine::Model* kinokoModel_ = nullptr;        // キノコモデル
 
 	KamataEngine::Model* Textmodel1_1 = nullptr;  
 	KamataEngine::Model* Textmodel1_2 = nullptr;       
-	KamataEngine::Model* Textmodel1_3 = nullptr; 
+	KamataEngine::Model* Textmodel1_3 = nullptr;
+	KamataEngine::Model* Textmodel1_4 = nullptr; 
+
 	KamataEngine::Model* TitleTextModel;
 	KamataEngine::Model* WModel = nullptr; // Wモデル
 	KamataEngine::Model* keyHeimenModel = nullptr; // キーモデル
@@ -58,6 +64,7 @@ private:
 	KamataEngine::Sprite* Sprite1_1 = nullptr; // 数字表示用スプライト
 	KamataEngine::Sprite* Sprite1_2 = nullptr; // 数字表示用スプライト
 	KamataEngine::Sprite* Sprite1_3 = nullptr; // 数字表示用スプライト
+	KamataEngine::Sprite* Sprite1_4 = nullptr; // 数字表示用スプライト
 	KamataEngine::Sprite* SpriteMove = nullptr; // 移動用スプライト
 	KamataEngine::Sprite* SpriteJump = nullptr; // ジャンプ用スプライト
 	KamataEngine::Sprite* SpriteSutage = nullptr; // ステージ用スプライト
@@ -113,6 +120,7 @@ private:
 	 int32_t textureHandel1_1 = 0; // テクスチャハンドル
 	 int32_t textureHandel1_2 = 0; // テクスチャハンドル
 	 int32_t textureHandel1_3 = 0; // テクスチャハンドル
+	 int32_t textureHandel1_4 = 0;  // テクスチャハンドル
 	 int32_t textureHandleMove = 0;    // テクスチャハンドル
 	 int32_t textureHandleJump = 0;  // テクスチャハンドル
 	 int32_t textureHandleSutage = 0;     // テクスチャハンドル
@@ -133,4 +141,14 @@ private:
 	    void SetupDisplayCoins();
 	    bool isCoinsSetup_ = false;
 
+		// ===== スターコインUI関連 =====
+		// UIテクスチャ
+	    uint32_t texHandleCoinEmpty_ = 0;
+	    uint32_t texHandleCoinGet_ = 0;
+
+	    // UIスプライト（3枚）
+	    KamataEngine::Sprite* uiStarCoins_[3] = {nullptr};
+
+	    // UIを表示するかどうかのフラグ
+	    bool isShowCoinUI_ = false;
 };

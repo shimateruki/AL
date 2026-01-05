@@ -11,19 +11,27 @@ void StageSelectGameScene::Initialize() {
 	keyHeimenModel = Model::CreateFromOBJ("keyHeimen", true);           // キーモデルの読み込み
 	// ゲームクリアテキストモデルの読み込み
 	TitleTextModel = Model::CreateFromOBJ("TitleText", true); // タイトルテキストモデルの読み込み
-	Textmodel1_1 = Model::CreateFromOBJ("Text1-1", true); // ゲームクリアテキストモデルの読み込み
-	Textmodel1_2 = Model::CreateFromOBJ("Text1-2", true);   // ゲームクリアテキストモデルの読み込み
-	Textmodel1_3 = Model::CreateFromOBJ("Text1-3", true); // ゲームクリアテキストモデルの読み込み
+	// ステージの看板に貼り付けるテキストモデルの読み込み
+	Textmodel1_1 = Model::CreateFromOBJ("Text1-1", true);
+	Textmodel1_2 = Model::CreateFromOBJ("Text1-2", true);  
+	Textmodel1_3 = Model::CreateFromOBJ("Text1-3", true);
+	Textmodel1_4 = Model::CreateFromOBJ("Text1-4", true);  
+
 	umbrellaModel_ = Model::CreateFromOBJ("parasol", true);
 	yamaModel = Model::CreateFromOBJ("yama", true);         // 山モデルの読み込み
-	starCoinModel_ = Model::CreateFromOBJ("kinoko", true);
+	hasigoModel_ = Model::CreateFromOBJ("hasigo", true); // 傘モデルの読み込み
+	kumoModel_ = Model::CreateFromOBJ("kumo", true);     // 雲モデルの読み込み
+	kinokoModel_ = Model::CreateFromOBJ("kinoko", true); // キノコモデルの読み込み
+	starCoinModel_ = Model::CreateFromOBJ("koin", true); // スターコインモデルの読み込み
+
 
 	textureHandel1_1 = TextureManager::Load("1-1.png"); // 数字表示用テクスチャの読み込み
 	textureHandel1_2 = TextureManager::Load("1-2.png"); // 数字表示用テクスチャの読み込み
 	textureHandel1_3 = TextureManager::Load("1-3.png"); // 数字表示用テクスチャの読み込み
+	textureHandel1_4 = TextureManager::Load("1-4.png"); // 数字表示用テクスチャの読み込み
 	textureHandleMove = TextureManager::Load("TextSpriteMove.png"); // 移動用テクスチャの読み込み
 	textureHandleJump = TextureManager::Load("TextSpriteSpaceJump.png"); // ジャンプ用テクスチャの読み込み
-	textureHandleSutage = TextureManager::Load("SutageSelectText.png"); // ステージ用テクスチャの読み込み
+	textureHandleSutage = TextureManager::Load("SutageSelectTextUi.png"); // ステージ用テクスチャの読み込み
 	treeModel_ = Model::CreateFromOBJ("tree", true);                     // 木モデルの読み込み
 
 
@@ -43,7 +51,7 @@ void StageSelectGameScene::Initialize() {
 	// 🗺️ マップ読み込み
 	//========================
 	mapChipField_ = new MapChipField();
-	mapChipField_->LoadMapChipCsv("Resources/map/heimen.csv");
+	mapChipField_->LoadMapChipCsv("Resources/map/stageSelect.csv");
 
 	//========================
 	// 🧍 プレイヤーの初期化
@@ -102,7 +110,7 @@ void StageSelectGameScene::Initialize() {
 	signboards_.back()->Initialize(signboardModel_, &camera_, mapChipField_->GetChipPositionIndex(10, 17), 1);
 	spriteTexts_.push_back(new SpriteText());
 	spriteTexts_.back()->Initialize(Textmodel1_1, &camera_, mapChipField_->GetChipPositionIndex(10, 17));
-	// ★ 修正: クリア済みの場合は色を青色に変更
+	//  クリア済みの場合は色を青色に変更
 	if (GameStateManager::GetInstance()->IsStageClear(1)) {
 		spriteTexts_.back()->SetColor({0.0f, 0.0f, 1.0f, 1.0f}); // 青色に変更
 	}
@@ -117,10 +125,10 @@ void StageSelectGameScene::Initialize() {
 
 	// 1-2
 	signboards_.push_back(new Signboard());
-	signboards_.back()->Initialize(signboardModel_, &camera_, mapChipField_->GetChipPositionIndex(20, 17), 2);
+	signboards_.back()->Initialize(signboardModel_, &camera_, mapChipField_->GetChipPositionIndex(21, 9), 2);
 	spriteTexts_.push_back(new SpriteText());
-	spriteTexts_.back()->Initialize(Textmodel1_2, &camera_, mapChipField_->GetChipPositionIndex(20, 17));
-	// ★ 修正: クリア済みの場合は色を青色に変更
+	spriteTexts_.back()->Initialize(Textmodel1_2, &camera_, mapChipField_->GetChipPositionIndex(21, 9));
+	//  クリア済みの場合は色を青色に変更
 	if (GameStateManager::GetInstance()->IsStageClear(2)) {
 		spriteTexts_.back()->SetColor({0.0f, 0.0f, 1.0f, 1.0f}); // 青色に変更
 	}
@@ -129,13 +137,23 @@ void StageSelectGameScene::Initialize() {
 
 	// 1-3
 	signboards_.push_back(new Signboard());
-	signboards_.back()->Initialize(signboardModel_, &camera_, mapChipField_->GetChipPositionIndex(30, 17), 3);
+	signboards_.back()->Initialize(signboardModel_, &camera_, mapChipField_->GetChipPositionIndex(36, 9), 3);
 	spriteTexts_.push_back(new SpriteText());
-	spriteTexts_.back()->Initialize(Textmodel1_3, &camera_, mapChipField_->GetChipPositionIndex(30, 17));
-	// ★ 修正: クリア済みの場合は色を青色に変更
+	spriteTexts_.back()->Initialize(Textmodel1_3, &camera_, mapChipField_->GetChipPositionIndex(36, 9));
+	//  クリア済みの場合は色を青色に変更
 	if (GameStateManager::GetInstance()->IsStageClear(3)) {
 		spriteTexts_.back()->SetColor({0.0f, 0.0f, 1.0f, 1.0f}); // 青色に変更
 	}
+	//1-4
+	signboards_.push_back(new Signboard());
+	signboards_.back()->Initialize(signboardModel_, &camera_, mapChipField_->GetChipPositionIndex(57, 17), 4);
+	spriteTexts_.push_back(new SpriteText());
+	spriteTexts_.back()->Initialize(Textmodel1_4, &camera_, mapChipField_->GetChipPositionIndex(57, 17));
+	//  クリア済みの場合は色を青色に変更
+	if (GameStateManager::GetInstance()->IsStageClear(4)) {
+		spriteTexts_.back()->SetColor({0.0f, 0.0f, 1.0f, 1.0f}); // 青色に変更
+	}
+
 	//// 2-1
 	//signboards_.push_back(new Signboard());
 	//signboards_.back()->Initialize(signboardModel_, &camera_, mapChipField_->GetChipPositionIndex(40, 17), 4);
@@ -161,9 +179,22 @@ void StageSelectGameScene::Initialize() {
 	Sprite1_1 = Sprite::Create(textureHandel1_1, {800.50}); // 数字表示用スプライトの作成
 	Sprite1_2 = Sprite::Create(textureHandel1_2, {800.50}); // 数字表示用スプライトの作成
 	Sprite1_3 = Sprite::Create(textureHandel1_3, {800.50}); // 数字表示用スプライトの作成
+	Sprite1_4 = Sprite::Create(textureHandel1_4, {800.50}); // 数字表示用スプライトの作成
 	SpriteSutage = Sprite::Create(textureHandleSutage, {0.0}); // ステージ用スプライトの作成
 
+	// スターコインUIの初期化
+	// 画像の読み込み 
+	texHandleCoinEmpty_ = TextureManager::Load("noKoinUi.png");
+	texHandleCoinGet_ = TextureManager::Load("koinUi.png");
 
+	// スプライト生成と配置（左上に並べる）
+	for (int i = 0; i < 3; i++) {
+		uiStarCoins_[i] = Sprite::Create(texHandleCoinEmpty_, {0, 0});
+		uiStarCoins_[i]->SetPosition({30.0f + (i * 50.0f), 130.0f});
+	}
+
+	// 最初は非表示
+	isShowCoinUI_ = false;
 
 
 	firstFrame = true; // 初回フレームフラグを設定
@@ -388,7 +419,6 @@ void StageSelectGameScene::Draw() {
 				// タイプを取得
 				MapChipType type = mapChipField_->GetMapChipTypeByindex(x, y);
 
-				// 種類ごとに描画モデルを分岐
 				switch (type) {
 				case MapChipType::kDirt_:
 					dirtModel_->Draw(*block, camera_);
@@ -396,7 +426,18 @@ void StageSelectGameScene::Draw() {
 				case MapChipType::kGrass_:
 					grassModel_->Draw(*block, camera_);
 					break;
+				case MapChipType::kJumpPad_:
+					kinokoModel_->Draw(*block, camera_);
+					break;
+				case MapChipType::kLadder_:
+					hasigoModel_->Draw(*block, camera_);
+					break;
+				case MapChipType::kCloud_:
+					kumoModel_->Draw(*block, camera_);
+					break;
+	
 				}
+			
 			}
 		}
 	}
@@ -433,13 +474,21 @@ void StageSelectGameScene::Draw() {
 
 	Model::PostDraw();
 
-	  // ★ 追加: スプライト描画
+	  //  スプライト描画
 	Sprite::PreDraw(dxcommon->GetCommandList());
 	if (activeSprite_&&isSprite) {
 		activeSprite_->Draw();
 	}
 	if (isSprite) {
 		SpriteSutage->Draw(); // ステージ用スプライトの描画
+	}
+
+	if (isShowCoinUI_&&isSprite) {
+		for (int i = 0; i < 3; i++) {
+			if (uiStarCoins_[i]) {
+				uiStarCoins_[i]->Draw();
+			}
+		}
 	}
 
 	Sprite::PostDraw();
@@ -502,13 +551,29 @@ void StageSelectGameScene::CheekAllcollision() {
 
 	// スプライトを非表示にする初期化
 	activeSprite_ = nullptr;
+	isShowCoinUI_ = false;
 
 
 	for (Signboard* signboard : signboards_) {
 		AABB aabb2 = signboard->GetAABB();
 		if (math->IsCollision(aabb1, aabb2)) {
-			// ★ 追加: 看板のIDに応じて表示するスプライトを切り替え
+			//  看板のIDに応じて表示するスプライトを切り替え
 			int stageID = signboard->GetStageID();
+
+			// 1. そのステージの過去のコイン取得数を取得
+			int savedCount = GameStateManager::GetInstance()->GetStarCoinRecord(stageID);
+
+			// 2. 3つのコインUIの色を切り替え
+			for (int i = 0; i < 3; i++) {
+				if (i < savedCount) {
+					uiStarCoins_[i]->SetTextureHandle(texHandleCoinGet_); // 黄色（取得済み）
+				} else {
+					uiStarCoins_[i]->SetTextureHandle(texHandleCoinEmpty_); // グレー（未取得）
+				}
+			}
+
+			// 3. UIを表示するフラグをON
+			isShowCoinUI_ = true;
 	
 			switch (stageID) {
 			case 1:
@@ -519,6 +584,9 @@ void StageSelectGameScene::CheekAllcollision() {
 				break;
 			case 3:
 				activeSprite_ = Sprite1_3;
+				break;
+			case 4:
+				activeSprite_ = Sprite1_4;
 				break;
 			default:
 				activeSprite_ = nullptr; // 他の看板は非表示
@@ -574,15 +642,6 @@ void StageSelectGameScene::SetupDisplayCoins() {
 		if (savedCount <= 0)
 			continue;
 
-		// ★ 修正点1：座標取得が (0,0,0) になっていた場合の保険
-		// 看板の座標がまだ計算されていない場合があるので、もし(0,0,0)なら
-		// 仕方ないので看板のInitializeと同じ計算式で場所を推定する（応急処置）
-		/* if (pos.x == 0.0f && pos.y == 0.0f) {
-		    // 看板の配置場所を直接指定しているなら、ここも手動計算が必要かもしれません
-		    // 例: pos = mapChipField_->GetChipPositionIndex(..., ...);
-		}
-		*/
-
 		// コイン生成
 		for (int i = 0; i < savedCount; ++i) {
 			auto coinWt = std::make_unique<WorldTransform>();
@@ -594,7 +653,6 @@ void StageSelectGameScene::SetupDisplayCoins() {
 			coinWt->translation_.x = pos.x + offsetX;
 			coinWt->translation_.y = pos.y + 4.0f;
 
-			// ★ 修正点2：Z座標を「手前」にずらす！
 			// カメラが手前（マイナス方向）にある場合、コインも少し手前に置かないと埋もれます
 			coinWt->translation_.z = pos.z - 2.0f;
 

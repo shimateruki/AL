@@ -40,10 +40,14 @@ void TutorialScene::Initialize() {
 	textureHandleEnter_ = TextureManager::Load("enter.png");                       // エンターキー用テクスチャの読み込み
 	textureHandleGameClearText_ = TextureManager::Load("TextSpriteGameClear.png"); // ゲームクリアテキスト用テクスチャの読み込み
 	textureHandlePauseText_ = TextureManager::Load("phoseText.png");               // ポーズテキスト用テクスチャの読み込み
-	treeModel_ = Model::CreateFromOBJ("tree", true);                               // 木モデルの読み込
-	textureHandle1_1_ = TextureManager::Load("1-1.png");
-	textureHandle1_2_ = TextureManager::Load("1-2.png");
-	textureHandle1_3_ = TextureManager::Load("1-3.png");
+	treeModel_ = Model::CreateFromOBJ("tree", true);
+	// チュートリアル用テクスチャの読み込み
+	uiMoveHandle_ = TextureManager::Load("wdMoveText.png");                             // "移動してみよう"
+	uiJumpHandle_ = TextureManager::Load("spaceMoveText.png");                             // "ジャンプしてみよう"
+	uiGlideHandle_ = TextureManager::Load("spacePrasplMoveText.png");                            // "滑空してみよう"
+	uiAttackHandle_ = TextureManager::Load("FKeyslShotText.png");                           // "攻撃してみよう"
+	uiFinishHandle_ = TextureManager::Load("tutorialWinText.png");                           // "おつかれさま！"
+
 
 
 	// パーティクルの初期化
@@ -69,9 +73,28 @@ void TutorialScene::Initialize() {
 	//========================
 	// 🧍 プレイヤーの初期化
 	//========================
+	// 1. まずデフォルトの位置を決めておく（万が一90番が見つからなかった時の保険）
+	Vector3 playerPosition = mapChipField_->GetChipPositionIndex(3, 2);
+
+	// 2. マップ全体を調べて「kPlayerStart_ (90)」を探す
+	for (uint32_t y = 0; y < mapChipField_->GetNumBlockVirtcal(); ++y) {
+		for (uint32_t x = 0; x < mapChipField_->GetNumBlockHorizonal(); ++x) {
+
+			// もし「プレイヤーのスタート地点(90)」なら
+			if (mapChipField_->GetMapChipTypeByindex(x, y) == MapChipType::kPlayerStart_) {
+				// その座標を取得して playerPosition を上書き！
+				playerPosition = mapChipField_->GetChipPositionIndex(x, y);
+
+				// ：見つけた後は、その場所を「空白(0)」に戻しておく
+				mapChipField_->SetMapChipType(x, y, MapChipType::kBlank_);
+			}
+		}
+	}
+
+	// 3. 決定した座標を使って初期化
 	player_ = new Player();
-	Vector3 playerPosition = mapChipField_->GetChipPositionIndex(3, 16);
-	player_->Initialize(playerModel_, &camera_, playerPosition);
+	player_->Initialize(playerModel_, &camera_, playerPosition); 
+
 	player_->SetMapChipField(mapChipField_);
 	player_->SetisMove(true);
 	player_->SetParticleManager(particleManager_);
@@ -155,32 +178,28 @@ void TutorialScene::Initialize() {
 	GameClearTextSprite_ = Sprite::Create(textureHandleGameClearText_, {0.0f, 0.0f}); // ゲームクリアテキスト用スプライトの作成
 	spriteCountdown_ = Sprite::Create(textureHandleCountdown3_, {0, 0});              // 初期スプライト（3）
 	Vector2 spritePos = {200.0f, 0.0f};
-	sprite1_1_ = Sprite::Create(textureHandle1_1_, spritePos);
-	sprite1_2_ = Sprite::Create(textureHandle1_2_, spritePos);
-	sprite1_3_ = Sprite::Create(textureHandle1_3_, spritePos);
 
-	float uiX = 1280.0f / 2.0f - 100.0f; // 画面中央あたり
-	float uiY = 100.0f;                  // 上の方
+
+	float uiX = 1280.0f / 2.0f - 200.0f; // 画面中央あたり
+	float uiY = 300.0f;                  // 上の方
 
 	// 1. 移動 (白)
-	uiMove_ = Sprite::Create(textureHandel_, {uiX, uiY});
-	uiMove_->SetColor({1, 1, 1, 1}); // 白
+	uiMove_ = Sprite::Create(uiMoveHandle_, {uiX, uiY});
 
 	// 2. ジャンプ (赤)
-	uiJump_ = Sprite::Create(textureHandel_, {uiX, uiY});
-	uiJump_->SetColor({1, 0.5f, 0.5f, 1}); // 赤っぽい色
+	uiJump_ = Sprite::Create(uiJumpHandle_, {uiX, uiY});
 
 	// 3. 滑空 (青)
-	uiGlide_ = Sprite::Create(textureHandel_, {uiX, uiY});
-	uiGlide_->SetColor({0.5f, 0.5f, 1, 1}); // 青っぽい色
+	uiGlide_ = Sprite::Create(uiGlideHandle_, {uiX, uiY});
+
 
 	// 4. 攻撃 (黄色)
-	uiAttack_ = Sprite::Create(textureHandel_, {uiX, uiY});
-	uiAttack_->SetColor({1, 1, 0.5f, 1}); // 黄色っぽい色
+	uiAttack_ = Sprite::Create(uiAttackHandle_, {uiX, uiY});
+
 
 	// 5. 終了 (緑)
-	uiFinish_ = Sprite::Create(textureHandel_, {uiX, uiY});
-	uiFinish_->SetColor({0.5f, 1, 0.5f, 1}); // 緑っぽい色
+	uiFinish_ = Sprite::Create(uiFinishHandle_, {uiX, uiY});
+
 
 	// HPアイコンのテクスチャを読み込む
 	textureHandleHpIconNormal_ = TextureManager::Load("playerAikon.png");
