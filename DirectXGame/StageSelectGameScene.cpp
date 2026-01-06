@@ -593,7 +593,7 @@ void StageSelectGameScene::CheekAllcollision() {
 				break;
 			}
 
-			if (Input::GetInstance()->TriggerKey(DIK_W)) {
+			if (Input::GetInstance()->TriggerKey(DIK_W) && !isTimerFinished_) {
 				isTimerFinished_ = true;
 				isSprite = false; // スプライト表示
 				fade_->Start(Fade::Status::FadeOut, 3.0f);

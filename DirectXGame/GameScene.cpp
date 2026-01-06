@@ -305,7 +305,30 @@ void GameScene::Update() {
 				isPaused_ = false; // ポーズを解除
 			} else if (currentSelect_ == PauseSelect::kStageSelect) {
 				//  ステージセレクト画面の1-1看板のマップチップ座標を指定
-				Vector3 signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
+				Vector3 signboardPosition;
+				switch (currentStageID_) {
+				case 1:
+					// ステージ1の看板の位置
+					signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
+					break;
+				case 2:
+					// ステージ2の看板の位置
+					signboardPosition
+					= mapChipField_->GetChipPositionIndex(21, 9);
+					break;
+				case 3:
+					// ステージ3の看板の位置
+					signboardPosition = mapChipField_->GetChipPositionIndex(36, 9);
+					break;
+				case 4:
+					// ステージ4の看板の位置
+					signboardPosition = mapChipField_->GetChipPositionIndex(57, 17);
+					break;
+				default:
+					// デフォルト
+					signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
+					break;
+				}
 
 				// 次のプレイヤー初期位置をGameStateManagerに保存
 				GameStateManager::GetInstance()->SetPlayerStartPosition(signboardPosition);
@@ -413,7 +436,26 @@ void GameScene::Update() {
 		for (Enemy* enemy : enemys_) {
 			enemy->Update();
 		}
-		//player_->CheckAndResolveTogeKabeCollision(togeKabe_);
+
+
+			switch (currentStageID_) {
+		case 1:
+			// ステージ1の看板の位置
+			player_->CheckAndResolveTogeKabeCollision(togeKabe_);
+			break;
+		case 2:
+			// ステージ2の看板の位置
+			player_->CheckAndResolveTogeKabeCollision(togeKabe_);
+			break;
+		case 3:
+			// ステージ3の看板の位置
+			player_->CheckAndResolveTogeKabeCollision(togeKabe_);
+			break;
+		case 4:
+			break;
+		}
+
+
 		CheekAllcollision();
 		CController_->Update();
 
@@ -536,7 +578,6 @@ void GameScene::Update() {
 				Vector3 pos = enemy->GetWorldPosition();
 
 				// 2. その座標に対応するマップチップのインデックスを取得
-				// (MapChipField.h にあるこの関数を使います)
 				MapChipField::IndexSet index = mapChipField_->GetMapChipIndexSetByPosition(pos);
 
 				// 3. その場所を「スターコイン(99)」に書き換える！
@@ -706,7 +747,19 @@ void GameScene::Draw() {
 		floor->Draw(breakableBlockModel_, &camera_); // 破壊可能な床の描画
 	}
 
-	togeKabe_->Draw(); // トゲ壁の描画
+
+
+	switch (currentStageID_) {
+	case 1:
+		togeKabe_->Draw(); // トゲ壁の描画
+		break;
+	case 2:
+		togeKabe_->Draw(); // トゲ壁の描画
+		break;
+	case 3:
+		togeKabe_->Draw(); // トゲ壁の描画
+		break;
+	}
 
 	// 🌌 スカイドーム描画
 	skydome_->Draw();
@@ -1053,7 +1106,30 @@ void GameScene::ChangePhase() {
 		finishedTimer++;
 		deatparticles_->Update();
 	//  ステージセレクト画面の1-1看板のマップチップ座標を指定
-		Vector3 signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
+		Vector3 signboardPosition;
+
+		switch (currentStageID_) {
+		case 1:
+			// ステージ1の看板の位置
+			signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
+			break;
+		case 2:
+			// ステージ2の看板の位置
+			signboardPosition = mapChipField_->GetChipPositionIndex(21, 9);
+			break;
+		case 3:
+			// ステージ3の看板の位置
+			signboardPosition = mapChipField_->GetChipPositionIndex(36, 9);
+			break;
+		case 4:
+			// ステージ4の看板の位置
+			signboardPosition = mapChipField_->GetChipPositionIndex(57, 17);
+			break;
+		default:
+			// デフォルト
+			signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
+			break;
+		}
 
 		// 次のプレイヤー初期位置をGameStateManagerに保存
 		GameStateManager::GetInstance()->SetPlayerStartPosition(signboardPosition);

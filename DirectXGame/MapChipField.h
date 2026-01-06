@@ -21,7 +21,7 @@ enum class MapChipType {
 	kCloud_ = 9,     // 雲ブロック（乗ると落ちる）
 	kWallBreak_ = 10, // 壁を壊せるブロック
 
-
+	
 	kEnemyWalk_ = 20,    // 歩く敵
 	kEnemyShooter_ = 21, // 撃つ敵
 	kEnemyHoming_ = 22,  // ホーミング敵
