@@ -14,9 +14,24 @@ enum class MapChipType {
 	kGrass_=2, // 草ブロック
 	kGoal_=3,  // ゴール地点
 	kSpike_=5, // トゲ（当たると死亡）
-	kBreakable_=4, // ★ 追加: 壊れる床
-	kJumpPad_= 6 ,  // ★ キノコジャンプ台
-	kIceFloor_ = 7 ,  // ★ 追加: 滑る床
+	kBreakable_=4, //  壊れる床
+	kJumpPad_= 6 ,  // キノコジャンプ台
+	kIceFloor_ = 7 ,  //  滑る床
+	kLadder_ = 8 ,    // はしご
+	kCloud_ = 9,     // 雲ブロック（乗ると落ちる）
+	kWallBreak_ = 10, // 壁を壊せるブロック
+
+	
+	kEnemyWalk_ = 20,    // 歩く敵
+	kEnemyShooter_ = 21, // 撃つ敵
+	kEnemyHoming_ = 22,  // ホーミング敵
+	kEnemySplit_ = 23,   // 分裂する敵
+	kSlime = 24,         // スライム敵
+	kFlee = 25,          // 逃げる敵
+
+
+	kPlayerStart_ = 90, // プレイヤースタート地点
+	kStarCoin_ = 99
 };
 
 /// ---------------------------
@@ -36,9 +51,20 @@ std::map<std::string, MapChipType> mapChipTable = {
     {"2", MapChipType::kGrass_},
     {"3", MapChipType::kGoal_ },
     {"5", MapChipType::kSpike_},
-	{"4", MapChipType::kBreakable_}, // ★ 追加: 壊れる床のマップチップ
+	{"4", MapChipType::kBreakable_}, //  壊れる床のマップチップ
     {"6", MapChipType::kJumpPad_} ,
-    {"7", MapChipType::kIceFloor_ }  // ★ 追加: 滑る床のマップチップ
+    {"7", MapChipType::kIceFloor_ },  //  滑る床のマップチップ
+    {"8", MapChipType::kLadder_   }, // はしごのマップチップ
+    {"9", MapChipType::kCloud_    }, // 雲ブロックのマップチップ
+    {"10", MapChipType::kWallBreak_}, // 壁を壊せるブロックのマップチップ
+    {"20", MapChipType::kEnemyWalk_   },
+    {"21", MapChipType::kEnemyShooter_},
+    {"22", MapChipType::kEnemyHoming_ },
+    {"23", MapChipType::kEnemySplit_  },
+    {"24", MapChipType::kSlime        },
+    {"25", MapChipType::kFlee         },
+    {"90", MapChipType::kPlayerStart_ },
+    {"99", MapChipType::kStarCoin_    },
 };
 }
 
@@ -95,6 +121,6 @@ private:
 	static inline const float kBlockHeight = 1.0f;
 
 	/// マップチップの縦横サイズ（チップ数）
-	static inline const uint32_t kNumBlockVirtical = 20;
-	static inline const uint32_t kNumBlockHorizonal = 100;
+	uint32_t kNumBlockVirtical = 20;
+	uint32_t kNumBlockHorizonal = 100;
 };

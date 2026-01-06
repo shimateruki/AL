@@ -18,6 +18,8 @@
 #include"CloudPlatform.h"
 #include "yama.h"
 #include"tree.h"
+#include "BreakableFloor.h"
+#include "ParticleManager.h"
 
 // ===== ゲームシーンクラス定義 =====
 class GameScene {
@@ -32,7 +34,7 @@ public:
 		GameClear // ゲームクリア時
 	};
 
-	// ★ 追加: ポーズ画面の各選択肢
+	// ポーズ画面の各選択肢
 	enum class PauseSelect {
 		kContinue,    // ゲームを続ける
 		kStageSelect, // ステージセレクトに戻る
@@ -48,7 +50,7 @@ public:
 
 	enum class NextScene { kGameOver, kStageSelect, kNone };
 	// 初期化・更新・描画
-	void Initialize();
+	void Initialize(int stageID);
 	void Update();
 	void Draw();
 
@@ -68,7 +70,7 @@ public:
 	~GameScene(); // デストラクタ
 
 private:
-	// ★ 追加: ポーズ関連のメンバ変数
+	//ポーズ関連のメンバ変数
 	bool isPaused_ = false;
 	PauseSelect currentSelect_ = PauseSelect::kContinue;
 	int currentSelectIndex_ = 0; // 現在の選択肢インデックス
@@ -80,7 +82,6 @@ private:
 	KamataEngine::Model* playerAttackModel_ = nullptr;  // プレイヤー攻撃モデル
 	KamataEngine::Model* goalModel_ = nullptr;          // ゴールモデル
 	KamataEngine::Model* modelSkydome_ = nullptr;       // スカイドームモデル
-	KamataEngine::Model* enemy_model_ = nullptr;        // 敵モデル
 	KamataEngine::Model* deatparticlesModel_ = nullptr; // デスパーティクルモデル
 	KamataEngine::Model* hitEffectModel_ = nullptr;     // ヒットエフェクトモデル
 	KamataEngine::Model* GameClearTextModel_ = nullptr; // ゲームクリアテキストモデル
@@ -89,16 +90,31 @@ private:
 	KamataEngine::Model* CloudPlatformModel_ = nullptr; // 雲プラットフォームモデル
 	KamataEngine::Model* yamaModel = nullptr;           // 山モデル
 	KamataEngine::Model* treeModel_ = nullptr;          // 木モデル
-
+	KamataEngine::Model* breakableBlockModel_ = nullptr; // 破壊可能ブロックモデル
+	KamataEngine::Model* iceBlockModel_ = nullptr;       // 氷ブロックモデル
+	KamataEngine::Model* kinokoModel_ = nullptr;         // キノコモデル
+	KamataEngine::Model* enemy_model_Walk = nullptr;     // 敵モデル
+	KamataEngine::Model* enemy_model_Shooter = nullptr; // 敵のモデル(弾打つ敵)
+	KamataEngine::Model* enemy_model_Homing = nullptr; // 敵のモデル(ホーミングして爆発する敵)
+	KamataEngine::Model* enemy_model_Fly = nullptr;//敵のモデル
+	KamataEngine::Model* umbrellaModel_ = nullptr;     // 傘モデル
+	KamataEngine::Model* hasigoModel_ = nullptr; // はしごモデル
+	KamataEngine::Model* kumoModel_ = nullptr;         // 雲モデル
+	KamataEngine::Model* iwaModel_ = nullptr;    // 岩モデル
+	Model* starCoinModel_ = nullptr;
+	Model* particleModel_ = nullptr; // パーティクル用の汎用モデル（球や板ポリ）
 	KamataEngine::Sprite* TextSprite1_1;
 	KamataEngine::Sprite* poseSprite = nullptr; // 数字表示用スプライト
 	KamataEngine::Sprite* yazirusiSprite = nullptr;
 	KamataEngine::Sprite* enterSprite_ = nullptr; // エンターキー用スプライト
 	KamataEngine::Sprite* GameClearTextSprite_ = nullptr; // ゲームクリアテキスト用スプライト
-	KamataEngine::Sprite* pauseTextSprite_ = nullptr;     
+	KamataEngine::Sprite* pauseTextSprite_ = nullptr;  
+		// 各ステージ画像のスプライト
+	KamataEngine::Sprite* sprite1_1_ = nullptr;
+	KamataEngine::Sprite* sprite1_2_ = nullptr;
+	KamataEngine::Sprite* sprite1_3_ = nullptr;
 
-
-
+	std::vector<std::unique_ptr<BreakableFloor>> breakableFloors_;
 
 	// ===== ワールド変換関連 =====
 	KamataEngine::WorldTransform worldTransform_;                                  // 共通ワールド変換
@@ -123,8 +139,9 @@ private:
 	std::vector<Enemy*> enemys_;
 	std::vector<Yama*> yama_;                // 山リスト
 	std::vector<Tree*> tree_;                // 木リスト
+	std::list<std::unique_ptr<WorldTransform>> starCoins_; // 配置されたコインのリスト
 	
-
+		ParticleManager* particleManager_ = nullptr;
 
 
 	std::vector<CloudPlatform*> CloudPlatform; // 雲リスト
@@ -148,6 +165,9 @@ private:
 	uint32_t clearbgmVoiceHandle_ = 0; // BGM再生のハンドル
 
 	uint32_t textureHandle;
+	uint32_t textureHandle1_1_ = 0;
+	uint32_t textureHandle1_2_ = 0;
+	uint32_t textureHandle1_3_ = 0;
 	uint32_t textureHandlePhose_ = 0; 
 	uint32_t TextureHandleYazirusi_ = 0;
 	uint32_t textureHandleEnter_ = 0; // テクスチャハンドル
@@ -160,7 +180,15 @@ private:
 
 		CountdownState countdownState_ = CountdownState::kOff;
 	float countdownTimer_ = 0.0f;
+	    // スターコイン関連のメンバ変数
+	    uint32_t texHandleCoinEmpty_ = 0; // 未取得
+	    uint32_t texHandleCoinGet_ = 0;   // 取得済み
 
+	    // コインのUIスプライト（3枚分）
+	    KamataEngine::Sprite* uiStarCoins_[3] = {nullptr};
+
+	    // 現在の獲得枚数
+	    int currentStarCoinCount_ = 0;
 
 
 	// カウントダウン表示用のスプライトハンドル
@@ -182,10 +210,10 @@ private:
 	//----------------------------------------
 	uint32_t textureHandleHeart_ = 0; // 満タンのハートの画像
 
-	// ★HPの最大値（Player.cppのhp_ = 3; と合わせる）
+	// HPの最大値（Player.cppのhp_ = 3; と合わせる）
 	static const int kMaxPlayerHp = 3;
 
-	// ★満タンハートのスプライトだけを持つ
+	// 満タンハートのスプライトだけを持つ
 	std::vector<KamataEngine::Sprite*> spriteHearts_;
 
 	//BGM
@@ -200,4 +228,11 @@ private:
 
 
 	KamataEngine::Sprite* spriteCountdown_ = nullptr;
+	// ：敵配置用の関数
+	void SpawnEnemies(int stageID);
+
+	// 現在のステージ番号を覚えておく
+	int currentStageID_ = 1;
+	// 現在のプレイで取った枚数
+	int currentPlayCoinCount_ = 0;
 };

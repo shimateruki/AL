@@ -14,11 +14,16 @@ public:
 		kfadeOut
 
 	};
+	enum class NextScene {
+		kGame,    // 通常のゲーム本編へ
+		kTutorial // チュートリアルへ
+	};
 	void Initialize();
 	void Update();
 	void Draw();
 	 ~TitleScene();
 	bool isfinished() const { return finished_; }
+	 NextScene GetNextScene() const { return nextScene_; }
 
 private:
 	KamataEngine::Model* playerModel_ = nullptr;
@@ -27,7 +32,8 @@ private:
 	KamataEngine::Model* modelSkydome_ = nullptr; // スカイドームモデル
 
 	KamataEngine::Sprite* startSprite_ = nullptr; // スタートボタン用スプライト
-	KamataEngine::Sprite* enterSprite_ = nullptr; // エンターキー用スプライト
+	KamataEngine::Sprite* spaceSprite_ = nullptr; // エンターキー用スプライト
+	KamataEngine::Sprite* tutorialSprite_ = nullptr;
 	Math* math;
 	Player* player_;
 	Skydome* skydome_ = nullptr; // スカイドームオブジェクト
@@ -47,6 +53,7 @@ private:
 	//  テクスチャハンドル
 	uint32_t textureHandleStart_ = 0;      // テクスチャハンドル
 	uint32_t textureHandleEnter_ = 0; // テクスチャハンドル
+	uint32_t textureHandleTutorial_ = 0;
 	//----------------------------------------
 	// オーディオハンドル
 	//----------------------------------------
@@ -61,4 +68,11 @@ private:
 
 	Audio* seAudio;
 
+
+	float blinkTimer_;
+	KamataEngine::Sprite* arrowSprite_ = nullptr;
+	uint32_t textureHandleArrow_ = 0;
+	//-- 選択管理 ---
+	int currentSelection_ = 0;               // 0: Start, 1: Tutorial
+	NextScene nextScene_ = NextScene::kGame; // デフォルトはゲーム
 };

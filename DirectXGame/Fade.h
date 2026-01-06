@@ -25,4 +25,5 @@ private:
 	float duration_ = 0.0f;
 	//経過時間カウンター
 	float counter_ = 0.0f;
+	float openRate_ = 0.0f;
 };

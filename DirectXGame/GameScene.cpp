@@ -5,8 +5,8 @@
 using namespace KamataEngine; 
 
 // GameSceneの初期化処理
-void GameScene::Initialize() {
-
+void GameScene::Initialize(int stageID) {
+	currentStageID_ = stageID;
 	//========================
 	// 📦 リソースの読み込み
 	//========================
@@ -16,13 +16,26 @@ void GameScene::Initialize() {
 	modelSkydome_ = Model::CreateFromOBJ("skydome", true);
 	playerModel_ = Model::CreateFromOBJ("player", true);
 	deatparticlesModel_ = Model::CreateFromOBJ("deathParticle", true);
+	breakableBlockModel_ = Model::CreateFromOBJ("Breakable", true); // 破壊可能ブロックのモデル読み込み
 	hitEffectModel_ = Model::CreateFromOBJ("hit", true);
 	goalModel_ = Model::CreateFromOBJ("gorl", true);
 	GameClearTextModel_ = Model::CreateFromOBJ("GameClear", true);
 	togeKabeModel_ = Model::CreateFromOBJ("kabeToge", true);
 	togeModel_ = Model::CreateFromOBJ("toge", true);
-	textureHandle = TextureManager::Load("1-1.png");
 	yamaModel = Model::CreateFromOBJ("yama", true); // 山モデルの読み込み
+	kinokoModel_ = Model::CreateFromOBJ("kinoko", true); // キノコモデルの読み込み
+	enemy_model_Walk = Model::CreateFromOBJ("enemy", true);  // 敵モデルの読み込み
+	enemy_model_Shooter = Model::CreateFromOBJ("enemyShooter", true); // 敵モデルの読み込み
+	enemy_model_Homing = Model::CreateFromOBJ("enemyHoming", true);  // 敵モデルの読み込み
+	iceBlockModel_ = Model::CreateFromOBJ("iceBlock", true);
+	umbrellaModel_ = Model::CreateFromOBJ("parasol", true); // 傘モデルの読み込み
+	hasigoModel_ = Model::CreateFromOBJ("hasigo", true); // 傘モデルの読み込み
+	kumoModel_ = Model::CreateFromOBJ("kumo", true);        // 雲モデルの読み込み
+	iwaModel_ = Model::CreateFromOBJ("iwa", true);       // 岩モデルの読み込み
+	starCoinModel_ = Model::CreateFromOBJ("koin", true);  // スターコインモデルの読み込み
+
+	// パーティクル用のモデル読み込み
+	particleModel_ = Model::CreateFromOBJ("particle", true);
 
 	// 数字表示用テクスチャの読み込み
 	textureHandlePhose_ = TextureManager::Load("Phose.png");
@@ -31,13 +44,19 @@ void GameScene::Initialize() {
 	textureHandleGameClearText_ = TextureManager::Load("TextSpriteGameClear.png"); // ゲームクリアテキスト用テクスチャの読み込み
 	textureHandlePauseText_ = TextureManager::Load("phoseText.png");               // ポーズテキスト用テクスチャの読み込み
 	treeModel_ = Model::CreateFromOBJ("tree", true);                               // 木モデルの読み込
-	enemy_model_ = Model::CreateFromOBJ("enemy", true);                            // 敵モデルの読み込み
+	textureHandle1_1_ = TextureManager::Load("1-1.png");
+	textureHandle1_2_ = TextureManager::Load("1-2.png");
+	textureHandle1_3_ = TextureManager::Load("1-3.png");
+
+
 	textureHandleCountdown3_ = TextureManager::Load("3.png");                   // 3の画像
 	textureHandleCountdown2_ = TextureManager::Load("2.png");                   // 2の画像
 	textureHandleCountdown1_ = TextureManager::Load("1.png");                   // 1の画像
 	textureHandleCountdownGo_ = TextureManager::Load("go.png");                 // GOの画像
 
-
+	//パーティクルの初期化
+	particleManager_ = new ParticleManager();
+	particleManager_->Initialize(particleModel_, &camera_);
 	
 	//========================
 	// 🎥 カメラの設定
@@ -50,17 +69,54 @@ void GameScene::Initialize() {
 	//========================
 	// 🗺️ マップ読み込み
 	//========================
+	std::stringstream ss;
+	ss << "Resources/map/1-" << stageID << ".csv";
 	mapChipField_ = new MapChipField();
-	mapChipField_->LoadMapChipCsv("Resources/1-1.csv");
-
+	mapChipField_->LoadMapChipCsv(ss.str()); 
+	CController_ = new CameraController();
+	CController_->Initialize(&camera_);
 	//========================
 	// 🧍 プレイヤーの初期化
 	//========================
+	// 1. まずデフォルトの位置を決めておく（万が一90番が見つからなかった時の保険）
+	Vector3 playerPosition = mapChipField_->GetChipPositionIndex(3, 2);
+
+	// 2. マップ全体を調べて「kPlayerStart_ (90)」を探す
+	for (uint32_t y = 0; y < mapChipField_->GetNumBlockVirtcal(); ++y) {
+		for (uint32_t x = 0; x < mapChipField_->GetNumBlockHorizonal(); ++x) {
+
+			// もし「プレイヤーのスタート地点(90)」なら
+			if (mapChipField_->GetMapChipTypeByindex(x, y) == MapChipType::kPlayerStart_) {
+				// その座標を取得して playerPosition を上書き！
+				playerPosition = mapChipField_->GetChipPositionIndex(x, y);
+
+				// ：見つけた後は、その場所を「空白(0)」に戻しておく
+				mapChipField_->SetMapChipType(x, y, MapChipType::kBlank_);
+			}
+		}
+	}
+
+	// 3. 決定した座標を使って初期化
 	player_ = new Player();
-	Vector3 playerPosition = mapChipField_->GetChipPositionIndex(3, 16);
-	player_->Initialize(playerModel_, &camera_, playerPosition);
+	player_->Initialize(playerModel_, &camera_, playerPosition); // <--- ここに見つけた座標が入る
+
 	player_->SetMapChipField(mapChipField_);
 	player_->SetisMove(false);
+	player_->SetParticleManager(particleManager_);
+	player_->SetUmbrellaModel(umbrellaModel_);
+	player_->SetCameraController(CController_);
+
+
+	//========================
+	// 🎮 カメラコントローラー
+	//========================
+
+
+	CController_->SetTarget(player_);
+	CController_->Reset();
+	CameraController::Rect cameraArea = {12.0f, 100 - 12.0f, 6.0f, 40.0f};
+	CController_->SetMovableSrea(cameraArea);
+
 
 	//========================
 	// 💥 ヒットエフェクト設定
@@ -68,20 +124,6 @@ void GameScene::Initialize() {
 	HitEffect::SetModel(hitEffectModel_);
 	HitEffect::SetCamera(&camera_);
 
-	//========================
-	// 👾 敵の初期化
-	//========================
-	enemys_.push_back(new Enemy());
-	enemys_.back()->Initialize(enemy_model_, &camera_, mapChipField_->GetChipPositionIndex(15, 15),Enemy::Type::kWalk);
-	enemys_.back()->SetMapChipField(mapChipField_);
-	enemys_.back()->SetGameScene(this);
-	enemys_.back()->SetPlayer(player_);
-	enemys_.back()->SetFlightPattern(Enemy::FlightPattern::kHorizontal);
-	enemys_.push_back(new Enemy());
-	enemys_.back()->Initialize(enemy_model_, &camera_, mapChipField_->GetChipPositionIndex(89, 14));
-	enemys_.back()->SetMapChipField(mapChipField_);
-	enemys_.back()->SetGameScene(this);
-	
 
 	//========================
 	// 🌪️ パーティクルの生成
@@ -95,15 +137,7 @@ void GameScene::Initialize() {
 	skydome_ = new Skydome();
 	skydome_->Initialize(modelSkydome_, &camera_);
 
-	//========================
-	// 🎮 カメラコントローラー
-	//========================
-	CController_ = new CameraController();
-	CController_->Initialize(&camera_);
-	CController_->SetTarget(player_);
-	CController_->Reset();
-	CameraController::Rect cameraArea = {12.0f, 100 - 12.0f, 6.0f, 6.0f};
-	CController_->SetMovableSrea(cameraArea);
+
 
 	//========================
 	// 🧱 ブロック生成
@@ -133,28 +167,30 @@ void GameScene::Initialize() {
 	togeKabe_->Initialize(togeKabeModel_, &camera_, mapChipField_->GetChipPositionIndex(0, 18));
 	togeKabe_->SetIsmove(false);
 
-
+	//山の初期化
 	yama_.push_back(new Yama());
 	yama_.back()->Initialize(yamaModel, &camera_, mapChipField_->GetChipPositionIndex(20, 19));
-
 	yama_.push_back(new Yama());
 	yama_.back()->Initialize(yamaModel, &camera_, mapChipField_->GetChipPositionIndex(70, 19));
 
-	
+	// 木の初期化
 	tree_.push_back(new Tree());
 	tree_.back()->Initialize(treeModel_, &camera_, mapChipField_->GetChipPositionIndex(5, 19));
 	tree_.push_back(new Tree());
 	tree_.back()->Initialize(treeModel_, &camera_, mapChipField_->GetChipPositionIndex(90, 19));
 
-
+	// spriteの初期化
 	TextSprite1_1 = Sprite::Create(textureHandle, {100.50});
 	poseSprite = Sprite::Create(textureHandlePhose_, {0.0});
 	yazirusiSprite = Sprite::Create(TextureHandleYazirusi_, {180, 190});
 	enterSprite_ = Sprite::Create(textureHandleEnter_, {0.0f, 0.0f}); // エンターキー用スプライトの作成
 	pauseTextSprite_ = Sprite::Create(textureHandlePauseText_, {0.0f, 0.0f}); // ポーズメニュー用スプライトの作成
-	// ゲームクリアテキストスプライトの作成
 	GameClearTextSprite_ = Sprite::Create(textureHandleGameClearText_, {0.0f, 0.0f}); // ゲームクリアテキスト用スプライトの作成
 	spriteCountdown_ = Sprite::Create(textureHandleCountdown3_, {0, 0});              // 初期スプライト（3）
+	Vector2 spritePos = {200.0f, 0.0f};
+	sprite1_1_ = Sprite::Create(textureHandle1_1_, spritePos);
+	sprite1_2_ = Sprite::Create(textureHandle1_2_, spritePos);
+	sprite1_3_ = Sprite::Create(textureHandle1_3_, spritePos);
 	// HPアイコンのテクスチャを読み込む
 	textureHandleHpIconNormal_ = TextureManager::Load("playerAikon.png");
 	textureHandleHpIconDamage_ = TextureManager::Load("playerAikonDamage.png");
@@ -171,25 +207,42 @@ void GameScene::Initialize() {
 
 	// HPの最大値(3回)ループして、ハートのスプライトを生成
 	for (int i = 0; i < kMaxPlayerHp; i++) {
-		// 表示座標を計算 (例: 20.0, 70.0, 120.0)
+		// 表示座標を計算 
 		Vector2 pos = {heartBasePos.x + (i * heartSpacing), heartBasePos.y};
 
 		// 満タンハートのスプライトをvectorに追加
 		spriteHearts_.push_back(Sprite::Create(textureHandleHeart_, pos));
 	}
 
-	
-	
+	texHandleCoinEmpty_ = TextureManager::Load("noKoinUi.png");
+	texHandleCoinGet_ = TextureManager::Load("koinUi.png");
 
+	// 1. セーブデータから、このステージのコイン取得数を取得
+	currentStarCoinCount_ = GameStateManager::GetInstance()->GetStarCoinRecord(currentStageID_);
 
-	GameStateManager::GetInstance()->SetCurrentStageID(1); // ステージ1
+	// 2. もし変な値（3以上とか）が入ってたら困るので、一応制限をかけておく
+	if (currentStarCoinCount_ > 3) {
+		currentStarCoinCount_ = 3;
+	}
 
+	// 3. スプライトの生成と配置
+	for (int i = 0; i < 3; i++) {
+		// 基本は「Empty(未取得)」で作る
+		uiStarCoins_[i] = Sprite::Create(texHandleCoinEmpty_, {0, 0});
+		uiStarCoins_[i]->SetPosition({30.0f + (i * 50.0f), 30.0f});
 
+		// もし既に持っている枚数分なら、最初から「Get(取得済み)」の画像にする
+		if (i < currentStarCoinCount_) {
+			uiStarCoins_[i]->SetTextureHandle(texHandleCoinGet_);
+		}
+	}
 
-
+	GameStateManager::GetInstance()->SetCurrentStageID(currentStageID_); // ステージ1
 	
 	isSprite = true;
 	firstFrame = true;
+	currentPlayCoinCount_ = 0;
+	starCoins_.clear();
 	currentSelectIndex_ = 0; // 初期選択インデックス
 	
 
@@ -212,7 +265,6 @@ void GameScene::Update() {
 	// ポーズ状態の切り替え
 	if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_P)&&!player_->IsDead()&&!isGameClear_) {
 		isPaused_ = !isPaused_;
-		consorlVoiceSelectHandle = KamataEngine::Audio::GetInstance()->PlayWave(consorlSelectHandle, false, 0.5f);
 	}
 
 	if (currentSelect_ == PauseSelect::kContinue) {
@@ -228,7 +280,6 @@ void GameScene::Update() {
 	if (isPaused_) {
 		// Wキーで上に移動
 		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_W)) {
-			consorlVoiceSelectHandle = KamataEngine::Audio::GetInstance()->PlayWave(consorlSelectHandle, false, 0.5f);
 			if (currentSelect_ == PauseSelect::kContinue) {
 				currentSelect_ = PauseSelect::kTitle;
 			} else if (currentSelect_ == PauseSelect::kStageSelect) {
@@ -239,7 +290,6 @@ void GameScene::Update() {
 		}
 		// Sキーで下に移動
 		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_S)) {
-			consorlVoiceSelectHandle = KamataEngine::Audio::GetInstance()->PlayWave(consorlSelectHandle, false, 0.5f);
 			if (currentSelect_ == PauseSelect::kContinue) {
 				currentSelect_ = PauseSelect::kStageSelect;
 			} else if (currentSelect_ == PauseSelect::kStageSelect) {
@@ -249,13 +299,36 @@ void GameScene::Update() {
 			}
 		}
 
-		// 決定（Enterキー）
-		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_RETURN)) {
+		// 決定（Spaceキー）
+		if (KamataEngine::Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 			if (currentSelect_ == PauseSelect::kContinue) {
 				isPaused_ = false; // ポーズを解除
 			} else if (currentSelect_ == PauseSelect::kStageSelect) {
-				// ★ 修正: ステージセレクト画面の1-1看板のマップチップ座標を指定
-				Vector3 signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
+				//  ステージセレクト画面の1-1看板のマップチップ座標を指定
+				Vector3 signboardPosition;
+				switch (currentStageID_) {
+				case 1:
+					// ステージ1の看板の位置
+					signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
+					break;
+				case 2:
+					// ステージ2の看板の位置
+					signboardPosition
+					= mapChipField_->GetChipPositionIndex(21, 9);
+					break;
+				case 3:
+					// ステージ3の看板の位置
+					signboardPosition = mapChipField_->GetChipPositionIndex(36, 9);
+					break;
+				case 4:
+					// ステージ4の看板の位置
+					signboardPosition = mapChipField_->GetChipPositionIndex(57, 17);
+					break;
+				default:
+					// デフォルト
+					signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
+					break;
+				}
 
 				// 次のプレイヤー初期位置をGameStateManagerに保存
 				GameStateManager::GetInstance()->SetPlayerStartPosition(signboardPosition);
@@ -270,7 +343,9 @@ void GameScene::Update() {
 		return;
 	}
 
-
+		for (auto& floor : breakableFloors_) {
+		floor->Update();
+	}
 
 	// ==============================
 	// フェーズごとの処理
@@ -355,13 +430,32 @@ void GameScene::Update() {
 	// プレイ中の処理
 	// ------------------------------
 	case Phase::kPlay:
-
+		particleManager_->Update();
 		player_->Update();
 		togeKabe_->Update();
 		for (Enemy* enemy : enemys_) {
 			enemy->Update();
 		}
-		//player_->CheckAndResolveTogeKabeCollision(togeKabe_);
+
+
+			switch (currentStageID_) {
+		case 1:
+			// ステージ1の看板の位置
+			player_->CheckAndResolveTogeKabeCollision(togeKabe_);
+			break;
+		case 2:
+			// ステージ2の看板の位置
+			player_->CheckAndResolveTogeKabeCollision(togeKabe_);
+			break;
+		case 3:
+			// ステージ3の看板の位置
+			player_->CheckAndResolveTogeKabeCollision(togeKabe_);
+			break;
+		case 4:
+			break;
+		}
+
+
 		CheekAllcollision();
 		CController_->Update();
 
@@ -392,6 +486,17 @@ void GameScene::Update() {
 		}
 
 		skydome_->Update();
+
+
+			if (auto stepped = player_->CheckSteppedBreakable(mapChipField_)) {
+			for (auto& floor : breakableFloors_) {
+				if (floor->GetIndexX() == stepped->xIndex && floor->GetIndexY() == stepped->yIndex) {
+					floor->OnStepped(); // ← 踏んだその1枚だけ開始
+					break;              // 見つかったら終わり
+				}
+			}
+		}
+		   
 		break;
 
 	// ------------------------------
@@ -430,6 +535,15 @@ void GameScene::Update() {
 		}
 
 		skydome_->Update();
+		// 壊れる床の更新
+		for (auto it = breakableFloors_.begin(); it != breakableFloors_.end();) {
+			(*it)->Update();
+			if ((*it)->IsBroken()) {
+				it = breakableFloors_.erase(it); // 消滅したらリストから消す
+			} else {
+				++it;
+			}
+		}
 		break;
 
 	// ------------------------------
@@ -448,6 +562,71 @@ void GameScene::Update() {
 	for (HitEffect* hitEffect : hitEffects_) {
 		hitEffect->Update();
 	}
+	// 1. 生まれた子供を一時的に保存するリスト
+	std::list<Enemy*> newEnemies;
+
+	// 2. ベクター用の削除ループ
+	auto it = enemys_.begin();
+	while (it != enemys_.end()) {
+		Enemy* enemy = *it;
+
+		// 敵が死んでいるかチェック
+		if (enemy->isDead()) {
+
+			if (enemy->GetType() == Enemy::Type::kFlee) {
+				// 1. 敵の座標を取得
+				Vector3 pos = enemy->GetWorldPosition();
+
+				// 2. その座標に対応するマップチップのインデックスを取得
+				MapChipField::IndexSet index = mapChipField_->GetMapChipIndexSetByPosition(pos);
+
+				// 3. その場所を「スターコイン(99)」に書き換える！
+				mapChipField_->SetMapChipType(index.xIndex, index.yIndex, MapChipType::kStarCoin_);
+			}
+
+
+
+
+			// 「分裂フラグ」が立っているなら子供を産む
+			if (enemy->GetIsSplit()) {
+				for (int i = 0; i < 2; i++) {
+					// 子供を生成
+					Enemy* newEnemy = new Enemy();
+					Vector3 pos = enemy->GetWorldPosition();
+
+					newEnemy->Initialize(enemy_model_Walk, &camera_, pos, Enemy::Type::kWalk);
+
+					// 必要な情報をセット
+					newEnemy->SetMapChipField(mapChipField_);
+					newEnemy->SetPlayer(player_);
+
+					// 子供はもう分裂しないようにする
+					newEnemy->SetIsSplit(false);
+
+					// 左右に飛び跳ねさせる
+					Vector3 velocity = (i == 0) ? Vector3(-0.1f, 0.5f, 0.0f) : Vector3(0.1f, 0.5f, 0.0f);
+					newEnemy->SetVelocity(velocity);
+
+					// 一時リストに追加
+					newEnemies.push_back(newEnemy);
+				}
+			}
+
+			// 親をメモリから削除
+			delete enemy;
+
+			// リストから削除し、イテレータを次に進める
+			it = enemys_.erase(it);
+		} else {
+			// 死んでいないなら、次の敵へ
+			++it;
+		}
+	}
+
+	// 3. 生まれた子供たちを本物のリストに合流させる
+	for (Enemy* newEnemy : newEnemies) {
+		enemys_.push_back(newEnemy);
+	}
 
 	// 死亡したヒットエフェクトの削除
 	hitEffects_.remove_if([](HitEffect* effect) {
@@ -458,12 +637,42 @@ void GameScene::Update() {
 		return false;
 	});
 
-	// 死亡した敵の削除
+#ifdef _DEBUG
+	// ==========================================
+	//  デバッグ表示: スターコイン確認用
+	// ==========================================
+	ImGui::Begin("Star Coin Debug");
+
+	// 1. 今プレイ中の取得数
+	ImGui::Text("Current Stage: %d", currentStageID_);
+	ImGui::Text("Now Coins (In Game): %d", currentPlayCoinCount_);
+
+	// 2. マネージャーに保存されている「過去の最高記録」
+	int savedRecord = GameStateManager::GetInstance()->GetStarCoinRecord(currentStageID_);
+	ImGui::Text("Saved Record (DB): %d", savedRecord);
+
+	ImGui::Separator();
+
+	// 3. 全ステージの保存状況確認
+	if (ImGui::TreeNode("All Stage Records")) {
+		for (int i = 1; i <= 5; i++) {
+			int count = GameStateManager::GetInstance()->GetStarCoinRecord(i);
+			ImGui::Text("Stage %d: %d", i, count);
+		}
+		ImGui::TreePop();
+	}
+
+	ImGui::End();
+#endif
 
 }
 void GameScene::Draw() {
 	DirectXCommon* dxcommon = DirectXCommon::GetInstance();
 	Model::PreDraw(dxcommon->GetCommandList());
+
+	// コインのアニメーション用に時間を進める
+	static float globalTime = 0.0f;
+	globalTime += 1.0f / 60.0f;
 
 	// 👾 敵の描画
 	for (Enemy* enemy : enemys_) {
@@ -472,9 +681,7 @@ void GameScene::Draw() {
 		enemy->Draw();
 	}
 
-
-
-	  // 🧱 ブロック描画（草・土でモデル切替）
+	// 🧱 ブロック描画（草・土でモデル切替）
 	for (uint32_t y = 0; y < worldTransformBlocks_.size(); ++y) {
 		for (uint32_t x = 0; x < worldTransformBlocks_[y].size(); ++x) {
 			WorldTransform* block = worldTransformBlocks_[y][x];
@@ -484,10 +691,9 @@ void GameScene::Draw() {
 
 				// デバッグ用出力
 				if (type == MapChipType::kGrass_) {
-					std::cout << "Grass at (" << x << ", " << y << ") is being processed.\n";
+					// std::cout << "Grass at (" << x << ", " << y << ") is being processed.\n";
 				}
 
-				// 種類ごとに描画モデルを分岐
 				switch (type) {
 				case MapChipType::kDirt_:
 					dirtModel_->Draw(*block, camera_);
@@ -495,27 +701,70 @@ void GameScene::Draw() {
 				case MapChipType::kGrass_:
 					grassModel_->Draw(*block, camera_);
 					break;
-			case MapChipType::kGoal_:
+				case MapChipType::kGoal_:
 					goalModel_->Draw(*block, camera_);
 					break;
-			case MapChipType::kSpike_:
-				// トゲの壁は特別な処理を行う
-				togeModel_->Draw(*block, camera_);
-				break;
+				case MapChipType::kSpike_:
+					// トゲの壁は特別な処理を行う
+					togeModel_->Draw(*block, camera_);
+					break;
+				case MapChipType::kJumpPad_:
+					kinokoModel_->Draw(*block, camera_);
+					break;
+				case MapChipType::kIceFloor_:
+					iceBlockModel_->Draw(*block, camera_);
+					break;
+				case MapChipType::kLadder_:
+					hasigoModel_->Draw(*block, camera_);
+					break;
+				case MapChipType::kCloud_:
+					kumoModel_->Draw(*block, camera_);
+					break;
+				case MapChipType::kWallBreak_:
+					iwaModel_->Draw(*block, camera_);
+					break;
+
+				// ==========================================
+				// スターコインのアニメーション
+				// ==========================================
+				case MapChipType::kStarCoin_:
+					// 1. くるくる回す (Y軸回転)
+					block->rotation_.y += 0.05f;
+					{ 
+						Vector3 originPos = mapChipField_->GetChipPositionIndex(x, y);
+						block->translation_.y = originPos.y + std::sin(globalTime * 3.0f) * 0.5f;
+					}
+
+
+					starCoinModel_->Draw(*block, camera_);
+					break;
 				}
 			}
 		}
 	}
 
-	togeKabe_->Draw(); // トゲ壁の描画
+	for (auto& floor : breakableFloors_) {
+		floor->Draw(breakableBlockModel_, &camera_); // 破壊可能な床の描画
+	}
 
 
+
+	switch (currentStageID_) {
+	case 1:
+		togeKabe_->Draw(); // トゲ壁の描画
+		break;
+	case 2:
+		togeKabe_->Draw(); // トゲ壁の描画
+		break;
+	case 3:
+		togeKabe_->Draw(); // トゲ壁の描画
+		break;
+	}
 
 	// 🌌 スカイドーム描画
 	skydome_->Draw();
 
-	
-		// 🧍 プレイヤー描画
+	// 🧍 プレイヤー描画
 	if (!player_->IsDead())
 		player_->Draw();
 
@@ -529,10 +778,8 @@ void GameScene::Draw() {
 		tree->Draw();
 	}
 
-	
 	// 🌪️ パーティクル描画
 	deatparticles_->Draw();
-
 
 	// 🎉 ゲームクリア表示
 	if (isGameClear_) {
@@ -540,32 +787,8 @@ void GameScene::Draw() {
 		GameClearTextModel_->Draw(GameClearTextWorldTransform_, camera_);
 		Model::PostDraw();
 	}
-
-	// 🌗 フェード描画
-	fade_->Draw(dxcommon->GetCommandList());
-	Model::PostDraw();
-
 	Sprite::PreDraw(dxcommon->GetCommandList());
-	if (countdownState_ == CountdownState::kCounting) {
-		spriteCountdown_->Draw();
-	}
-	if (isSprite&&!isGameClear_&&!isPaused_) {
-		TextSprite1_1->Draw();
-		pauseTextSprite_->Draw(); // ポーズスプライトの描画
-	}
-
-	if (isPaused_) {
-		poseSprite->Draw();
-		yazirusiSprite->Draw();
-		enterSprite_->Draw(); // エンターキー用スプライトの描画
-	}
-
-	// ゲームクリアテキストスプライトの描画
-	if (isGameClear_&&isSprite) {
-		GameClearTextSprite_->Draw();
-		enterSprite_->Draw(); // エンターキー用スプライトの描画
-
-	}
+	// 🌗 フェード描画
 
 	if (!player_->IsDead()) {
 		// もしプレイヤーが「無敵時間中」なら
@@ -577,7 +800,7 @@ void GameScene::Draw() {
 	}
 
 	if (!player_->IsDead()) {
-		// プレイヤーの現在のHPを取得 
+		// プレイヤーの現在のHPを取得
 		int currentHp = player_->GetHp();
 		for (int i = 0; i < currentHp; i++) {
 
@@ -586,7 +809,52 @@ void GameScene::Draw() {
 		}
 	}
 
+	switch (currentStageID_) {
+	case 1:
+		sprite1_1_->Draw();
+		break;
+	case 2:
+		sprite1_2_->Draw();
+		break;
+	case 3:
+		sprite1_3_->Draw();
+		break;
+	}
+	fade_->Draw(dxcommon->GetCommandList());
+	Model::PostDraw();
+
+	Sprite::PreDraw(dxcommon->GetCommandList());
+	if (countdownState_ == CountdownState::kCounting) {
+		spriteCountdown_->Draw();
+	}
+	if (isSprite && !isGameClear_ && !isPaused_) {
+		TextSprite1_1->Draw();
+		pauseTextSprite_->Draw(); // ポーズスプライトの描画
+	}
+
+	if (isPaused_) {
+		poseSprite->Draw();
+		yazirusiSprite->Draw();
+		enterSprite_->Draw(); // エンターキー用スプライトの描画
+	}
+
+	// ゲームクリアテキストスプライトの描画
+	if (isGameClear_ && isSprite) {
+		GameClearTextSprite_->Draw();
+		enterSprite_->Draw(); // エンターキー用スプライトの描画
+	}
+
+	for (int i = 0; i < 3; i++) {
+		if (uiStarCoins_[i] != nullptr) {
+			uiStarCoins_[i]->Draw();
+		}
+	}
+
 	Sprite::PostDraw();
+
+	if (particleManager_) {
+		particleManager_->Draw(dxcommon->GetCommandList());
+	}
 }
 
 void GameScene::GenerrateBlock() {
@@ -601,12 +869,66 @@ void GameScene::GenerrateBlock() {
 	for (uint32_t y = 0; y < kNumBlockVirtal; ++y) {
 		for (uint32_t x = 0; x < kNumBlockHorizontal; ++x) {
 			MapChipType type = mapChipField_->GetMapChipTypeByindex(x, y);
+			Vector3 pos = mapChipField_->GetChipPositionIndex(x, y);
 
-			// 何らかの描画が必要なブロックのみWorldTransformを生成
-			if (type != MapChipType::kBlank_) {
+			// 1. 何もない場所はスキップ
+			if (type == MapChipType::kBlank_) {
+				continue;
+			}
+
+			// ==========================================
+			//  2. 敵の生成処理 
+			// ==========================================
+			if (type == MapChipType::kEnemyWalk_ || type == MapChipType::kEnemyShooter_ || type == MapChipType::kEnemyHoming_ || type == MapChipType::kEnemySplit_ || type == MapChipType::kSlime ||
+			    type == MapChipType::kFlee) {
+
+				Enemy* newEnemy = new Enemy();
+
+				// タイプ別に初期化
+				if (type == MapChipType::kEnemyWalk_) {
+					newEnemy->Initialize(enemy_model_Walk, &camera_, pos, Enemy::Type::kWalk);
+				} else if (type == MapChipType::kEnemyShooter_) {
+					newEnemy->Initialize(enemy_model_Shooter, &camera_, pos, Enemy::Type::kShooter);
+				} else if (type == MapChipType::kEnemyHoming_) {
+
+					newEnemy->Initialize(enemy_model_Homing, &camera_, pos, Enemy::Type::kHoming);
+				} else if (type == MapChipType::kEnemySplit_) {
+					newEnemy->Initialize(enemy_model_Walk, &camera_, pos, Enemy::Type::kSplit);
+				} else if (type == MapChipType::kSlime) {
+					newEnemy->Initialize(enemy_model_Walk, &camera_, pos, Enemy::Type::kSlime);
+				} else if (type ==MapChipType::kFlee) {
+					newEnemy->Initialize(enemy_model_Walk, &camera_, pos, Enemy::Type::kFlee);
+				}
+
+				newEnemy->SetPlayer(player_);
+				newEnemy->SetMapChipField(mapChipField_);
+
+				// リストに追加
+				enemys_.push_back(newEnemy);
+
+	
+				mapChipField_->SetMapChipType(x, y, MapChipType::kBlank_);
+
+				continue; // 次のループへ（ブロック生成はしない）
+			}
+
+			// ==========================================
+			// 3. 壊れる床
+			// ==========================================
+			if (type == MapChipType::kBreakable_) {
+				auto floor = std::make_unique<BreakableFloor>();
+				floor->Initialize(pos, x, y, mapChipField_);
+				breakableFloors_.push_back(std::move(floor));
+
+				worldTransformBlocks_[y][x] = nullptr;
+			}
+			// ==========================================
+			// 4. 通常ブロック (それ以外)
+			// ==========================================
+			else {
 				WorldTransform* worldTransform = new WorldTransform();
 				worldTransform->Initialize();
-				worldTransform->translation_ = mapChipField_->GetChipPositionIndex(x, y);
+				worldTransform->translation_ = pos;
 				worldTransformBlocks_[y][x] = worldTransform;
 			}
 		}
@@ -650,15 +972,18 @@ void GameScene::CheekAllcollision() {
 
 			// ここでは、踏んだかどうかの判定のみに集中する
 			if (aabb1.min.y >= aabb2.max.y - 4.0f && !player_->GetOnGround()) {
+
 				if (enemy->GetType() == Enemy::Type::kFlying) {
 					player_->SetVelocityY(0.8f); // 大ジャンプ
 				} else {
 					player_->SetVelocityY(0.3f); // 通常ジャンプ
-				}
 
+				}
+				enemy->TakeDamage(999);
 			} else {
 				player_->TakeDamage(1);
 			}
+
 		}
 
 		for (EnemyBullet* bullet : enemy->GetBullets()) {
@@ -707,7 +1032,7 @@ void GameScene::CheekAllcollision() {
 			MapChipType type = mapChipField_->GetMapChipTypeByindex(x, y);
 
 			// ゴール or 棘 以外は無視
-			if (type != MapChipType::kGoal_ && type != MapChipType::kSpike_) {
+			if (type != MapChipType::kGoal_ && type != MapChipType::kSpike_ && type != MapChipType::kStarCoin_) {
 				continue;
 			}
 
@@ -720,8 +1045,7 @@ void GameScene::CheekAllcollision() {
 			// 当たり判定
 			if (math->IsCollision(aabb1, chipAABB)) {
 				if (type == MapChipType::kGoal_) {
-					// ゴール処理
-					clearbgmVoiceHandle_ = KamataEngine::Audio::GetInstance()->PlayWave(clearbgmHandle_, false, 0.5f);
+
 					isGameClear_ = true;
 					player_->StartVictoryPose(); // 勝利ポーズ開始
 					CController_->StartVictoryZoom(player_);
@@ -729,13 +1053,26 @@ void GameScene::CheekAllcollision() {
 				} else if (type == MapChipType::kSpike_) {
 					// 棘のダメージ処理
 					player_->TakeDamage(1);
+				} else if (type == MapChipType::kStarCoin_) {
+					if (currentPlayCoinCount_ < 3) {
+						uiStarCoins_[currentPlayCoinCount_]->SetTextureHandle(texHandleCoinGet_);
+					}
+					// 1. カウントを増やす
+					currentPlayCoinCount_++;
+
+					// 2. マップデータを「空白(0)」に書き換える（これで消える＆次から当たらない）
+					mapChipField_->SetMapChipType(x, y, MapChipType::kBlank_);
+
+					// 3. SEを鳴らす（あれば）
+					// Audio::GetInstance()->PlayWave(soundHandleCoin_);
+
 				}
 			}
 		}
 	}
 
-
 }
+
 
 void GameScene::ChangePhase() {
 	switch (phase_) {
@@ -746,7 +1083,6 @@ void GameScene::ChangePhase() {
 		}
 		break;
 	case Phase::kCountdown:
-		// Update()内のカウントダウンロジックでフェーズがkPlayに変わるため、ここでは何もしない
 		break;
 		
 	
@@ -769,8 +1105,31 @@ void GameScene::ChangePhase() {
 	case Phase::kDeath:
 		finishedTimer++;
 		deatparticles_->Update();
-				// ★ 修正: ステージセレクト画面の1-1看板のマップチップ座標を指定
-		Vector3 signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
+	//  ステージセレクト画面の1-1看板のマップチップ座標を指定
+		Vector3 signboardPosition;
+
+		switch (currentStageID_) {
+		case 1:
+			// ステージ1の看板の位置
+			signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
+			break;
+		case 2:
+			// ステージ2の看板の位置
+			signboardPosition = mapChipField_->GetChipPositionIndex(21, 9);
+			break;
+		case 3:
+			// ステージ3の看板の位置
+			signboardPosition = mapChipField_->GetChipPositionIndex(36, 9);
+			break;
+		case 4:
+			// ステージ4の看板の位置
+			signboardPosition = mapChipField_->GetChipPositionIndex(57, 17);
+			break;
+		default:
+			// デフォルト
+			signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
+			break;
+		}
 
 		// 次のプレイヤー初期位置をGameStateManagerに保存
 		GameStateManager::GetInstance()->SetPlayerStartPosition(signboardPosition);
@@ -780,21 +1139,42 @@ void GameScene::ChangePhase() {
 		break;
 	case Phase::GameClear:
 
-
-	
-
 		
             // ステージクリア情報を保存
-		GameStateManager::GetInstance()->SetStageClear(1, true);
+		GameStateManager::GetInstance()->SetStageClear(currentStageID_, true);
+		    GameStateManager::GetInstance()->SaveStarCoinRecord(currentStageID_, currentPlayCoinCount_);
+		Vector3 returnPos = {};
 
-		// ★ 修正: ステージセレクト画面の1-1看板のマップチップ座標を指定
-	    signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
+		switch (currentStageID_) {
+		case 1:
+			// ステージ1の看板の位置
+			returnPos = mapChipField_->GetChipPositionIndex(10, 17);
+			break;
+		case 2:
+			// ステージ2の看板の位置
+			returnPos = mapChipField_->GetChipPositionIndex(21, 9);
+			break;
+		case 3:
+			// ステージ3の看板の位置
+			returnPos = mapChipField_->GetChipPositionIndex(36, 9);
+			break;
+		case 4:
+			// ステージ4の看板の位置
+			returnPos = mapChipField_->GetChipPositionIndex(57, 17);
+			break;
+		default:
+			// デフォルト
+			returnPos = mapChipField_->GetChipPositionIndex(10, 17);
+			break;
+		}
+
+		// 計算した座標を次の初期位置としてセット
+		GameStateManager::GetInstance()->SetPlayerStartPosition(returnPos);
 
 		// 次のプレイヤー初期位置をGameStateManagerに保存
-		GameStateManager::GetInstance()->SetPlayerStartPosition(signboardPosition);
 		player_->UpdateVictoryAnimation(); // 勝利ポーズのアニメを更新
 		CController_->Update();
-		if (Input::GetInstance()->TriggerKey(DIK_RETURN)) {
+		if (Input::GetInstance()->TriggerKey(DIK_SPACE)) {
 			isTimerFinished_ = true;                   // スペースキーが押されたらタイマー終了フラグを立てる
 			isSprite = false;                          // スプライト表示
 			fade_->Start(Fade::Status::FadeOut, 3.0f); // フェードアウト開始
@@ -872,3 +1252,4 @@ GameScene::~GameScene() {
 
 	worldTransformBlocks_.clear(); // ベクターをクリア
 }
+

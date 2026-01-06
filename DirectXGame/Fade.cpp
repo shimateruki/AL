@@ -10,7 +10,7 @@ void Fade::Initalize()
 	// スプライト生成
 	sprite_ = Sprite::Create(textureHandle, {0.0f, 0.0f});
 	sprite_->SetSize(Vector2(1280.0f, 720.0f));
-	sprite_->SetColor(Vector4(0, 0, 0, 1));
+	sprite_->SetColor(Vector4(1.0f, 0.6f, 0.2f, 1.0f));
 }
 
 void Fade::Draw(ID3D12GraphicsCommandList* commandList) {
