@@ -375,6 +375,9 @@ void GameScene::Update() {
 				case 4:
 					signboardPosition = mapChipField_->GetChipPositionIndex(57, 17);
 					break;
+				case 5:
+					signboardPosition = mapChipField_->GetChipPositionIndex(75, 17);
+					break;
 				default:
 					signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
 					break;
@@ -1314,6 +1317,10 @@ void GameScene::ChangePhase() {
 			// ステージ4の看板の位置
 			signboardPosition = mapChipField_->GetChipPositionIndex(57, 17);
 			break;
+		case 5:
+			// ステージ5の看板の位置
+			signboardPosition = mapChipField_->GetChipPositionIndex(75, 17);
+			break;
 		default:
 			// デフォルト
 			signboardPosition = mapChipField_->GetChipPositionIndex(10, 17);
@@ -1350,6 +1357,10 @@ void GameScene::ChangePhase() {
 		case 4:
 			// ステージ4の看板の位置
 			returnPos = mapChipField_->GetChipPositionIndex(57, 17);
+			break;
+		case 5:
+			// ステージ5の看板の位置
+			returnPos = mapChipField_->GetChipPositionIndex(75, 17);
 			break;
 		default:
 			// デフォルト
