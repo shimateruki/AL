@@ -1,22 +1,39 @@
-#pragma once // 同じヘッダーファイルが複数回インクルードされるのを防ぐ
-#include "KamataEngine.h" // KamataEngineの基本機能（Model, WorldTransform, Cameraなど）をインクルード
-#include "math.h"         // 数学関連のユーティリティ（Mathクラスや関連関数）をインクルード
-#include "MapChipField.h" // MapChipFieldクラスの定義をインクルード
+#pragma once // インクルードガード
+
+// ==========================================
+// インクルード
+// ==========================================
+// --- エンジン・基本機能 ---
+#include "KamataEngine.h"
+#include "math.h"
+
+// --- ゲームシステム ---
 #include "EnemyBullet.h"
+#include "MapChipField.h"
+#include "ParticleManager.h"
 
-
-using namespace KamataEngine; // KamataEngine名前空間を使用
-
-// 前方宣言
-class GameScene; // GameSceneクラスの前方宣言
-class Player;
-class GameScene1_2; // GameScene1_2クラスの前方宣言
+// ==========================================
+// 前方宣言 (Forward Declarations)
+// ==========================================
+class GameScene;
+class GameScene1_2;
 class GameScene1_3;
 class GameScene2_1;
-    // 敵クラス 
-class Enemy {
+class Player;
 
+// KamataEngine名前空間を使用
+using namespace KamataEngine;
+
+// ==========================================
+// 敵クラス定義
+// ==========================================
+class Enemy {
 public:
+	// -------------------------------------------------
+	// 定数・列挙型 (Enums)
+	// -------------------------------------------------
+
+	// 敵の種類
 	enum class Type {
 		kWalk,    // 普通に歩く
 		kShooter, // その場で撃ってくる
@@ -25,65 +42,112 @@ public:
 		kSplit,   // 分裂タイプ
 		kSlime,   // スライムタイプ
 		kFlee,    // 逃げるタイプ
+		kBoss,    // ボス
 	};
-	// 飛行パターンを表す列挙型
+
+	// 飛行パターン
 	enum class FlightPattern {
 		kVertical,   // 上下移動
 		kHorizontal, // 左右移動
 	};
 
-	// 敵の行動状態を表す列挙型
+	// 基本行動状態
 	enum class Behavior {
 		kUnKnow,
 		kRoot,
 		kisDead, // 死亡状態
-
 	};
-	// 初期化に type を追加
+
+	// ボスの詳細状態
+	enum class BossState {
+		kWait,        // 待機（プレイヤーの方を見る）
+		kEntrance,    // 登場演出
+		kCharge,      // 溜め（震える予兆）
+		kJump,        // ジャンプ中
+		kCoolDown,    // 着地後の硬直（攻撃チャンス）
+		kPhaseChange, // 形態変化（怒り演出）
+		kTripleJump,  // 3連ジャンプ（Phase2用）
+		kBarrage,     // 拡散弾発射
+		kSummon,      // 手下召喚
+		kDashCharge,  // 突進の予兆（平たく潰れる）
+		kDash,        // 突進中
+		kHighJump,    // 画面外へ飛び上がる
+		kSkyWait,     // 上空で待機（プレイヤーを狙う）
+		kSkyFall,     // 急降下
+		kSpinAttack,  // 回転攻撃
+		kDead,        // 死亡
+	};
+
+	// -------------------------------------------------
+	// 主要メソッド (Core Methods)
+	// -------------------------------------------------
+	// 初期化
 	void Initialize(Model* model, Camera* camera, const Vector3& position, Type type = Type::kWalk);
-
-	// プレイヤーの位置を知るためにセットする関数
-	void SetPlayer(Player* player) { player_ = player; }
-
-	// 弾のリストを取得する関数（GameSceneでの当たり判定用）
-	const std::list<EnemyBullet*>& GetBullets() const { return bullets_; }
-	// 更新処理 
+	// 更新
 	void Update();
-
-	// 描画処理 
+	// 描画
 	void Draw();
 
+	// -------------------------------------------------
+	// ゲッター・セッター (Getters / Setters)
+	// -------------------------------------------------
+	// 基本情報
 	Vector3 GetWorldPosition();
-	bool GetIsDead(){ return isDead_; } // 敵が死亡しているかどうかを取得するメソッド
+	Type GetType() const { return type_; }
+	int GetHp() const { return hp_; }
+
+	// 状態フラグ系
+	bool GetIsDead() { return isDead_; }
+	bool isDead() const { return isDead_; } // 重複しているが維持
+	void SetDead(bool dead) { isDead_ = dead; }
+
+	bool GetIsSplit() const { return isSplit_; }
+	void SetIsSplit(bool flag) { isSplit_ = flag; }
+
+	bool IsReadyToExplode() const { return isReadyToExplode_; }
+
+	// 衝突無効化設定
+	bool isCollisonDisabled() const { return isCollisDisabled_; }
+	void SetCollisonDisabled(bool disabled) { isCollisDisabled_ = disabled; }
+
+	// 外部参照のセット
+	void SetPlayer(Player* player) { player_ = player; }
+	void SetMapChipField(MapChipField* field) { mapChipField_ = field; }
+	void SetParticleManager(ParticleManager* particleManager) { particleManager_ = particleManager; }
+
+	// シーン参照のセット
+	void SetGameScene(GameScene* gameScene) { gameScene_ = gameScene; }
+	void SetGameScene1_2(GameScene1_2* scene) { gameScene1_2_ = scene; }
+	void SetGameScene1_3(GameScene1_3* scene) { gameScene1_3_ = scene; }
+	void SetGameScene2_1(GameScene2_1* scene) { gameScene2_1_ = scene; }
+
+	// パラメータ設定
+	void SetFlightPattern(FlightPattern pattern) { flightPattern_ = pattern; }
+	void SetVelocity(const Vector3& velocity) { velocity_ = velocity; }
+	void SetBossState(BossState state) { bossState_ = state; }
+
+	// -------------------------------------------------
+	// ゲームロジック・判定 (Game Logic)
+	// -------------------------------------------------
+	// 衝突判定関連
 	AABB GetAABB();
 	void onCollision(const Player* player);
-	void SetDead(bool dead) { isDead_ = dead; } // 敵の死亡状態を設定するメソッド
-	void OnStomped(const Player* player);
+	void OnStomped(const Player* player); // 踏まれた時の処理
+	void TakeDamage(int damage);          // ダメージ処理
+
+	// ユーティリティ
 	bool IsWalkable(MapChipType type);
-	bool isCollisonDisabled() const { return isCollisDisabled_; } // 衝突無効化フラグを取得
-	void SetCollisonDisabled(bool disabled) { isCollisDisabled_ = disabled; }          // 衝突無効化フラグを設定
-	void SetGameScene(GameScene* gameScene) { gameScene_ = gameScene; } // ゲームシーンへのポインタを設定
-	void SetGameScene1_2(GameScene1_2* GameScene1_2) { gameScene1_2_ = GameScene1_2; } // GameScene1_2へのポインタを設定
-	void SetGameScene1_3(GameScene1_3* GameScene1_3) { gameScene1_3_ = GameScene1_3; } // GameScene1_2へのポインタを設定
-	void SetGameScene2_1(GameScene2_1* GameScene2_1) { gameScene2_1_ = GameScene2_1; } // GameScene1_2へのポインタを設定
-	bool isDead() const { return isDead_; }  
-	  void SetMapChipField(MapChipField* field) { mapChipField_ = field; }
-                                        
-	  Type GetType() const { return type_; } // 敵のタイプを取得するメソッド
-	  void SetFlightPattern(FlightPattern pattern) { flightPattern_ = pattern; }
+	const std::list<EnemyBullet*>& GetBullets() const { return bullets_; } // 弾リスト取得
 
-	  bool IsReadyToExplode() const { return isReadyToExplode_; }
-	  void SetVelocity(const Vector3& velocity) { velocity_ = velocity; }
-	  void TakeDamage(int damage);
-	  bool GetIsSplit() const { return isSplit_; }
-	  // 分裂フラグの設定
-	  void SetIsSplit(bool flag) { isSplit_ = flag; }
-  private:
-	// 敵のワールド変換 
-	WorldTransform worldTransformEnemy_;
-	MapChipField* mapChipField_ = nullptr;
+private:
+	// ==========================================
+	// メンバ変数・内部メソッド
+	// ==========================================
 
-	    // マップとの当たり判定結果
+	// -------------------------------------------------
+	// 内部処理用構造体・関数
+	// -------------------------------------------------
+	// マップ当たり判定結果
 	struct CollisionMapInfo {
 		Vector3 isMovement;
 		bool isHitTop = false;
@@ -91,104 +155,117 @@ public:
 		bool hitWall = false;
 	};
 
-	// プレイヤーと同様の、四隅の座標計算用ユーティリティ
-	enum Corner {
-		kRightBottom,
-		kLeftBottom,
-		kRightTop,
-		kLeftTop,
-	};
+	// 座標計算用
+	enum Corner { kRightBottom, kLeftBottom, kRightTop, kLeftTop };
 	static const uint32_t knumCorner = 4;
 	Vector3 CarnerPosition(const Vector3& center, Corner cornter);
 
-	// 各方向のマップチップとの当たり判定
+	// マップチップ衝突判定
 	void MapChipUp(CollisionMapInfo& info);
 	void MapChipDown(CollisionMapInfo& info);
 	void MapChipLeft(CollisionMapInfo& info);
 	void MapChipRight(CollisionMapInfo& info);
 
-	// 状態更新
+	// 接地・壁判定更新
 	void UpdateOnGround(const CollisionMapInfo& info);
 	void UpdateOnWall(const CollisionMapInfo& info);
 
-	// 状態フラグ
-	bool onGround_ = false; // 接地しているか
+	// AI・行動決定
+	void SelectNextAction();
+	void EmitExplosion();
 
+	// -------------------------------------------------
+	// 基本コンポーネント
+	// -------------------------------------------------
+	WorldTransform worldTransformEnemy_; // ワールド変換
+	Model* model_ = nullptr;             // モデル
+	Camera* camera_ = nullptr;           // カメラ
+	Math* math = nullptr;                // 数学ヘルパー
 
+	// -------------------------------------------------
+	// 外部参照 (References)
+	// -------------------------------------------------
+	Player* player_ = nullptr;                   // ターゲット（プレイヤー）
+	MapChipField* mapChipField_ = nullptr;       // マップ
+	ParticleManager* particleManager_ = nullptr; // パーティクル管理者
 
-	// 定数（幅と高さ）
+	// 各シーンへのポインタ
+	GameScene* gameScene_ = nullptr;
+	GameScene1_2* gameScene1_2_ = nullptr;
+	GameScene1_3* gameScene1_3_ = nullptr;
+	GameScene2_1* gameScene2_1_ = nullptr;
+
+	// -------------------------------------------------
+	// ステータス・状態 (Status)
+	// -------------------------------------------------
+	Type type_ = Type::kWalk;       // 敵タイプ
+	int hp_ = 0;                    // 現在HP
+	bool isDead_ = false;           // 死亡フラグ
+	bool isCollisDisabled_ = false; // 衝突判定無効フラグ
+	bool isSplit_ = false;          // 分裂済みフラグ
+	float damageBlinkTimer_ = 0.0f; // ダメージ点滅タイマー
+
+	// 行動状態
+	Behavior behavior_ = Behavior::kRoot;
+	Behavior behaviorRequest_ = Behavior::kUnKnow;
+
+	// -------------------------------------------------
+	// 物理・移動パラメータ (Physics & Movement)
+	// -------------------------------------------------
+	Vector3 velocity_ = {}; // 速度ベクトル
+	bool onGround_ = false; // 接地フラグ
+
+	// コリジョン・サイズ定数
 	const float kWidth = 1.0f;
 	const float kHeight = 0.8f;
 	const float kBlank = 0.1f;
 	const float kGroundSearchHeight = 0.1f;
 
-	// 敵のモデル 
-	Model* model_ = nullptr;
-
-	// カメラへのポインタ 
-	Camera* camera_ = nullptr;
-
-	// 歩行速度 
+	// 歩行関連
 	static inline const float kWalkSpeed = 0.02f;
-
-	// 敵の速度
-	Vector3 velocity_ = {};
-
-	// 歩行モーションの開始角度 
 	static inline const float kWalkMotionAngleStart = 0.0f;
-
-	// 歩行モーションの終了角度 
 	static inline const float kWalkMotionAngleEnd = 30.0f;
-
-	// 歩行モーションの時間 
 	static inline const float kWalkMotionTime = 1.0f;
-
-	// 歩行タイマー
 	float walkTimer = 0.0f;
 
-	// 数学ユーティリティオブジェクト
-	Math* math = nullptr;
-	bool isDead_ = false;       // 敵が死亡しているかどうかのフラグ
-	                            // 振る舞い
-	Behavior behavior_ = Behavior::kRoot;
-	// 次の振る舞いのリクエスト
-	Behavior behaviorRequest_ = Behavior::kUnKnow;
+	// 反転・アニメーション制御
+	float flipCooldownTimer = 0.0f;
+	const float kFlipCooldown = 2.0f;
+	bool animationPlaying = false;
 
-	bool isCollisDisabled_ = false; // 衝突無効化フラグ（敵が死亡しているかどうかを示す）
-	GameScene* gameScene_ = nullptr; // ゲームシーンへのポインタ（必要に応じて使用）
-	GameScene1_2* gameScene1_2_ = nullptr; // GameScene1_2へのポインタ（必要に応じて使用）
-	GameScene1_3* gameScene1_3_ = nullptr; // GameScene1_3へのポインタ（必要に応じて使用）
-	GameScene2_1* gameScene2_1_ = nullptr; // GameScene2_1へのポインタ（必要に応じて使用）
+	// -------------------------------------------------
+	// タイプ別固有パラメータ (Specific Mechanics)
+	// -------------------------------------------------
 
-    float flipCooldownTimer = 0.0f;
-	const float kFlipCooldown = 2.0f; // 0.5秒間は反転しない
-	bool animationPlaying = false;    // 死亡アニメーション中かどうかのフラグ
-
-	Type type_ = Type::kWalk;
-	Player* player_ = nullptr; // 狙う対象
-
-	// 弾関連
+	// --- 射撃タイプ (Shooter) ---
 	std::list<EnemyBullet*> bullets_;
 	float shotTimer_ = 0.0f;
-	const float kShotInterval = 2.0f; // 2秒に1回発射
+	const float kShotInterval = 2.0f;
 
-	// 飛行用
+	// --- 飛行タイプ (Flying) ---
 	FlightPattern flightPattern_ = FlightPattern::kVertical;
 	Vector3 startPosition_ = {};
 	float flightTimer_ = 0.0f;
-	const float kFlightRange = 3.0f; // 動く幅
-	const float kFlightSpeed = 2.0f; // 動く速さ
-	const float kEnemyJumpSpeed = 12.0f;
-	// ホーミング用
-	const float kHomingSpeed = 0.01f;    // 追尾スピード（少し速め）
-	const float kDetectionRange = 10.0f; // プレイヤーを見つける距離
-	float homingTimer_ = 0.0f;           // アニメーション用
-	float explosionTimer_ = 0.0f;        // 経過時間
-	const float kExplosionTime = 2.0f;   // 爆発までの時間（2秒）
-	bool isReadyToExplode_ = false;      // 爆発フラグ
+	const float kFlightRange = 3.0f;
+	const float kFlightSpeed = 2.0f;
 
-	int hp_ = 0; // 敵の体力
-	float damageBlinkTimer_ = 0.0f; // ダメージ点滅用タイマー
-	bool isSplit_ = false;
+	// --- ホーミング・自爆タイプ (Homing) ---
+	const float kHomingSpeed = 0.01f;
+	const float kDetectionRange = 10.0f;
+	const float kExplosionTime = 2.0f;
+	float homingTimer_ = 0.0f;
+	float explosionTimer_ = 0.0f;
+	bool isReadyToExplode_ = false;
+
+	// --- ボス関連 (Boss) ---
+	BossState bossState_ = BossState::kWait;
+	int maxHp_ = 0;          // 最大HP
+	bool isPhase2_ = false;  // 第2形態フラグ
+	float bossTimer_ = 0.0f; // 行動用タイマー
+
+	// ジャンプ制御
+	int jumpCountBoss_ = 0;
+	int jumpCounter_ = 0;
 	float jumpWaitTimer_ = 0.0f;
+	const float kEnemyJumpSpeed = 12.0f;
 };

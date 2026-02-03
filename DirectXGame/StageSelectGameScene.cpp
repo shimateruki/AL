@@ -16,6 +16,7 @@ void StageSelectGameScene::Initialize() {
 	Textmodel1_2 = Model::CreateFromOBJ("Text1-2", true);  
 	Textmodel1_3 = Model::CreateFromOBJ("Text1-3", true);
 	Textmodel1_4 = Model::CreateFromOBJ("Text1-4", true);  
+	Textmodel1_5 = Model::CreateFromOBJ("Text1-5", true);
 
 	umbrellaModel_ = Model::CreateFromOBJ("parasol", true);
 	yamaModel = Model::CreateFromOBJ("yama", true);         // 山モデルの読み込み
@@ -29,11 +30,12 @@ void StageSelectGameScene::Initialize() {
 	textureHandel1_2 = TextureManager::Load("1-2.png"); // 数字表示用テクスチャの読み込み
 	textureHandel1_3 = TextureManager::Load("1-3.png"); // 数字表示用テクスチャの読み込み
 	textureHandel1_4 = TextureManager::Load("1-4.png"); // 数字表示用テクスチャの読み込み
+	textureHandel1_5 = TextureManager::Load("1-5.png"); // 数字表示用テクスチャの読み込み
 	textureHandleMove = TextureManager::Load("TextSpriteMove.png"); // 移動用テクスチャの読み込み
 	textureHandleJump = TextureManager::Load("TextSpriteSpaceJump.png"); // ジャンプ用テクスチャの読み込み
 	textureHandleSutage = TextureManager::Load("SutageSelectTextUi.png"); // ステージ用テクスチャの読み込み
 	treeModel_ = Model::CreateFromOBJ("tree", true);                     // 木モデルの読み込み
-
+	particleModel_ = Model::CreateFromOBJ("deathParticle", true);
 
 
 
@@ -52,7 +54,8 @@ void StageSelectGameScene::Initialize() {
 	//========================
 	mapChipField_ = new MapChipField();
 	mapChipField_->LoadMapChipCsv("Resources/map/stageSelect.csv");
-
+	particleManager_ = new ParticleManager();
+	particleManager_->Initialize(particleModel_, &camera_);
 	//========================
 	// 🧍 プレイヤーの初期化
 	//========================
@@ -62,6 +65,7 @@ void StageSelectGameScene::Initialize() {
 	player_->SetMapChipField(mapChipField_);
 	player_->SetisMove(true);
 	player_->SetUmbrellaModel(umbrellaModel_);
+	player_->SetParticleManager(particleManager_);
 
 
 	//========================
@@ -153,7 +157,16 @@ void StageSelectGameScene::Initialize() {
 	if (GameStateManager::GetInstance()->IsStageClear(4)) {
 		spriteTexts_.back()->SetColor({0.0f, 0.0f, 1.0f, 1.0f}); // 青色に変更
 	}
+	signboards_.push_back(new Signboard());
+	signboards_.back()->Initialize(signboardModel_, &camera_, mapChipField_->GetChipPositionIndex(75, 17), 5); 
 
+	spriteTexts_.push_back(new SpriteText());
+	spriteTexts_.back()->Initialize(Textmodel1_5, &camera_, mapChipField_->GetChipPositionIndex(75, 17));
+
+	// クリア済みなら青くする処理
+	if (GameStateManager::GetInstance()->IsStageClear(5)) {
+		spriteTexts_.back()->SetColor({0.0f, 0.0f, 1.0f, 1.0f});
+	}
 	//// 2-1
 	//signboards_.push_back(new Signboard());
 	//signboards_.back()->Initialize(signboardModel_, &camera_, mapChipField_->GetChipPositionIndex(40, 17), 4);
@@ -180,6 +193,7 @@ void StageSelectGameScene::Initialize() {
 	Sprite1_2 = Sprite::Create(textureHandel1_2, {800.50}); // 数字表示用スプライトの作成
 	Sprite1_3 = Sprite::Create(textureHandel1_3, {800.50}); // 数字表示用スプライトの作成
 	Sprite1_4 = Sprite::Create(textureHandel1_4, {800.50}); // 数字表示用スプライトの作成
+	Sprite1_5 = Sprite::Create(textureHandel1_5, {800.50});
 	SpriteSutage = Sprite::Create(textureHandleSutage, {0.0}); // ステージ用スプライトの作成
 
 	// スターコインUIの初期化
@@ -246,6 +260,7 @@ void StageSelectGameScene::Update() {
 		tree->Update();
 	}
 
+	particleManager_->Update();
 	#ifdef _DEBUG
 	ImGui::Begin("StageSelectGameScene Debug Info"); // ImGuiのデバッグウィンドウ開始
 	ImGui::Text("player %f", player_->GetWorldTransform().translation_.x);
@@ -356,7 +371,7 @@ void StageSelectGameScene::Update() {
 
 	// 1. セーブデータの確認
 	if (ImGui::TreeNode("1. Save Data (Manager)")) {
-		for (int i = 1; i <= 3; i++) { // ステージ1～3を確認
+		for (int i = 1; i <= 5; i++) { // ついでに1-5まで確認できるように拡張しました
 			int count = GameStateManager::GetInstance()->GetStarCoinRecord(i);
 			ImGui::Text("Stage %d: %d Coins", i, count);
 		}
@@ -366,12 +381,10 @@ void StageSelectGameScene::Update() {
 	// 2. 看板の座標確認
 	if (ImGui::TreeNode("2. Signboard Positions")) {
 		for (size_t i = 0; i < signboards_.size(); ++i) {
-			// 看板の座標を取得
 			Vector3 pos = signboards_[i]->GetWorldPosition();
 			int id = signboards_[i]->GetStageID();
 			ImGui::Text("Sign[%d] (Stage%d): (%.1f, %.1f, %.1f)", (int)i, id, pos.x, pos.y, pos.z);
 
-			// もし全部 (0.0, 0.0, 0.0) なら、Initializeのタイミング問題確定です
 			if (pos.x == 0 && pos.y == 0) {
 				ImGui::TextColored(ImVec4(1, 0, 0, 1), "WARNING: Position is Zero!");
 			}
@@ -393,10 +406,31 @@ void StageSelectGameScene::Update() {
 		ImGui::TreePop();
 	}
 
-
 	ImGui::Separator();
 	if (ImGui::Button("Manual Reload (SetupDisplayCoins)")) {
 		SetupDisplayCoins();
+	}
+
+	// =========================================================
+	// 修正箇所: 全ステージへのワープボタン
+	// =========================================================
+	ImGui::Separator();
+	ImGui::Text("--- DEBUG WARP ---");
+
+	// 1から5までループでボタンを作る
+	for (int i = 1; i <= 5; i++) {
+		// ボタンのラベルを作る (例: "Go to 1-1", "Go to 1-5 (Boss)")
+		std::string label = "Go to 1-" + std::to_string(i);
+		if (i == 5)
+			label += " (Boss)";
+
+		// ボタンを押したらそのステージへ遷移
+		if (ImGui::Button(label.c_str())) {
+			nextStageID_ = i; // IDをセット
+			finished_ = true; // 終了フラグON
+			if (fade_)
+				fade_->Start(Fade::Status::FadeOut, 1.0f);
+		}
 	}
 
 	ImGui::End();
@@ -472,6 +506,11 @@ void StageSelectGameScene::Draw() {
 	// 🌗 フェード描画
 	fade_->Draw(dxcommon->GetCommandList());
 
+
+	
+	if (particleManager_) {
+		particleManager_->Draw(dxcommon->GetCommandList());
+	}
 	Model::PostDraw();
 
 	  //  スプライト描画
@@ -553,28 +592,33 @@ void StageSelectGameScene::CheekAllcollision() {
 	activeSprite_ = nullptr;
 	isShowCoinUI_ = false;
 
-
 	for (Signboard* signboard : signboards_) {
 		AABB aabb2 = signboard->GetAABB();
 		if (math->IsCollision(aabb1, aabb2)) {
-			//  看板のIDに応じて表示するスプライトを切り替え
+
 			int stageID = signboard->GetStageID();
 
-			// 1. そのステージの過去のコイン取得数を取得
-			int savedCount = GameStateManager::GetInstance()->GetStarCoinRecord(stageID);
+			// ★ここが修正ポイント
+			// ステージIDが 0 (タイトル) や 5 (ボス) のときはコインUIを出さない
+			if (stageID != 0 && stageID != 5) {
 
-			// 2. 3つのコインUIの色を切り替え
-			for (int i = 0; i < 3; i++) {
-				if (i < savedCount) {
-					uiStarCoins_[i]->SetTextureHandle(texHandleCoinGet_); // 黄色（取得済み）
-				} else {
-					uiStarCoins_[i]->SetTextureHandle(texHandleCoinEmpty_); // グレー（未取得）
+				// 1. そのステージの過去のコイン取得数を取得
+				int savedCount = GameStateManager::GetInstance()->GetStarCoinRecord(stageID);
+
+				// 2. 3つのコインUIの色を切り替え
+				for (int i = 0; i < 3; i++) {
+					if (i < savedCount) {
+						uiStarCoins_[i]->SetTextureHandle(texHandleCoinGet_); // 黄色（取得済み）
+					} else {
+						uiStarCoins_[i]->SetTextureHandle(texHandleCoinEmpty_); // グレー（未取得）
+					}
 				}
+
+				// 3. UIを表示するフラグをON
+				isShowCoinUI_ = true;
 			}
 
-			// 3. UIを表示するフラグをON
-			isShowCoinUI_ = true;
-	
+			// スプライト（ステージ番号の説明画像など）の切り替え
 			switch (stageID) {
 			case 1:
 				activeSprite_ = Sprite1_1;
@@ -588,11 +632,15 @@ void StageSelectGameScene::CheekAllcollision() {
 			case 4:
 				activeSprite_ = Sprite1_4;
 				break;
+			case 5:
+				activeSprite_ = Sprite1_5;
+				break;
 			default:
 				activeSprite_ = nullptr; // 他の看板は非表示
 				break;
 			}
 
+			// ステージ遷移処理
 			if (Input::GetInstance()->TriggerKey(DIK_W) && !isTimerFinished_) {
 				isTimerFinished_ = true;
 				isSprite = false; // スプライト表示
@@ -603,7 +651,6 @@ void StageSelectGameScene::CheekAllcollision() {
 		}
 	}
 }
-
 StageSelectGameScene::~StageSelectGameScene() {
 	for (auto& blockLine : worldTransformBlocks_) {
 		for (auto& block : blockLine) {

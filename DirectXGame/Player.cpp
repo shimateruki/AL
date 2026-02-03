@@ -138,7 +138,34 @@ void Player::UpdateTitleAnimation() {
 }
 
 void Player::Move() {
+	if (isCutscene_) {
+		// 1. 横移動を強制停止
+		velosity_.x = 0.0f;
 
+		// 2. 重力処理
+		if (!onGround_) {
+			velosity_.y += -kGgravityAcceleration / 60.0f;
+			velosity_.y = std::max(velosity_.y, -kLimitFallSpeed);
+		} else {
+			velosity_.y = 0.0f;
+		}
+
+		// 3. 弾の更新（Section 6 のロジックを実行）
+		// イベント中でも撃った弾は飛び続けるようにする
+		for (auto it = bullets_.begin(); it != bullets_.end();) {
+			(*it)->Update();
+			if ((*it)->IsDead()) {
+				delete (*it);
+				it = bullets_.erase(it);
+			} else {
+				++it;
+			}
+		}
+
+		// 4. アニメーションを待機状態（元のサイズ）に固定
+		worldTransformPlayer_.scale_ = {originalScaleY_, originalScaleY_, originalScaleY_};
+		return;
+	}
 	// ==========================================
 	// 1. 摩擦（滑りやすさ）の決定
 	// ==========================================
@@ -180,17 +207,7 @@ void Player::Move() {
 		velosity_ += acceleration;
 		velosity_.x = std::clamp(velosity_.x, -kLimitRunSpeed, kLimitRunSpeed);
 
-		// 砂埃パーティクル（走っている時）
-		if (onGround_ && std::abs(velosity_.x) > 0.05f) {
-			if (rand() % 5 == 0) {
-				Vector3 pos = worldTransformPlayer_.translation_;
-				pos.y += 0.5f;
-				float dustVelX = -velosity_.x * 0.5f;
-				if (particleManager_) {
-					particleManager_->Emit(pos, {dustVelX, 0.1f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.5f, 2.3f, 2.0f, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 0.0f});
-				}
-			}
-		}
+
 	} else {
 		velosity_.x *= (1.0f - currentAttenuation);
 	}
@@ -344,7 +361,7 @@ void Player::Move() {
 		attackCooldown_ -= 1.0f / 60.0f;
 	}
 
-	// ★空中なら強制的にチャージ解除＆処理しない
+	// 空中なら強制的にチャージ解除＆処理しない
 	if (!onGround_) {
 		isCharging_ = false;
 		chargeTimer_ = 0.0f;
@@ -392,6 +409,7 @@ void Player::Move() {
 				// 通常弾
 				newBullet->Initialize(model_, spawnPos, velocity, mapchipField_, 0.4f, 1);
 			}
+			newBullet->SetParticleManager(particleManager_);
 			bullets_.push_back(newBullet);
 
 			// ★発射！反動アニメーション開始
@@ -966,6 +984,43 @@ void Player::BehaviorRootUpdate() {
 			isInvincible_ = false;
 		}
 	}
+	// =========================================================
+	// スターコイン取得判定＆エフェクト
+	// =========================================================
+	// プレイヤーの中心座標
+	Vector3 centerPos = worldTransformPlayer_.translation_;
+
+	// 中心にあるマップチップを取得
+	MapChipField::IndexSet index = mapchipField_->GetMapChipIndexSetByPosition(centerPos);
+	MapChipType type = mapchipField_->GetMapChipTypeByindex(index.xIndex, index.yIndex);
+
+	// もしスターコインなら
+	if (type == MapChipType::kStarCoin_) {
+
+		// 1. マップから消す（取得）
+		mapchipField_->SetMapChipType(index.xIndex, index.yIndex, MapChipType::kBlank_);
+
+		// 2. 取得エフェクト（パッと弾ける）
+		if (particleManager_) {
+			for (int i = 0; i < 20; i++) {
+				Vector3 pos = centerPos;
+
+				// 放射状に散らす
+				Vector3 vel;
+				vel.x = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.5f;
+				vel.y = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.5f;
+				vel.z = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.5f;
+
+				// 色：輝く金色
+				Vector4 startColor = {1.0f, 1.0f, 0.5f, 1.0f}; // 白っぽい黄色
+				Vector4 endColor = {1.0f, 0.8f, 0.0f, 0.0f};   // 濃い黄色
+
+				particleManager_->Emit(pos, vel, {0, 0, 0}, 0.5f, 0.5f, 0.0f, startColor, endColor);
+			}
+		}
+	}
+
+
 }
 
 void Player::StartMoveToNode(int index) {
@@ -1095,37 +1150,69 @@ MapChipType Player::GetFloorChipType() {
 	return mapchipField_->GetMapChipTypeByindex(index.xIndex, index.yIndex);
 }
 
-
 void Player::TakeDamage(int damage) {
+
 	// 無敵時間中はダメージを受けない
 	if (isInvincible_) {
 		return;
 	}
+
+	// (既存のカメラシェイク処理)
 	if (cameraController_) {
 		cameraController_->StartShake();
 	}
+
+	// HP減少
 	hp_ -= damage;
 	if (hp_ <= 0) {
 		hp_ = 0;
-		SetIsDead(true); // HPが0になったら死亡
+		SetIsDead(true);
 	}
 
-	// ダメージを受けたら無敵時間開始
+	// =========================================================
+	// ：ダメージ時の飛散パーティクル（青い体液が飛び散る）
+	// =========================================================
+	if (particleManager_) {
+		// 派手に散らすので数を多めに (例: 15個)
+		for (int i = 0; i < 15; i++) {
+			Vector3 pos = worldTransformPlayer_.translation_;
+			// 中心から少しランダムにずらす
+			pos.x += (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.5f;
+			pos.y += (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.5f;
+			pos.z += (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.5f;
+
+			// 速度：放射状に飛び散る
+			Vector3 vel;
+			vel.x = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.4f; // 横
+			vel.y = (static_cast<float>(rand()) / RAND_MAX) * 0.4f + 0.1f; // 上に跳ね上がる
+			vel.z = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.4f; // 奥・手前
+
+			// 重力：下に落ちるようにする（液体感）
+			Vector3 accel = {0.0f, -0.015f, 0.0f};
+
+			// 色：本体より少し薄い青 ～ 透明へ
+			Vector4 startColor = {0.0f, 0.5f, 1.0f, 0.8f}; // 水色
+			Vector4 endColor = {0.0f, 0.0f, 1.0f, 0.0f};   // 青でフェードアウト
+
+			// 寿命：短め（0.4秒くらい）でパッと消える
+			particleManager_->Emit(pos, vel, accel, 0.5f, 0.3f, 0.0f, startColor, endColor);
+		}
+	}
+
+	// (既存の無敵時間開始処理)
 	isInvincible_ = true;
 	invincibleTimer_ = kInvincibleDuration;
 
+	velosity_.y = kJumpAccleration / 120.0f; // 少し跳ねる
+	onGround_ = false;
 
-	velosity_.y = kJumpAccleration / 120.0f;
-	onGround_ = false; // 空中状態にする
-
-	// 2. もし2段ジャンプスピン中なら、それを解除する
+	// 2段ジャンプスピン解除
 	if (isSpinning_) {
 		isSpinning_ = false;
 		worldTransformPlayer_.rotation_.z = 0.0f;
 	}
-
-
 }
+
 
 void Player::CheckAndResolveTogeKabeCollision(const KabeToge* togeKabe) {
 	if (!togeKabe || isDead_) {
@@ -1287,9 +1374,8 @@ void Player::StartVictoryPose() {
 	velosity_ = {};   // 速度をリセット
 	onGround_ = true; // 地面にいる前提
 	worldTransformPlayer_.rotation_.y = std::numbers::pi_v<float>;
-	turnTimer_ = 0.0f;                                           
+	turnTimer_ = 0.0f;
 }
-
 void Player::UpdateVictoryAnimation() {
 
 	// --- 待機タイマーの処理（次のジャンプの「タメ」） ---

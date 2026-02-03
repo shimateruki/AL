@@ -31,7 +31,6 @@ void ParticleManager::Update() {
 		it->worldTransform.scale_ = {currentScale, currentScale, currentScale};
 
 		// 4. 色の更新（startColor と endColor の間で変化させる）
-		// ※ここも少し修正：wだけでなくRGBも変化できるようにしました
 		it->color.x = math->Lerp(it->startColor.x, it->endColor.x, t);
 		it->color.y = math->Lerp(it->startColor.y, it->endColor.y, t);
 		it->color.z = math->Lerp(it->startColor.z, it->endColor.z, t);
@@ -54,9 +53,13 @@ void ParticleManager::Update() {
 void ParticleManager::Draw(ID3D12GraphicsCommandList* commandList) {
 
 	Model::PreDraw(commandList);
-	objectColor_.SetColor({1.0f, 0.0f, 0.0f, 1.0f});
+
+
 	// 2. 描画ループ
 	for (auto& particle : particles_) {
+
+		objectColor_.SetColor(particle.color);
+
 		model_->Draw(particle.worldTransform, *camera_, &objectColor_);
 	}
 
@@ -85,6 +88,6 @@ void ParticleManager::Emit(const Vector3& pos, const Vector3& vel, const Vector3
 	newParticle.endScale = endScale;
 	newParticle.startColor = startColor;
 	newParticle.endColor = endColor;
-	newParticle.color = startColor; // 最初は startColor で始める
+	newParticle.color = startColor; 
 }
 void ParticleManager::Clear() { particles_.clear(); }
