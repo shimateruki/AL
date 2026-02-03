@@ -1,5 +1,5 @@
 #include "PlayerBullet.h"
-
+#include "ParticleManager.h"
 using namespace KamataEngine;
 
 void PlayerBullet::Initialize(KamataEngine::Model* model, const KamataEngine::Vector3& position, const KamataEngine::Vector3& velocity, MapChipField* mapChipField, float scale, int damage) {
@@ -29,7 +29,30 @@ void PlayerBullet::Update() {
 	if (lifeTimer_ >= kLifeTime) {
 		isDead_ = true;
 	}
+	if (particleManager_) {
+		Vector3 pos = worldTransform_.translation_;
 
+		// 少しランダムに散らす
+		pos.x += (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.2f;
+		pos.y += (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.2f;
+		pos.z += (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.2f;
+
+		// 速度・加速度
+		Vector3 vel = {0.0f, 0.0f, 0.0f};
+		Vector3 accel = {0.0f, 0.0f, 0.0f};
+
+		// 色：水色 -> 青 -> 透明
+		Vector4 startColor = {0.0f, 1.0f, 1.0f, 0.8f};
+		Vector4 endColor = {0.0f, 0.0f, 1.0f, 0.0f};
+
+		// サイズ
+		float startScale = worldTransform_.scale_.x * 0.8f;
+		float endScale = 0.0f;
+		float life = 0.3f; // 寿命
+
+		particleManager_->Emit(pos, vel, accel, life, startScale, endScale, startColor, endColor);
+	}
+	
 	// 壁判定（ブロック貫通防止）
 	if (mapChipField_) {
 		MapChipField::IndexSet index = mapChipField_->GetMapChipIndexSetByPosition(worldTransform_.translation_);

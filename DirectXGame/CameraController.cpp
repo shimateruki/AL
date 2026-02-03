@@ -104,7 +104,7 @@ void CameraController::Reset() {
 
 
 
-// ズーム演出を開始する（GameSceneから呼ばれる）
+// ズーム演出を開始する
 void CameraController::StartVictoryZoom(Player* target) {
 	mode_ = Mode::kVictoryZoom;
 	zoomTimer_ = 0.0f;

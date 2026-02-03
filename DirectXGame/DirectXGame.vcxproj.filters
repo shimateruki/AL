@@ -134,12 +134,6 @@
     <FxCompile Include="Resources\shaders\ShapePS.hlsl">
       <Filter>シェーダー ファイル</Filter>
     </FxCompile>
-    <FxCompile Include="Resources\shaders\ObjPS.hlsl">
-      <Filter>シェーダー ファイル</Filter>
-    </FxCompile>
-    <FxCompile Include="Resources\shaders\ObjVS.hlsl">
-      <Filter>シェーダー ファイル</Filter>
-    </FxCompile>
     <FxCompile Include="Resources\shaders\PrimitivePS.hlsl">
       <Filter>シェーダー ファイル</Filter>
     </FxCompile>
@@ -152,6 +146,12 @@
     <FxCompile Include="Resources\shaders\TerrainVS.hlsl">
       <Filter>シェーダー ファイル</Filter>
     </FxCompile>
+    <FxCompile Include="Resources\shaders\ObjVS.hlsl">
+      <Filter>シェーダー ファイル</Filter>
+    </FxCompile>
+    <FxCompile Include="Resources\shaders\ObjPS.hlsl">
+      <Filter>シェーダー ファイル</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\shaders\Sprite.hlsli">
@@ -160,13 +160,13 @@
     <None Include="Resources\shaders\Shape.hlsli">
       <Filter>シェーダー ファイル</Filter>
     </None>
-    <None Include="Resources\shaders\Obj.hlsli">
-      <Filter>シェーダー ファイル</Filter>
-    </None>
     <None Include="Resources\shaders\Primitive.hlsli">
       <Filter>シェーダー ファイル</Filter>
     </None>
     <None Include="Resources\shaders\Terrain.hlsli">
+      <Filter>シェーダー ファイル</Filter>
+    </None>
+    <None Include="Resources\shaders\Obj.hlsli">
       <Filter>シェーダー ファイル</Filter>
     </None>
   </ItemGroup>

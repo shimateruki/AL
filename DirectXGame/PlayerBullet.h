@@ -3,6 +3,9 @@
 #include "MapChipField.h"
 #include"math.h"
 
+class ParticleManager;
+
+
 class PlayerBullet {
 public:
 	// 初期化
@@ -18,7 +21,7 @@ public:
 	KamataEngine::Vector3 GetWorldPosition() const;
 	AABB GetAABB();
 	int GetDamage() const { return damage_; }
-
+	void SetParticleManager(ParticleManager* particleManager) { particleManager_ = particleManager; }
 private:
 	KamataEngine::WorldTransform worldTransform_;
 	KamataEngine::Model* model_ = nullptr;
@@ -31,4 +34,5 @@ private:
 	const float kRadius = 0.5f;   // 当たり判定の大きさ
 	Math* math_ = nullptr;
 	int damage_ = 1;
+	ParticleManager* particleManager_ = nullptr;
 };

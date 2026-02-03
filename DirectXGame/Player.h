@@ -82,6 +82,7 @@ public:
 	int GetHp() const { return hp_; }
 	const std::list<PlayerBullet*>& GetBullets() const { return bullets_; }
 	void SetCameraController(CameraController* cameraController) { cameraController_ = cameraController; }
+	void SetIsCutscene(bool isCutscene) { isCutscene_ = isCutscene; }
 	//----------------------------------------
 	// 衝突
 	//----------------------------------------
@@ -337,4 +338,5 @@ private:
 	float attackRecoilTimer_ = 0.0f;
 	// 歩行アニメーション用
 	float walkTimer_ = 0.0f;
+	bool isCutscene_ = false;
 };
