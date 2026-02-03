@@ -73,7 +73,7 @@ void Enemy::Initialize(Model* model, Camera* camera, const Vector3& position, Ty
 		velocity_ = {0, 0, 0};
 		break;
 	case Type::kBoss:
-		hp_ = 100;
+		hp_ = 150;
 		maxHp_ = hp_;
 		isPhase2_ = false;
 		worldTransformEnemy_.scale_ = {1.0f, 1.0f, 1.0f};
